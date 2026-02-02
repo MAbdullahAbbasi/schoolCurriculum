@@ -30,19 +30,41 @@ app.use(express.json());
 
 // Check if MONGO_URI is set
 if (!process.env.MONGO_URI) {
-  console.error("ERROR: MONGO_URI environment variable is not set!");
-  console.error("Please create a .env file in the backend directory with: MONGO_URI=your_mongodb_atlas_connection_string");
+  console.error("❌ ERROR: MONGO_URI environment variable is not set!");
+  console.error("📝 For Render deployment:");
+  console.error("   1. Go to your Render service → Environment");
+  console.error("   2. Add environment variable: MONGO_URI");
+  console.error("   3. Value should be: mongodb+srv://username:password@cluster.mongodb.net/?retryWrites=true&w=majority");
+  console.error("   4. Replace username, password, and cluster with your actual MongoDB Atlas credentials");
+  process.exit(1);
+}
+
+// Validate MONGO_URI format
+const mongoUriValue = process.env.MONGO_URI.trim();
+if (!mongoUriValue.startsWith('mongodb://') && !mongoUriValue.startsWith('mongodb+srv://')) {
+  console.error("❌ ERROR: MONGO_URI format is incorrect!");
+  console.error(`   Current value: ${mongoUriValue.substring(0, 50)}${mongoUriValue.length > 50 ? '...' : ''}`);
+  console.error("");
+  console.error("   MONGO_URI must start with 'mongodb://' or 'mongodb+srv://'");
+  console.error("   Example: mongodb+srv://username:password@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority");
+  console.error("");
+  console.error("📝 To fix in Render:");
+  console.error("   1. Go to your Render service → Environment tab");
+  console.error("   2. Find MONGO_URI environment variable");
+  console.error("   3. Update it with your full MongoDB Atlas connection string");
+  console.error("   4. Get your connection string from MongoDB Atlas → Connect → Connect your application");
   process.exit(1);
 }
 
 // MongoDB Atlas connection with proper options
 const connectDB = async (retryCount = 0) => {
   try {
-    let mongoUri = process.env.MONGO_URI;
+    let mongoUri = mongoUriValue; // Use the validated and trimmed value
     
-    // Validate that MONGO_URI is a proper MongoDB connection string
-    if (!mongoUri || !mongoUri.startsWith('mongodb://') && !mongoUri.startsWith('mongodb+srv://')) {
-      throw new Error('MONGO_URI must be a valid MongoDB connection string starting with mongodb:// or mongodb+srv://');
+    // Log connection attempt (without password) - only on first attempt
+    if (retryCount === 0) {
+      const uriPreview = mongoUri.replace(/:[^:@]+@/, ':****@');
+      console.log(`🔗 Connecting to MongoDB... (${uriPreview.substring(0, 60)}...)`);
     }
     
     // Ensure the connection string includes the SchoolCurriculum database
