@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import CurriculumHeader from './CurriculumHeader';
+import { API_URL } from './config/api';
 import './StudentsRecord.css';
 
 const StudentsRecord = () => {
@@ -22,7 +23,7 @@ const StudentsRecord = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await axios.get('http://localhost:5000/api/courses');
+      const response = await axios.get(`${API_URL}/api/courses`);
       if (response.data.success) {
         setCourses(response.data.data || []);
       } else {

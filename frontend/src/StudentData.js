@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import CurriculumHeader from './CurriculumHeader';
+import { API_URL } from './config/api';
 import './StudentData.css';
 
 const StudentData = () => {
@@ -21,7 +22,7 @@ const StudentData = () => {
   const fetchStudentsData = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:5000/api/students-data');
+      const response = await axios.get(`${API_URL}/api/students-data`);
       setStudentsData(response.data);
       setError(null);
     } catch (err) {
@@ -72,7 +73,7 @@ const StudentData = () => {
       setUploading(true);
       setError(null);
 
-      const response = await axios.post('http://localhost:5000/api/students-data/upload', formData, {
+      const response = await axios.post(`${API_URL}/api/students-data/upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

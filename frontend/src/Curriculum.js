@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import CurriculumHeader from './CurriculumHeader';
 import StudentData from './StudentData';
+import { API_URL } from './config/api';
 import './Curriculum.css';
 
 const Curriculum = () => {
@@ -40,7 +41,7 @@ const Curriculum = () => {
 
   // Fetch data from API
   useEffect(() => {
-    axios.get('http://localhost:5000/api/curriculum', {
+    axios.get(`${API_URL}/api/curriculum`, {
       timeout: 10000, // 10 second timeout
     })
       .then(res => {
@@ -53,7 +54,7 @@ const Curriculum = () => {
         console.error('Error fetching data:', err);
         if (err.code === 'ECONNREFUSED' || err.message.includes('Network Error')) {
           console.error('Backend server is not running or not accessible');
-          console.error('Please ensure the backend server is running on http://localhost:5000');
+          console.error(`Please ensure the backend server is running on ${API_URL}`);
         } else if (err.response) {
           console.error('Error response:', err.response.status, err.response.data);
           if (err.response.status === 503 && err.response.data?.error === 'Database not connected') {
@@ -356,7 +357,7 @@ const Curriculum = () => {
     };
 
     try {
-      const response = await axios.post('http://localhost:5000/api/courses', courseData, {
+      const response = await axios.post(`${API_URL}/api/courses`, courseData, {
         headers: {
           'Content-Type': 'application/json',
         },
@@ -702,7 +703,7 @@ const Curriculum = () => {
               <p>The database appears to be empty or the API call failed.</p>
               <p className="empty-hint">Please check:</p>
               <ul style={{textAlign: 'left', display: 'inline-block', marginTop: '1rem', color: '#e74c3c'}}>
-                <li>✅ Backend server is running on http://localhost:5000</li>
+                <li>✅ Backend server is running on {API_URL}</li>
                 <li>⚠️ MongoDB Atlas connection is established</li>
                 <li>⚠️ Your IP address is whitelisted in MongoDB Atlas</li>
                 <li>⚠️ Data exists in the SchoolCurriculum.objectives collection</li>

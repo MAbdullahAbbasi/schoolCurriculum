@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import CurriculumHeader from './CurriculumHeader';
+import { API_URL } from './config/api';
 import './StudentRecordDetail.css';
 
 const StudentRecordDetail = () => {
@@ -27,7 +28,7 @@ const StudentRecordDetail = () => {
       setError(null);
 
       // Fetch course data
-      const courseResponse = await axios.get(`http://localhost:5000/api/courses`);
+      const courseResponse = await axios.get(`${API_URL}/api/courses`);
       if (courseResponse.data.success) {
         const foundCourse = courseResponse.data.data.find(c => c.code === courseCode);
         if (foundCourse) {
@@ -40,12 +41,12 @@ const StudentRecordDetail = () => {
       }
 
       // Fetch students data
-      const studentsResponse = await axios.get('http://localhost:5000/api/students-data');
+      const studentsResponse = await axios.get(`${API_URL}/api/students-data`);
       setStudents(studentsResponse.data || []);
 
       // Fetch existing record if any
       try {
-        const recordResponse = await axios.get(`http://localhost:5000/api/records/course/${courseCode}`);
+        const recordResponse = await axios.get(`${API_URL}/api/records/course/${courseCode}`);
         if (recordResponse.data.success && recordResponse.data.data) {
           const record = recordResponse.data.data;
           // Populate scores from existing record
@@ -195,7 +196,7 @@ const StudentRecordDetail = () => {
         students: studentsData,
       };
 
-      const response = await axios.post('http://localhost:5000/api/records', recordData);
+      const response = await axios.post(`${API_URL}/api/records`, recordData);
 
       if (response.data.success) {
         setHasExistingRecord(true);
