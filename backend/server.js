@@ -68,28 +68,57 @@ const connectDB = async (retryCount = 0) => {
     }
     
     // Ensure the connection string includes the SchoolCurriculum database
-    // Parse the URI to extract components
-    const uriParts = mongoUri.split('?');
-    const baseUri = uriParts[0];
-    const queryString = uriParts[1] || '';
+    // Use a more reliable method: split by ? to separate query params, then handle the base URI
+    const hasQuery = mongoUri.includes('?');
+    const parts = hasQuery ? mongoUri.split('?') : [mongoUri, ''];
+    let baseUri = parts[0];
+    const queryString = parts[1] || '';
     
-    // Check if database name is already in the URI
-    if (baseUri.includes('/') && !baseUri.endsWith('/')) {
-      // Extract the path after the last /
-      const pathMatch = baseUri.match(/\/([^/]+)$/);
-      if (pathMatch && pathMatch[1] && pathMatch[1] !== 'SchoolCurriculum') {
-        // Replace existing database name
-        mongoUri = baseUri.replace(/\/[^/]+$/, '/SchoolCurriculum') + (queryString ? '?' + queryString : '');
-        console.log("Set database to SchoolCurriculum in connection string");
-      } else if (!pathMatch || !pathMatch[1]) {
-        // No database specified, add it
-        mongoUri = baseUri + '/SchoolCurriculum' + (queryString ? '?' + queryString : '');
-        console.log("Added SchoolCurriculum database to connection string");
+    // Find where the hostname ends (after @ symbol and before / or end of string)
+    // Format: mongodb+srv://username:password@cluster.mongodb.net[/database]
+    const atIndex = baseUri.indexOf('@');
+    if (atIndex === -1) {
+      throw new Error('Invalid MongoDB connection string: missing @ symbol');
+    }
+    
+    // Find the hostname part (everything after @)
+    const afterAt = baseUri.substring(atIndex + 1);
+    const slashIndex = afterAt.indexOf('/');
+    
+    if (slashIndex === -1) {
+      // No database specified, add it
+      mongoUri = baseUri + '/SchoolCurriculum' + (queryString ? '?' + queryString : '');
+      if (retryCount === 0) console.log("Added SchoolCurriculum database to connection string");
+    } else {
+      // Database might be specified
+      const currentDb = afterAt.substring(slashIndex + 1).split('?')[0].split('/')[0];
+      if (!currentDb || currentDb.trim() === '') {
+        // Empty database name, add SchoolCurriculum
+        mongoUri = baseUri + 'SchoolCurriculum' + (queryString ? '?' + queryString : '');
+        if (retryCount === 0) console.log("Added SchoolCurriculum database to connection string");
+      } else if (currentDb !== 'SchoolCurriculum') {
+        // Different database, replace it - be careful to preserve the structure
+        const beforeDb = baseUri.substring(0, atIndex + 1 + slashIndex + 1);
+        mongoUri = beforeDb + 'SchoolCurriculum' + (queryString ? '?' + queryString : '');
+        if (retryCount === 0) console.log("Set database to SchoolCurriculum in connection string");
       }
-    } else if (baseUri.endsWith('/')) {
-      // URI ends with /, add database name
-      mongoUri = baseUri + 'SchoolCurriculum' + (queryString ? '?' + queryString : '');
-      console.log("Added SchoolCurriculum database to connection string");
+      // If it's already SchoolCurriculum, use as-is
+    }
+    
+    // Reconstruct full URI
+    if (queryString && !mongoUri.includes('?')) {
+      mongoUri = mongoUri + '?' + queryString;
+    }
+    
+    // Validate the final URI before connecting
+    if (!mongoUri.includes('@') || !mongoUri.match(/@[^/]+/)) {
+      throw new Error(`Invalid MongoDB URI format after processing. URI must contain hostname after @ symbol.`);
+    }
+    
+    // Log final URI (without password) for debugging - only on first attempt
+    if (retryCount === 0) {
+      const finalUriPreview = mongoUri.replace(/:[^:@]+@/, ':****@');
+      console.log(`📝 Final connection URI: ${finalUriPreview.substring(0, 80)}...`);
     }
     
     const conn = await mongoose.connect(mongoUri, {
