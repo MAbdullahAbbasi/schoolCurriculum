@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
@@ -7,7 +7,6 @@ import './StudentRecordDetail.css';
 
 const StudentRecordDetail = () => {
   const { courseCode } = useParams();
-  const navigate = useNavigate();
   const [course, setCourse] = useState(null);
   const [students, setStudents] = useState([]);
   const [studentScores, setStudentScores] = useState({});
@@ -20,6 +19,7 @@ const StudentRecordDetail = () => {
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseCode]);
 
   const fetchData = async () => {

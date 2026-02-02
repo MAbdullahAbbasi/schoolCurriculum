@@ -199,10 +199,10 @@ const Curriculum = () => {
     setCurrentView('studentsData');
   };
 
-  // Handle back to curriculum view
-  const handleBackToCurriculum = () => {
-    setCurrentView('curriculum');
-  };
+  // Handle back to curriculum view (kept for potential future use)
+  // const handleBackToCurriculum = () => {
+  //   setCurrentView('curriculum');
+  // };
 
   // Handle topic selection (when clicking on card in selection mode)
   const handleTopicSelect = (gradeId, courseIndex) => {
