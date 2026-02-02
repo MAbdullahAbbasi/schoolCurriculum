@@ -5,7 +5,6 @@ const studentDataSchema = new mongoose.Schema(
     registrationNumber: {
       type: String,
       required: true,
-      unique: true,
       trim: true,
     },
     studentName: {
@@ -29,8 +28,8 @@ const studentDataSchema = new mongoose.Schema(
   }
 );
 
-// Create index on registrationNumber for faster lookups
-studentDataSchema.index({ registrationNumber: 1 });
+// Create unique index on registrationNumber for faster lookups
+studentDataSchema.index({ registrationNumber: 1 }, { unique: true });
 
 const StudentData = mongoose.model('StudentData', studentDataSchema, 'studentsData');
 

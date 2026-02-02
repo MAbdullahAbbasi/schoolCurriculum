@@ -40,15 +40,33 @@ const connectDB = async (retryCount = 0) => {
   try {
     let mongoUri = process.env.MONGO_URI;
     
+    // Validate that MONGO_URI is a proper MongoDB connection string
+    if (!mongoUri || !mongoUri.startsWith('mongodb://') && !mongoUri.startsWith('mongodb+srv://')) {
+      throw new Error('MONGO_URI must be a valid MongoDB connection string starting with mongodb:// or mongodb+srv://');
+    }
+    
     // Ensure the connection string includes the SchoolCurriculum database
-    // Replace any existing database name with SchoolCurriculum
-    if (mongoUri.includes('/') && !mongoUri.includes('/SchoolCurriculum')) {
-      // Replace the database name in the URI
-      mongoUri = mongoUri.replace(/\/[^/?]+(\?|$)/, '/SchoolCurriculum$1');
-      console.log("Set database to SchoolCurriculum in connection string");
-    } else if (!mongoUri.includes('/')) {
-      // No database specified, add it
-      mongoUri = mongoUri.endsWith('/') ? mongoUri + 'SchoolCurriculum' : mongoUri + '/SchoolCurriculum';
+    // Parse the URI to extract components
+    const uriParts = mongoUri.split('?');
+    const baseUri = uriParts[0];
+    const queryString = uriParts[1] || '';
+    
+    // Check if database name is already in the URI
+    if (baseUri.includes('/') && !baseUri.endsWith('/')) {
+      // Extract the path after the last /
+      const pathMatch = baseUri.match(/\/([^/]+)$/);
+      if (pathMatch && pathMatch[1] && pathMatch[1] !== 'SchoolCurriculum') {
+        // Replace existing database name
+        mongoUri = baseUri.replace(/\/[^/]+$/, '/SchoolCurriculum') + (queryString ? '?' + queryString : '');
+        console.log("Set database to SchoolCurriculum in connection string");
+      } else if (!pathMatch || !pathMatch[1]) {
+        // No database specified, add it
+        mongoUri = baseUri + '/SchoolCurriculum' + (queryString ? '?' + queryString : '');
+        console.log("Added SchoolCurriculum database to connection string");
+      }
+    } else if (baseUri.endsWith('/')) {
+      // URI ends with /, add database name
+      mongoUri = baseUri + 'SchoolCurriculum' + (queryString ? '?' + queryString : '');
       console.log("Added SchoolCurriculum database to connection string");
     }
     
@@ -64,12 +82,25 @@ const connectDB = async (retryCount = 0) => {
     return true;
   } catch (err) {
     console.error(`❌ MongoDB connection error (attempt ${retryCount + 1}):`, err.message);
+    
+    // Provide specific error guidance
     if (err.message.includes('IP') || err.message.includes('whitelist')) {
       console.error("⚠️  IP Whitelist Issue:");
       console.error("   1. Go to MongoDB Atlas → Network Access");
       console.error("   2. Click 'Add IP Address'");
       console.error("   3. Select 'Add Current IP Address' or 'Allow Access from Anywhere' (0.0.0.0/0)");
       console.error("   4. Wait 1-2 minutes for changes to propagate");
+    } else if (err.message.includes('ENOTFOUND') || err.message.includes('querySrv')) {
+      console.error("⚠️  Connection String Issue:");
+      console.error("   1. Check that MONGO_URI in Render environment variables is correct");
+      console.error("   2. MONGO_URI should start with 'mongodb+srv://' for Atlas");
+      console.error("   3. Format: mongodb+srv://username:password@cluster.mongodb.net/?retryWrites=true&w=majority");
+      console.error("   4. Make sure your MongoDB Atlas username and password are correct");
+    } else if (err.message.includes('authentication failed') || err.message.includes('bad auth')) {
+      console.error("⚠️  Authentication Issue:");
+      console.error("   1. Check your MongoDB Atlas username and password");
+      console.error("   2. Make sure special characters in password are URL-encoded");
+      console.error("   3. Verify the database user has proper permissions");
     }
     return false;
   }
