@@ -6,6 +6,8 @@ import curriculumRoutes from "./routes/curriculumRoutes.js";
 import studentDataRoutes from "./routes/studentDataRoutes.js";
 import courseRoutes from "./routes/courseRoutes.js";
 import recordRoutes from "./routes/recordRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
+import { authMiddleware } from "./middleware/authMiddleware.js";
 
 dotenv.config();
 
@@ -25,7 +27,9 @@ mongoose.connection.on('disconnected', () => {
   console.log('⚠️  Mongoose disconnected from MongoDB');
 });
 
-app.use(cors());
+app.use(cors({
+  exposedHeaders: ['X-New-Token'],
+}));
 app.use(express.json());
 
 // Check if MONGO_URI is set
@@ -205,6 +209,9 @@ app.get("/", (req, res) => {
     });
 });
 
+// Protect all /api routes with JWT (except POST /api/auth/login)
+app.use("/api", authMiddleware);
+
 // Use curriculum routes
 app.use("/api/curriculum", curriculumRoutes);
 
@@ -216,6 +223,9 @@ app.use("/api/courses", courseRoutes);
 
 // Use record routes
 app.use("/api/records", recordRoutes);
+
+// Use auth routes
+app.use("/api/auth", authRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

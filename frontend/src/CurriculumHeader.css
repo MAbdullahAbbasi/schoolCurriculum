@@ -112,6 +112,26 @@
   box-shadow: 0 2px 8px rgba(52, 152, 219, 0.2);
 }
 
+/* Log out Button */
+.logout-button {
+  background: transparent;
+  color: #7f8c8d;
+  border: 2px solid #bdc3c7;
+  padding: 0.875rem 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.logout-button:hover {
+  border-color: #95a5a6;
+  color: #2c3e50;
+  background: #f8f9fa;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .curriculum-header > div {
@@ -128,7 +148,8 @@
 
   .students-data-button,
   .record-button,
-  .create-course-button {
+  .create-course-button,
+  .logout-button {
     width: 100%;
     margin-top: 0;
   }

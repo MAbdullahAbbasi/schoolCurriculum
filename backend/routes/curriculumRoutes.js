@@ -1,8 +1,24 @@
 import express from "express";
+import multer from "multer";
+import XLSX from "xlsx";
 import Curriculum from "../models/Curriculum.js";
 import mongoose from "mongoose";
 
 const router = express.Router();
+
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ok =
+      file.mimetype === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+      file.mimetype === "application/vnd.ms-excel" ||
+      file.mimetype === "text/csv" ||
+      /\.(xlsx|xls|csv)$/i.test(file.originalname);
+    cb(ok ? null : new Error("Only Excel or CSV allowed"), ok);
+  },
+});
 
 // Debug endpoint to check database collections
 router.get("/debug/collections", async (req, res) => {
@@ -64,10 +80,137 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Get single grade by id
+// Helper to normalize column names
+const normalizeCol = (name) =>
+  (name || "").toString().toLowerCase().trim().replace(/\s+/g, " ");
+const findCol = (row, variations) => {
+  for (const key of Object.keys(row)) {
+    const n = normalizeCol(key);
+    if (variations.some((v) => n.includes(v.toLowerCase()))) return key;
+  }
+  return null;
+};
+
+// POST upload objectives Excel: expects Grade, Code, Title, Description (flexible column names)
+router.post("/upload", upload.single("file"), async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        error: "Database not connected",
+      });
+    }
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: "No file uploaded",
+        message: "Please select an Excel or CSV file.",
+      });
+    }
+
+    let workbook;
+    try {
+      workbook = XLSX.read(req.file.buffer, { type: "buffer" });
+    } catch (e) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid file",
+        message: "Could not read the file as Excel or CSV.",
+      });
+    }
+
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(worksheet, { defval: "", raw: false });
+
+    if (!rows.length) {
+      return res.status(400).json({
+        success: false,
+        error: "Empty file",
+        message: "The file has no data rows.",
+      });
+    }
+
+    const gradeCol = findCol(rows[0], ["grade", "class", "level"]);
+    const codeCol = findCol(rows[0], ["code", "objective code", "obj code"]);
+    const titleCol = findCol(rows[0], ["title", "topic", "name", "objective title"]);
+    const descCol = findCol(rows[0], ["description", "desc", "learning objective"]);
+
+    if (!gradeCol) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing Grade column",
+        message: "The file must have a column for Grade (e.g. Grade, Class, Level).",
+      });
+    }
+
+    const byGrade = {};
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const gradeRaw = row[gradeCol];
+      const gradeNum = parseInt(gradeRaw, 10);
+      if (isNaN(gradeNum) || gradeNum < 1) continue;
+
+      const code = codeCol && row[codeCol] != null ? String(row[codeCol]).trim() : "";
+      const title = titleCol && row[titleCol] != null ? String(row[titleCol]).trim() : "";
+      const description = descCol && row[descCol] != null ? String(row[descCol]).trim() : "";
+
+      if (!byGrade[gradeNum]) byGrade[gradeNum] = [];
+      byGrade[gradeNum].push({ code, title, description });
+    }
+
+    const grades = Object.keys(byGrade).map(Number);
+    if (grades.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: "No valid data",
+        message: "No valid grade and objective rows found. Ensure Grade is a number.",
+      });
+    }
+
+    let added = 0;
+    let updated = 0;
+
+    for (const grade of grades) {
+      const objectives = byGrade[grade];
+      const existing = await Curriculum.findOne({ grade });
+
+      if (existing) {
+        const current = existing.objectives || [];
+        const combined = [...current, ...objectives];
+        existing.objectives = combined;
+        await existing.save();
+        updated++;
+      } else {
+        await Curriculum.create({
+          id: grade,
+          grade,
+          objectives,
+        });
+        added++;
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Objectives uploaded: ${added} new grade(s), ${updated} grade(s) updated.`,
+      added,
+      updated,
+      gradesProcessed: grades.length,
+    });
+  } catch (err) {
+    console.error("Error uploading objectives:", err);
+    res.status(500).json({
+      success: false,
+      error: "Upload failed",
+      message: err.message || "An error occurred while processing the file.",
+    });
+  }
+});
+
+// Get single grade by id (must be after /upload to avoid "upload" as id)
 router.get("/:id", async (req, res) => {
   try {
-    // Ensure id is a number
     const gradeId = Number(req.params.id);
     console.log(`Fetching curriculum for grade ID: ${gradeId}`);
 

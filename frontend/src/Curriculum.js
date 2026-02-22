@@ -26,6 +26,11 @@ const Curriculum = () => {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedTopics, setSelectedTopics] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  // Upload objectives state
+  const [objectivesFile, setObjectivesFile] = useState(null);
+  const [uploadingObjectives, setUploadingObjectives] = useState(false);
+  const [lastUploadedFileKey, setLastUploadedFileKey] = useState(null);
+  const objectivesInputId = 'objectives-file-input';
   const [formData, setFormData] = useState({
     courseName: '',
     durationType: '', // 'days', 'weeks', 'months'
@@ -39,32 +44,27 @@ const Curriculum = () => {
     startDate: ''
   });
 
-  // Fetch data from API
-  useEffect(() => {
-    axios.get(`${API_URL}/api/curriculum`, {
-      timeout: 30000, // 30 second timeout (increased for production)
+  const fetchCurriculum = () => {
+    return axios.get(`${API_URL}/api/curriculum`, {
+      timeout: 30000,
     })
       .then(res => {
-        console.log('Data received:', res.data);
         setData(res.data);
-        setFilteredData(res.data); // Initialize filtered data with all data
+        setFilteredData(res.data);
         setLoading(false);
+        return res.data;
       })
       .catch(err => {
         console.error('Error fetching data:', err);
-        if (err.code === 'ECONNREFUSED' || err.message.includes('Network Error')) {
-          console.error('Backend server is not running or not accessible');
-          console.error(`Please ensure the backend server is running on ${API_URL}`);
-        } else if (err.response) {
-          console.error('Error response:', err.response.status, err.response.data);
-          if (err.response.status === 503 && err.response.data?.error === 'Database not connected') {
-            console.error('MongoDB is not connected. Please check IP whitelist in MongoDB Atlas.');
-          }
-        } else {
-          console.error('Error details:', err.message);
-        }
         setLoading(false);
+        throw err;
       });
+  };
+
+  // Fetch data from API
+  useEffect(() => {
+    setLoading(true);
+    fetchCurriculum();
   }, []);
 
   // Apply filters whenever filters or data change
@@ -185,6 +185,67 @@ const Curriculum = () => {
       ...prev,
       [filterName]: value
     }));
+  };
+
+  const handleObjectivesFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const ok = /\.(xlsx|xls|csv)$/i.test(file.name);
+      if (ok) {
+        setObjectivesFile(file);
+      } else {
+        alert('Please select an Excel or CSV file (.xlsx, .xls, .csv).');
+        e.target.value = '';
+      }
+    }
+  };
+
+  const getFileKey = (file) =>
+    file ? `${file.name}-${file.size}-${file.lastModified || 0}` : null;
+
+  const handleUploadObjectives = async () => {
+    if (!objectivesFile) {
+      alert('Please select a file first.');
+      return;
+    }
+    const fileKey = getFileKey(objectivesFile);
+    if (lastUploadedFileKey && fileKey === lastUploadedFileKey) {
+      alert('This file was already uploaded. Select a different file to upload again.');
+      return;
+    }
+    const formData = new FormData();
+    formData.append('file', objectivesFile);
+    try {
+      setUploadingObjectives(true);
+      const res = await axios.post(`${API_URL}/api/curriculum/upload`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 30000,
+      });
+      if (res.data.success) {
+        setLastUploadedFileKey(fileKey);
+        alert(res.data.message || 'Objectives uploaded successfully.');
+        setObjectivesFile(null);
+        const input = document.getElementById(objectivesInputId);
+        if (input) input.value = '';
+        setFilters({
+          ageGroup: '',
+          grade: '',
+          code: '',
+          subject: '',
+          topic: '',
+          learningObjective: '',
+        });
+        setLoading(true);
+        await fetchCurriculum();
+      } else {
+        alert(res.data.message || res.data.error || 'Upload failed.');
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || err.response?.data?.error || err.message || 'Upload failed.';
+      alert(msg);
+    } finally {
+      setUploadingObjectives(false);
+    }
   };
 
   // Handle create course button click
@@ -612,6 +673,36 @@ const Curriculum = () => {
               ))}
             </select>
           </div>
+        </div>
+
+        <div className="upload-objectives-bar">
+          <input
+            id={objectivesInputId}
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            onChange={handleObjectivesFileChange}
+            className="objectives-file-input"
+          />
+          <button
+            type="button"
+            className="upload-objectives-btn"
+            onClick={() => document.getElementById(objectivesInputId)?.click()}
+          >
+            Upload Objectives
+          </button>
+          {objectivesFile && (
+            <>
+              <span className="objectives-file-name">{objectivesFile.name}</span>
+              <button
+                type="button"
+                className="upload-objectives-submit-btn"
+                onClick={handleUploadObjectives}
+                disabled={uploadingObjectives}
+              >
+                {uploadingObjectives ? 'Uploading...' : 'Upload file'}
+              </button>
+            </>
+          )}
         </div>
 
       {/* Selection Mode Banner */}

@@ -103,6 +103,69 @@
   box-shadow: 0 2px 8px rgba(52, 73, 94, 0.15);
 }
 
+/* Upload Objectives bar - below filters, on the left */
+.upload-objectives-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin-top: 1rem;
+  margin-bottom: 1.5rem;
+  justify-content: flex-start;
+}
+
+.objectives-file-input {
+  display: none;
+}
+
+.upload-objectives-btn {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.upload-objectives-btn:hover {
+  background: #2980b9;
+  transform: translateY(-1px);
+}
+
+.objectives-file-name {
+  font-size: 0.9rem;
+  color: #2c3e50;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.upload-objectives-submit-btn {
+  background: #27ae60;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.upload-objectives-submit-btn:hover:not(:disabled) {
+  background: #219a52;
+  transform: translateY(-1px);
+}
+
+.upload-objectives-submit-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 /* Loading State */
 .loading-spinner {
   display: flex;

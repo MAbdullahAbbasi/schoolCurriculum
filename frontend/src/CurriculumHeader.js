@@ -18,10 +18,14 @@ const CurriculumHeader = ({ onCreateCourseClick }) => {
     if (location.pathname !== '/') {
       navigate('/');
     }
-    // If we're already on the curriculum page, trigger the create course action
     if (onCreateCourseClick) {
       onCreateCourseClick();
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('curriculum_auth');
+    window.location.reload();
   };
 
   return (
@@ -49,6 +53,9 @@ const CurriculumHeader = ({ onCreateCourseClick }) => {
             onClick={handleCreateCourseClick}
           >
             + Create Course
+          </button>
+          <button type="button" className="logout-button" onClick={handleLogout}>
+            Log out
           </button>
         </div>
       </div>
