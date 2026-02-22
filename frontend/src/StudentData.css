@@ -240,6 +240,82 @@
   font-size: 0.9rem;
 }
 
+/* Edit / Save row */
+.students-table tbody tr.editing-row {
+  background: #e8f4fc;
+}
+
+.student-edit-input {
+  width: 100%;
+  max-width: 200px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #3498db;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.student-edit-input:focus {
+  outline: none;
+  border-color: #2980b9;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.edit-record-btn {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.edit-record-btn:hover {
+  background: #2980b9;
+  transform: translateY(-1px);
+}
+
+.save-record-btn {
+  background: #27ae60;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-right: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.save-record-btn:hover:not(:disabled) {
+  background: #219a52;
+  transform: translateY(-1px);
+}
+
+.save-record-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.cancel-edit-btn {
+  background: #95a5a6;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-edit-btn:hover {
+  background: #7f8c8d;
+}
+
 /* Empty State */
 .empty-state {
   text-align: center;

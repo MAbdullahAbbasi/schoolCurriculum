@@ -13,6 +13,9 @@ const StudentData = () => {
   const [studentsData, setStudentsData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [editingRegistrationNumber, setEditingRegistrationNumber] = useState(null);
+  const [editForm, setEditForm] = useState({ studentName: '', grade: '', dateOfBirth: '' });
+  const [savingRegistrationNumber, setSavingRegistrationNumber] = useState(null);
 
   // Fetch existing students data on component mount
   useEffect(() => {
@@ -57,6 +60,54 @@ const StudentData = () => {
         setError('Please upload a valid Excel file (.xlsx, .xls, or .csv)');
         setFile(null);
       }
+    }
+  };
+
+  const handleEditClick = (student) => {
+    setEditingRegistrationNumber(student.registrationNumber);
+    let dob = student.dateOfBirth || '';
+    if (dob && typeof dob === 'string' && dob.length > 10) {
+      dob = dob.split('T')[0];
+    }
+    setEditForm({
+      studentName: student.studentName || '',
+      grade: student.grade || '',
+      dateOfBirth: dob,
+    });
+  };
+
+  const handleEditFormChange = (field, value) => {
+    setEditForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleCancelEdit = () => {
+    setEditingRegistrationNumber(null);
+    setEditForm({ studentName: '', grade: '', dateOfBirth: '' });
+  };
+
+  const handleSaveClick = async (registrationNumber) => {
+    if (!editForm.studentName?.trim() || !editForm.grade?.trim() || !editForm.dateOfBirth) {
+      alert('Please fill all fields.');
+      return;
+    }
+    try {
+      setSavingRegistrationNumber(registrationNumber);
+      setError(null);
+      await axios.put(`${API_URL}/api/students-data/update`, {
+        registrationNumber,
+        studentName: editForm.studentName.trim(),
+        grade: editForm.grade.trim(),
+        dateOfBirth: editForm.dateOfBirth,
+      });
+      await fetchStudentsData();
+      setEditingRegistrationNumber(null);
+      setEditForm({ studentName: '', grade: '', dateOfBirth: '' });
+    } catch (err) {
+      console.error('Error updating student:', err);
+      const msg = err.response?.data?.message || err.response?.data?.error || err.message || 'Failed to update record';
+      alert(msg);
+    } finally {
+      setSavingRegistrationNumber(null);
     }
   };
 
@@ -171,25 +222,91 @@ const StudentData = () => {
                   <th>Student Name</th>
                   <th>Grade</th>
                   <th>Date of Birth</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {studentsData.map((student, index) => (
-                  <tr key={index}>
-                    <td>{student.registrationNumber || '-'}</td>
-                    <td>{student.studentName || '-'}</td>
-                    <td>{student.grade || '-'}</td>
-                    <td>
-                      {student.dateOfBirth 
-                        ? new Date(student.dateOfBirth).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          })
-                        : '-'}
-                    </td>
-                  </tr>
-                ))}
+                {studentsData.map((student, index) => {
+                  const isEditing = editingRegistrationNumber === student.registrationNumber;
+                  const isSaving = savingRegistrationNumber === student.registrationNumber;
+                  return (
+                    <tr key={student.registrationNumber || index} className={isEditing ? 'editing-row' : ''}>
+                      <td>{student.registrationNumber || '-'}</td>
+                      {isEditing ? (
+                        <>
+                          <td>
+                            <input
+                              type="text"
+                              className="student-edit-input"
+                              value={editForm.studentName}
+                              onChange={(e) => handleEditFormChange('studentName', e.target.value)}
+                              placeholder="Student Name"
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              className="student-edit-input"
+                              value={editForm.grade}
+                              onChange={(e) => handleEditFormChange('grade', e.target.value)}
+                              placeholder="Grade"
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="date"
+                              className="student-edit-input"
+                              value={editForm.dateOfBirth}
+                              onChange={(e) => handleEditFormChange('dateOfBirth', e.target.value)}
+                            />
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              className="save-record-btn"
+                              onClick={() => handleSaveClick(student.registrationNumber)}
+                              disabled={isSaving}
+                            >
+                              {isSaving ? 'Saving...' : 'Save'}
+                            </button>
+                            {!isSaving && (
+                              <button
+                                type="button"
+                                className="cancel-edit-btn"
+                                onClick={handleCancelEdit}
+                              >
+                                Cancel
+                              </button>
+                            )}
+                          </td>
+                        </>
+                      ) : (
+                        <>
+                          <td>{student.studentName || '-'}</td>
+                          <td>{student.grade || '-'}</td>
+                          <td>
+                            {student.dateOfBirth
+                              ? new Date(student.dateOfBirth).toLocaleDateString('en-US', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric',
+                                })
+                              : '-'}
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              className="edit-record-btn"
+                              onClick={() => handleEditClick(student)}
+                            >
+                              Edit
+                            </button>
+                          </td>
+                        </>
+                      )}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

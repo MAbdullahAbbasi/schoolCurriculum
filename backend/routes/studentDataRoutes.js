@@ -74,6 +74,87 @@ router.get('/', async (req, res) => {
   }
 });
 
+// PUT update a single student by registration number (also on /update for explicit path)
+const updateStudentHandler = async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        error: 'Database not connected',
+        message: 'MongoDB is not connected.',
+      });
+    }
+
+    const { registrationNumber, studentName, grade, dateOfBirth } = req.body;
+
+    if (!registrationNumber || !registrationNumber.toString().trim()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Registration number is required',
+      });
+    }
+
+    const updateFields = {};
+    if (studentName !== undefined) updateFields.studentName = String(studentName).trim();
+    if (grade !== undefined) updateFields.grade = String(grade).trim();
+    if (dateOfBirth !== undefined) {
+      const d = new Date(dateOfBirth);
+      if (isNaN(d.getTime())) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid date of birth',
+        });
+      }
+      updateFields.dateOfBirth = d;
+    }
+
+    if (Object.keys(updateFields).length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'No fields to update',
+      });
+    }
+
+    const updated = await StudentData.findOneAndUpdate(
+      { registrationNumber: String(registrationNumber).trim() },
+      { $set: updateFields },
+      { new: true, runValidators: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({
+        success: false,
+        error: 'Student not found',
+        message: `No student with registration number "${registrationNumber}" found.`,
+      });
+    }
+
+    const studentObj = updated.toObject();
+    if (studentObj.dateOfBirth) {
+      studentObj.dateOfBirth = new Date(studentObj.dateOfBirth).toISOString().split('T')[0];
+    }
+    delete studentObj._id;
+    delete studentObj.__v;
+    delete studentObj.createdAt;
+    delete studentObj.updatedAt;
+
+    res.json({
+      success: true,
+      message: 'Student record updated successfully',
+      data: studentObj,
+    });
+  } catch (error) {
+    console.error('Error updating student:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update student',
+      message: error.message,
+    });
+  }
+};
+
+router.put('/', updateStudentHandler);
+router.put('/update', updateStudentHandler);
+
 // POST upload Excel file and save to database
 router.post('/upload', upload.single('file'), async (req, res) => {
   try {

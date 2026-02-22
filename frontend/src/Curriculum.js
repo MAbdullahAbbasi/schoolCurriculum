@@ -42,7 +42,7 @@ const Curriculum = () => {
   // Fetch data from API
   useEffect(() => {
     axios.get(`${API_URL}/api/curriculum`, {
-      timeout: 10000, // 10 second timeout
+      timeout: 30000, // 30 second timeout (increased for production)
     })
       .then(res => {
         console.log('Data received:', res.data);
