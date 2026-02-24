@@ -31,6 +31,8 @@ const Curriculum = () => {
   const [uploadingObjectives, setUploadingObjectives] = useState(false);
   const [lastUploadedFileKey, setLastUploadedFileKey] = useState(null);
   const objectivesInputId = 'objectives-file-input';
+  const [singleObjectiveForm, setSingleObjectiveForm] = useState({ grade: '', code: '', title: '', description: '' });
+  const [addingObjective, setAddingObjective] = useState(false);
   const [formData, setFormData] = useState({
     courseName: '',
     durationType: '', // 'days', 'weeks', 'months'
@@ -245,6 +247,37 @@ const Curriculum = () => {
       alert(msg);
     } finally {
       setUploadingObjectives(false);
+    }
+  };
+
+  const handleSingleObjectiveChange = (field, value) => {
+    setSingleObjectiveForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleAddSingleObjective = async (e) => {
+    e.preventDefault();
+    const { grade, code, title, description } = singleObjectiveForm;
+    if (!grade || parseInt(grade, 10) < 1) {
+      alert('Please enter a valid grade (1 or higher).');
+      return;
+    }
+    try {
+      setAddingObjective(true);
+      await axios.post(`${API_URL}/api/curriculum/objective`, {
+        grade: parseInt(grade, 10),
+        code: code != null ? String(code).trim() : '',
+        title: title != null ? String(title).trim() : '',
+        description: description != null ? String(description).trim() : '',
+      });
+      setSingleObjectiveForm({ grade: '', code: '', title: '', description: '' });
+      setFilters({ ageGroup: '', grade: '', code: '', subject: '', topic: '', learningObjective: '' });
+      setLoading(true);
+      await fetchCurriculum();
+    } catch (err) {
+      const msg = err.response?.data?.message || err.response?.data?.error || err.message || 'Failed to add objective.';
+      alert(msg);
+    } finally {
+      setAddingObjective(false);
     }
   };
 
@@ -674,6 +707,49 @@ const Curriculum = () => {
             </select>
           </div>
         </div>
+
+        <div className="add-single-objective-section">
+          <h4 className="add-objective-heading">Add objective individually</h4>
+          <form onSubmit={handleAddSingleObjective} className="add-objective-form">
+            <input
+              type="number"
+              min="1"
+              placeholder="Grade"
+              value={singleObjectiveForm.grade}
+              onChange={(e) => handleSingleObjectiveChange('grade', e.target.value)}
+              className="add-objective-input"
+              required
+            />
+            <input
+              type="text"
+              placeholder="Code"
+              value={singleObjectiveForm.code}
+              onChange={(e) => handleSingleObjectiveChange('code', e.target.value)}
+              className="add-objective-input"
+            />
+            <input
+              type="text"
+              placeholder="Title"
+              value={singleObjectiveForm.title}
+              onChange={(e) => handleSingleObjectiveChange('title', e.target.value)}
+              className="add-objective-input"
+            />
+            <input
+              type="text"
+              placeholder="Description"
+              value={singleObjectiveForm.description}
+              onChange={(e) => handleSingleObjectiveChange('description', e.target.value)}
+              className="add-objective-input add-objective-desc"
+            />
+            <button type="submit" className="add-objective-submit-btn" disabled={addingObjective}>
+              {addingObjective ? 'Adding...' : 'Add'}
+            </button>
+          </form>
+        </div>
+
+        <p className="objectives-upload-hint">
+          Excel file should contain columns: <strong>Grade</strong>, <strong>Code</strong>, <strong>Title</strong>, <strong>Description</strong> (column names can vary slightly, e.g. Class for Grade, Topic for Title).
+        </p>
 
         <div className="upload-objectives-bar">
           <input

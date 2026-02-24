@@ -208,6 +208,54 @@ router.post("/upload", upload.single("file"), async (req, res) => {
   }
 });
 
+// POST add a single objective
+router.post("/objective", async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        error: "Database not connected",
+      });
+    }
+    const { grade, code, title, description } = req.body;
+    const gradeNum = parseInt(grade, 10);
+    if (isNaN(gradeNum) || gradeNum < 1) {
+      return res.status(400).json({
+        success: false,
+        error: "Valid grade is required (number, 1 or higher)",
+      });
+    }
+    const objective = {
+      code: code != null ? String(code).trim() : "",
+      title: title != null ? String(title).trim() : "",
+      description: description != null ? String(description).trim() : "",
+    };
+    const existing = await Curriculum.findOne({ grade: gradeNum });
+    if (existing) {
+      existing.objectives = existing.objectives || [];
+      existing.objectives.push(objective);
+      await existing.save();
+    } else {
+      await Curriculum.create({
+        id: gradeNum,
+        grade: gradeNum,
+        objectives: [objective],
+      });
+    }
+    res.status(201).json({
+      success: true,
+      message: "Objective added successfully.",
+    });
+  } catch (err) {
+    console.error("Error adding objective:", err);
+    res.status(500).json({
+      success: false,
+      error: "Failed to add objective",
+      message: err.message || "An error occurred.",
+    });
+  }
+});
+
 // Get single grade by id (must be after /upload to avoid "upload" as id)
 router.get("/:id", async (req, res) => {
   try {
