@@ -49,6 +49,14 @@ router.get('/', async (req, res) => {
       return res.json([]);
     }
 
+    // Sort by class (grade) ascending (numeric order: 1, 2, 3, ... 10, 11, 12)
+    students.sort((a, b) => {
+      const gradeA = parseInt(a.grade, 10) || 0;
+      const gradeB = parseInt(b.grade, 10) || 0;
+      if (gradeA !== gradeB) return gradeA - gradeB;
+      return (a.studentName || '').localeCompare(b.studentName || '');
+    });
+
     // Convert to plain objects and format dates
     const studentsData = students.map(student => {
       const studentObj = student.toObject();
@@ -154,6 +162,69 @@ const updateStudentHandler = async (req, res) => {
 
 router.put('/', updateStudentHandler);
 router.put('/update', updateStudentHandler);
+
+// DELETE all students data
+router.delete('/all', async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        error: 'Database not connected',
+      });
+    }
+    const result = await StudentData.deleteMany({});
+    res.json({
+      success: true,
+      message: `Deleted ${result.deletedCount} student record(s).`,
+      deletedCount: result.deletedCount,
+    });
+  } catch (error) {
+    console.error('Error deleting all students:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete students data',
+      message: error.message,
+    });
+  }
+});
+
+// DELETE single student by registration number
+router.delete('/single', async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        error: 'Database not connected',
+      });
+    }
+    const { registrationNumber } = req.body;
+    if (!registrationNumber || !String(registrationNumber).trim()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Registration number is required',
+      });
+    }
+    const result = await StudentData.deleteOne({ registrationNumber: String(registrationNumber).trim() });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Record not found',
+        message: 'No student found with this registration number.',
+      });
+    }
+    res.json({
+      success: true,
+      message: 'Student record deleted successfully.',
+    });
+  } catch (error) {
+    console.error('Error deleting student:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete student',
+      message: error.message,
+    });
+  }
+});
 
 // POST upload Excel file and save to database
 router.post('/upload', upload.single('file'), async (req, res) => {

@@ -16,6 +16,8 @@ const StudentData = () => {
   const [editingRegistrationNumber, setEditingRegistrationNumber] = useState(null);
   const [editForm, setEditForm] = useState({ studentName: '', grade: '', dateOfBirth: '' });
   const [savingRegistrationNumber, setSavingRegistrationNumber] = useState(null);
+  const [deletingAll, setDeletingAll] = useState(false);
+  const [deletingRegistrationNumber, setDeletingRegistrationNumber] = useState(null);
 
   // Fetch existing students data on component mount
   useEffect(() => {
@@ -108,6 +110,51 @@ const StudentData = () => {
       alert(msg);
     } finally {
       setSavingRegistrationNumber(null);
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    if (!window.confirm('Are you sure you want to delete ALL student data? This cannot be undone.')) {
+      return;
+    }
+    try {
+      setDeletingAll(true);
+      setError(null);
+      const res = await axios.delete(`${API_URL}/api/students-data/all`);
+      if (res.data.success) {
+        alert(res.data.message || 'All student data has been deleted.');
+        await fetchStudentsData();
+      } else {
+        alert(res.data.error || res.data.message || 'Failed to delete data.');
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || err.response?.data?.error || err.message || 'Failed to delete data.';
+      alert(msg);
+    } finally {
+      setDeletingAll(false);
+    }
+  };
+
+  const handleDeleteOne = async (registrationNumber, studentName) => {
+    if (!window.confirm(`Delete record for "${studentName || registrationNumber}"? This cannot be undone.`)) {
+      return;
+    }
+    try {
+      setDeletingRegistrationNumber(registrationNumber);
+      setError(null);
+      await axios.delete(`${API_URL}/api/students-data/single`, {
+        data: { registrationNumber },
+      });
+      await fetchStudentsData();
+      if (editingRegistrationNumber === registrationNumber) {
+        setEditingRegistrationNumber(null);
+        setEditForm({ studentName: '', grade: '', dateOfBirth: '' });
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || err.response?.data?.error || err.message || 'Failed to delete record.';
+      alert(msg);
+    } finally {
+      setDeletingRegistrationNumber(null);
     }
   };
 
@@ -213,7 +260,17 @@ const StudentData = () => {
 
       {studentsData.length > 0 && (
         <div className="students-table-section">
-          <h3>Students Data ({studentsData.length} records)</h3>
+          <div className="students-table-header-row">
+            <h3>Students Data ({studentsData.length} records)</h3>
+            <button
+              type="button"
+              className="delete-all-btn"
+              onClick={handleDeleteAll}
+              disabled={deletingAll}
+            >
+              {deletingAll ? 'Deleting...' : 'Delete all data'}
+            </button>
+          </div>
           <div className="table-wrapper">
             <table className="students-table">
               <thead>
@@ -300,6 +357,14 @@ const StudentData = () => {
                               onClick={() => handleEditClick(student)}
                             >
                               Edit
+                            </button>
+                            <button
+                              type="button"
+                              className="delete-record-btn"
+                              onClick={() => handleDeleteOne(student.registrationNumber, student.studentName)}
+                              disabled={deletingRegistrationNumber === student.registrationNumber}
+                            >
+                              {deletingRegistrationNumber === student.registrationNumber ? 'Deleting...' : 'Delete'}
                             </button>
                           </td>
                         </>
