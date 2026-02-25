@@ -16,9 +16,21 @@ const StudentData = () => {
   const [editingRegistrationNumber, setEditingRegistrationNumber] = useState(null);
   const [editForm, setEditForm] = useState({ studentName: '', fathersName: '', grade: '', dateOfBirth: '' });
   const [uploadError, setUploadError] = useState(null);
+  const [addForm, setAddForm] = useState({
+    registrationNumber: '',
+    studentName: '',
+    fathersName: '',
+    grade: '',
+    dateOfBirth: '',
+  });
+  const [addError, setAddError] = useState(null);
+  const [addingStudent, setAddingStudent] = useState(false);
   const [savingRegistrationNumber, setSavingRegistrationNumber] = useState(null);
   const [deletingAll, setDeletingAll] = useState(false);
   const [deletingRegistrationNumber, setDeletingRegistrationNumber] = useState(null);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedRegistrationNumbers, setSelectedRegistrationNumbers] = useState(new Set());
+  const [deletingSelected, setDeletingSelected] = useState(false);
 
   // Fetch existing students data on component mount
   useEffect(() => {
@@ -85,6 +97,43 @@ const StudentData = () => {
 
   const handleEditFormChange = (field, value) => {
     setEditForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleAddFormChange = (field, value) => {
+    setAddForm((prev) => ({ ...prev, [field]: value }));
+    setAddError(null);
+  };
+
+  const handleAddStudent = async (e) => {
+    e.preventDefault();
+    if (!addForm.registrationNumber?.trim() || !addForm.studentName?.trim() || !addForm.grade?.trim() || !addForm.dateOfBirth) {
+      setAddError({
+        message: 'Registration Number, Student Name, Grade and Date of Birth are required.',
+        solution: 'Please fill all required fields.',
+      });
+      return;
+    }
+    try {
+      setAddingStudent(true);
+      setAddError(null);
+      await axios.post(`${API_URL}/api/students-data`, {
+        registrationNumber: addForm.registrationNumber.trim(),
+        studentName: addForm.studentName.trim(),
+        fathersName: (addForm.fathersName != null) ? String(addForm.fathersName).trim() : '',
+        grade: addForm.grade.trim(),
+        dateOfBirth: addForm.dateOfBirth,
+      });
+      setAddForm({ registrationNumber: '', studentName: '', fathersName: '', grade: '', dateOfBirth: '' });
+      await fetchStudentsData();
+    } catch (err) {
+      const data = err.response?.data;
+      setAddError({
+        message: data?.message || data?.error || err.message || 'Failed to add student.',
+        solution: data?.solution || 'Check that the registration number is unique and all fields are valid.',
+      });
+    } finally {
+      setAddingStudent(false);
+    }
   };
 
   const handleCancelEdit = () => {
@@ -154,13 +203,56 @@ const StudentData = () => {
       await fetchStudentsData();
       if (editingRegistrationNumber === registrationNumber) {
         setEditingRegistrationNumber(null);
-        setEditForm({ studentName: '', grade: '', dateOfBirth: '' });
+        setEditForm({ studentName: '', fathersName: '', grade: '', dateOfBirth: '' });
       }
     } catch (err) {
       const msg = err.response?.data?.message || err.response?.data?.error || err.message || 'Failed to delete record.';
       alert(msg);
     } finally {
       setDeletingRegistrationNumber(null);
+    }
+  };
+
+  const toggleSelectionMode = () => {
+    setSelectionMode((prev) => !prev);
+    if (selectionMode) setSelectedRegistrationNumbers(new Set());
+  };
+
+  const toggleStudentSelection = (registrationNumber) => {
+    setSelectedRegistrationNumbers((prev) => {
+      const next = new Set(prev);
+      if (next.has(registrationNumber)) next.delete(registrationNumber);
+      else next.add(registrationNumber);
+      return next;
+    });
+  };
+
+  const handleSelectAll = (checked) => {
+    if (checked) {
+      setSelectedRegistrationNumbers(new Set(studentsData.map((s) => s.registrationNumber).filter(Boolean)));
+    } else {
+      setSelectedRegistrationNumbers(new Set());
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    const regNums = Array.from(selectedRegistrationNumbers);
+    if (regNums.length === 0) return;
+    if (!window.confirm(`Delete ${regNums.length} selected student(s)? This cannot be undone.`)) return;
+    try {
+      setDeletingSelected(true);
+      setError(null);
+      await axios.delete(`${API_URL}/api/students-data/selected`, {
+        data: { registrationNumbers: regNums },
+      });
+      await fetchStudentsData();
+      setSelectedRegistrationNumbers(new Set());
+      setSelectionMode(false);
+    } catch (err) {
+      const msg = err.response?.data?.message || err.response?.data?.error || err.message || 'Failed to delete selected.';
+      alert(msg);
+    } finally {
+      setDeletingSelected(false);
     }
   };
 
@@ -264,6 +356,79 @@ const StudentData = () => {
         </div>
       </div>
 
+      <div className="add-student-section">
+        <h3 className="add-student-title">Add student individually</h3>
+        {addError && (
+          <div className="add-error-message" role="alert">
+            <strong>Error:</strong> {addError.message}
+            {addError.solution && (
+              <p className="add-error-solution">{addError.solution}</p>
+            )}
+          </div>
+        )}
+        <form className="add-student-form" onSubmit={handleAddStudent}>
+          <div className="add-student-fields">
+            <div className="add-field">
+              <label htmlFor="add-registrationNumber">Registration Number</label>
+              <input
+                id="add-registrationNumber"
+                type="text"
+                value={addForm.registrationNumber}
+                onChange={(e) => handleAddFormChange('registrationNumber', e.target.value)}
+                placeholder="Registration Number"
+                disabled={addingStudent}
+              />
+            </div>
+            <div className="add-field">
+              <label htmlFor="add-studentName">Student Name</label>
+              <input
+                id="add-studentName"
+                type="text"
+                value={addForm.studentName}
+                onChange={(e) => handleAddFormChange('studentName', e.target.value)}
+                placeholder="Student Name"
+                disabled={addingStudent}
+              />
+            </div>
+            <div className="add-field">
+              <label htmlFor="add-fathersName">Fathers Name</label>
+              <input
+                id="add-fathersName"
+                type="text"
+                value={addForm.fathersName}
+                onChange={(e) => handleAddFormChange('fathersName', e.target.value)}
+                placeholder="Fathers Name (optional)"
+                disabled={addingStudent}
+              />
+            </div>
+            <div className="add-field">
+              <label htmlFor="add-grade">Grade</label>
+              <input
+                id="add-grade"
+                type="text"
+                value={addForm.grade}
+                onChange={(e) => handleAddFormChange('grade', e.target.value)}
+                placeholder="Grade"
+                disabled={addingStudent}
+              />
+            </div>
+            <div className="add-field">
+              <label htmlFor="add-dateOfBirth">Date of Birth</label>
+              <input
+                id="add-dateOfBirth"
+                type="date"
+                value={addForm.dateOfBirth}
+                onChange={(e) => handleAddFormChange('dateOfBirth', e.target.value)}
+                disabled={addingStudent}
+              />
+            </div>
+          </div>
+          <button type="submit" className="add-student-btn" disabled={addingStudent}>
+            {addingStudent ? 'Adding...' : 'Add Student'}
+          </button>
+        </form>
+      </div>
+
       {error && !uploading && (
         <div className="error-message">
           {error}
@@ -274,19 +439,49 @@ const StudentData = () => {
         <div className="students-table-section">
           <div className="students-table-header-row">
             <h3>Students Data ({studentsData.length} records)</h3>
-            <button
-              type="button"
-              className="delete-all-btn"
-              onClick={handleDeleteAll}
-              disabled={deletingAll}
-            >
-              {deletingAll ? 'Deleting...' : 'Delete all data'}
-            </button>
+            <div className="table-actions">
+              <button
+                type="button"
+                className={selectionMode ? 'select-mode-btn active' : 'select-mode-btn'}
+                onClick={toggleSelectionMode}
+                disabled={deletingAll || deletingSelected}
+              >
+                {selectionMode ? 'Cancel' : 'Select'}
+              </button>
+              {selectionMode && (
+                <button
+                  type="button"
+                  className="delete-selected-btn"
+                  onClick={handleDeleteSelected}
+                  disabled={selectedRegistrationNumbers.size === 0 || deletingSelected}
+                >
+                  {deletingSelected ? 'Deleting...' : `Delete selected (${selectedRegistrationNumbers.size})`}
+                </button>
+              )}
+              <button
+                type="button"
+                className="delete-all-btn"
+                onClick={handleDeleteAll}
+                disabled={deletingAll || deletingSelected || selectionMode}
+              >
+                {deletingAll ? 'Deleting...' : 'Delete all data'}
+              </button>
+            </div>
           </div>
           <div className="table-wrapper">
             <table className="students-table">
               <thead>
                 <tr>
+                  {selectionMode && (
+                    <th className="checkbox-cell">
+                      <input
+                        type="checkbox"
+                        aria-label="Select all"
+                        checked={studentsData.length > 0 && selectedRegistrationNumbers.size === studentsData.length}
+                        onChange={(e) => handleSelectAll(e.target.checked)}
+                      />
+                    </th>
+                  )}
                   <th>Registration Number</th>
                   <th>Student Name</th>
                   <th>Fathers Name</th>
@@ -299,8 +494,19 @@ const StudentData = () => {
                 {studentsData.map((student, index) => {
                   const isEditing = editingRegistrationNumber === student.registrationNumber;
                   const isSaving = savingRegistrationNumber === student.registrationNumber;
+                  const isSelected = selectedRegistrationNumbers.has(student.registrationNumber);
                   return (
                     <tr key={student.registrationNumber || index} className={isEditing ? 'editing-row' : ''}>
+                      {selectionMode && (
+                        <td className="checkbox-cell">
+                          <input
+                            type="checkbox"
+                            aria-label={`Select ${student.registrationNumber || student.studentName}`}
+                            checked={isSelected}
+                            onChange={() => toggleStudentSelection(student.registrationNumber)}
+                          />
+                        </td>
+                      )}
                       <td>{student.registrationNumber || '-'}</td>
                       {isEditing ? (
                         <>

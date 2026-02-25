@@ -82,6 +82,106 @@ router.get('/', async (req, res) => {
   }
 });
 
+// POST add a single student
+router.post('/', async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        error: 'Database not connected',
+        message: 'MongoDB is not connected.',
+      });
+    }
+
+    const { registrationNumber, studentName, fathersName, grade, dateOfBirth } = req.body;
+
+    if (!registrationNumber || String(registrationNumber).trim() === '') {
+      return res.status(400).json({
+        success: false,
+        error: 'Validation failed',
+        message: 'Registration Number is required.',
+        solution: 'Please enter a registration number.',
+      });
+    }
+    if (!studentName || String(studentName).trim() === '') {
+      return res.status(400).json({
+        success: false,
+        error: 'Validation failed',
+        message: 'Student Name is required.',
+        solution: 'Please enter the student name.',
+      });
+    }
+    if (!grade || String(grade).trim() === '') {
+      return res.status(400).json({
+        success: false,
+        error: 'Validation failed',
+        message: 'Grade is required.',
+        solution: 'Please enter the grade.',
+      });
+    }
+    if (!dateOfBirth) {
+      return res.status(400).json({
+        success: false,
+        error: 'Validation failed',
+        message: 'Date of Birth is required.',
+        solution: 'Please enter a valid date (e.g. YYYY-MM-DD).',
+      });
+    }
+
+    const regNum = String(registrationNumber).trim();
+    const existing = await StudentData.findOne({ registrationNumber: regNum });
+    if (existing) {
+      return res.status(400).json({
+        success: false,
+        error: 'Duplicate registration number',
+        message: `A student with registration number "${regNum}" already exists.`,
+        solution: 'Use a unique registration number or update the existing record.',
+      });
+    }
+
+    const dob = new Date(dateOfBirth);
+    if (isNaN(dob.getTime())) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid date',
+        message: 'Date of Birth could not be parsed.',
+        solution: 'Use a valid date format (e.g. YYYY-MM-DD or DD/MM/YYYY).',
+      });
+    }
+
+    const newStudent = new StudentData({
+      registrationNumber: regNum,
+      studentName: String(studentName).trim(),
+      fathersName: (fathersName != null) ? String(fathersName).trim() : '',
+      grade: String(grade).trim(),
+      dateOfBirth: dob,
+    });
+    await newStudent.save();
+
+    const studentObj = newStudent.toObject();
+    if (studentObj.dateOfBirth) {
+      studentObj.dateOfBirth = new Date(studentObj.dateOfBirth).toISOString().split('T')[0];
+    }
+    delete studentObj._id;
+    delete studentObj.__v;
+    delete studentObj.createdAt;
+    delete studentObj.updatedAt;
+
+    res.status(201).json({
+      success: true,
+      message: 'Student added successfully',
+      data: studentObj,
+    });
+  } catch (error) {
+    console.error('Error adding student:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to add student',
+      message: error.message,
+      solution: 'Please try again. If the problem persists, check that all required fields are valid.',
+    });
+  }
+});
+
 // PUT update a single student by registration number (also on /update for explicit path)
 const updateStudentHandler = async (req, res) => {
   try {
@@ -222,6 +322,40 @@ router.delete('/single', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to delete student',
+      message: error.message,
+    });
+  }
+});
+
+// DELETE multiple students by registration numbers
+router.delete('/selected', async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        error: 'Database not connected',
+      });
+    }
+    const { registrationNumbers } = req.body;
+    if (!Array.isArray(registrationNumbers) || registrationNumbers.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Registration numbers required',
+        message: 'Please provide an array of registration numbers to delete.',
+      });
+    }
+    const regNums = registrationNumbers.map((r) => String(r).trim()).filter(Boolean);
+    const result = await StudentData.deleteMany({ registrationNumber: { $in: regNums } });
+    res.json({
+      success: true,
+      message: `Deleted ${result.deletedCount} student record(s).`,
+      deletedCount: result.deletedCount,
+    });
+  } catch (error) {
+    console.error('Error deleting selected students:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete students',
       message: error.message,
     });
   }
