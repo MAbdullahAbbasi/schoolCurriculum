@@ -1,16 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Curriculum from './Curriculum';
 import StudentData from './StudentData';
 import StudentsRecord from './StudentsRecord';
 import StudentRecordDetail from './StudentRecordDetail';
 import Login from './Login';
+import { API_URL } from './config/api';
 
 const AUTH_KEY = 'curriculum_auth';
+const INACTIVITY_MS = 20 * 60 * 1000;   // 20 minutes
+const REFRESH_INTERVAL_MS = 2 * 60 * 1000;  // check every 2 min to refresh if active
+const ACTIVITY_THRESHOLD_MS = 90 * 1000;     // consider "active" if activity in last 90 sec
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [checking, setChecking] = useState(true);
+  const lastActivityRef = useRef(Date.now());
 
   useEffect(() => {
     try {
@@ -23,7 +29,50 @@ function App() {
     setChecking(false);
   }, []);
 
+  // Inactivity logout and token refresh when user is active (only when authenticated)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const updateActivity = () => {
+      lastActivityRef.current = Date.now();
+    };
+
+    const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
+    events.forEach((ev) => window.addEventListener(ev, updateActivity));
+
+    const inactivityInterval = setInterval(() => {
+      if (Date.now() - lastActivityRef.current >= INACTIVITY_MS) {
+        localStorage.removeItem(AUTH_KEY);
+        window.location.reload();
+      }
+    }, 60000); // check every 1 minute
+
+    const refreshInterval = setInterval(() => {
+      if (Date.now() - lastActivityRef.current > ACTIVITY_THRESHOLD_MS) return;
+      try {
+        const raw = localStorage.getItem(AUTH_KEY);
+        const auth = raw ? JSON.parse(raw) : null;
+        if (!auth?.token) return;
+        axios.get(`${API_URL}/api/auth/refresh`, {
+          headers: { Authorization: `Bearer ${auth.token}` },
+        }).then((res) => {
+          if (res.data?.token) {
+            auth.token = res.data.token;
+            localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
+          }
+        }).catch(() => {});
+      } catch (_) {}
+    }, REFRESH_INTERVAL_MS);
+
+    return () => {
+      events.forEach((ev) => window.removeEventListener(ev, updateActivity));
+      clearInterval(inactivityInterval);
+      clearInterval(refreshInterval);
+    };
+  }, [isAuthenticated]);
+
   const handleLoginSuccess = () => {
+    lastActivityRef.current = Date.now();
     setIsAuthenticated(true);
   };
 

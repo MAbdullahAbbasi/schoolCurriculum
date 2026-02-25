@@ -18,18 +18,7 @@ axios.interceptors.request.use((config) => {
 });
 
 axios.interceptors.response.use(
-  (response) => {
-    const newToken = response.headers['x-new-token'];
-    if (newToken) {
-      try {
-        const raw = localStorage.getItem(AUTH_KEY);
-        const auth = raw ? JSON.parse(raw) : {};
-        auth.token = newToken;
-        localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
-      } catch (_) {}
-    }
-    return response;
-  },
+  (response) => response,
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem(AUTH_KEY);

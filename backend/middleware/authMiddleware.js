@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'school-curriculum-secret-change-in-production';
-const JWT_EXPIRY = '2m';
+const JWT_EXPIRY = '20m';
 
 export const createToken = (username) => {
   return jwt.sign(
@@ -20,9 +20,9 @@ export const verifyToken = (token) => {
 };
 
 /**
- * Protects /api/* routes. Skips POST /api/auth/login.
- * On valid token: sets X-New-Token (sliding 2 min), then next().
- * On missing/invalid/expired token: 401.
+ * Protects /api/* routes. Skips only POST /api/auth/login.
+ * On valid token: next(). Token expiry is 20m and is NOT extended on normal API calls.
+ * Client uses inactivity timer and calls GET /api/auth/refresh when user is active to extend session.
  */
 export const authMiddleware = (req, res, next) => {
   const url = req.originalUrl || req.url || '';
@@ -52,7 +52,5 @@ export const authMiddleware = (req, res, next) => {
   }
 
   req.user = payload;
-  const newToken = createToken(payload.username);
-  res.setHeader('X-New-Token', newToken);
   next();
 };

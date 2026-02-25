@@ -72,4 +72,17 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// GET /api/auth/refresh - requires valid token, returns new token (20m from now)
+router.get('/refresh', (req, res) => {
+  try {
+    if (!req.user || !req.user.username) {
+      return res.status(401).json({ success: false, error: 'Not authenticated' });
+    }
+    const token = createToken(req.user.username);
+    res.json({ success: true, token });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Refresh failed', message: err.message });
+  }
+});
+
 export default router;
