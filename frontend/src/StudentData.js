@@ -395,8 +395,9 @@ const StudentData = () => {
             className="upload-file-btn"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
+            title={file ? file.name : undefined}
           >
-            {uploading ? 'Uploading...' : 'Upload file'}
+            {uploading ? 'Uploading...' : (file ? `Upload ${file.name}` : 'Upload file')}
           </button>
         </form>
       </div>
