@@ -168,6 +168,28 @@
   cursor: not-allowed;
 }
 
+.delete-all-objectives-btn {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.delete-all-objectives-btn:hover:not(:disabled) {
+  background: #c0392b;
+  transform: translateY(-1px);
+}
+
+.delete-all-objectives-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .objectives-upload-hint {
   margin: 0 0 0.75rem 0;
   font-size: 0.9rem;
@@ -463,6 +485,38 @@
 .topic-card:nth-child(3n):hover .topic-title,
 .topic-card:nth-child(3n).hovered .topic-title {
   color: #34495e;
+}
+
+.topic-delete-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  margin-left: auto;
+  margin-right: 0.25rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #95a5a6;
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+}
+
+.topic-delete-icon:hover:not(:disabled) {
+  color: #e74c3c;
+  background: #fdeaea;
+}
+
+.topic-delete-icon:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.topic-delete-spinner {
+  font-size: 0.9rem;
 }
 
 .expand-arrow {

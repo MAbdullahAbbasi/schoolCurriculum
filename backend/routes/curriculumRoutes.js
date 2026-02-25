@@ -208,6 +208,82 @@ router.post("/upload", upload.single("file"), async (req, res) => {
   }
 });
 
+// DELETE all objectives (all grade documents)
+router.delete("/all", async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        error: "Database not connected",
+      });
+    }
+    const result = await Curriculum.deleteMany({});
+    res.json({
+      success: true,
+      message: `Deleted all objectives (${result.deletedCount} grade document(s)).`,
+      deletedCount: result.deletedCount,
+    });
+  } catch (err) {
+    console.error("Error deleting all objectives:", err);
+    res.status(500).json({
+      success: false,
+      error: "Failed to delete objectives",
+      message: err.message || "An error occurred.",
+    });
+  }
+});
+
+// DELETE a single objective by grade and code
+router.delete("/objective", async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        error: "Database not connected",
+      });
+    }
+    const { grade, code } = req.body;
+    const gradeNum = parseInt(grade, 10);
+    if (isNaN(gradeNum) || gradeNum < 1) {
+      return res.status(400).json({
+        success: false,
+        error: "Valid grade is required",
+      });
+    }
+    const codeStr = code != null ? String(code).trim() : "";
+    const doc = await Curriculum.findOne({ grade: gradeNum });
+    if (!doc) {
+      return res.status(404).json({
+        success: false,
+        error: "Grade not found",
+        message: "No curriculum found for this grade.",
+      });
+    }
+    const objectives = doc.objectives || [];
+    const initialLen = objectives.length;
+    doc.objectives = objectives.filter((obj) => String(obj.code || "").trim() !== codeStr);
+    if (doc.objectives.length === initialLen) {
+      return res.status(404).json({
+        success: false,
+        error: "Objective not found",
+        message: "No objective with this code found in this grade.",
+      });
+    }
+    await doc.save();
+    res.json({
+      success: true,
+      message: "Objective deleted successfully.",
+    });
+  } catch (err) {
+    console.error("Error deleting objective:", err);
+    res.status(500).json({
+      success: false,
+      error: "Failed to delete objective",
+      message: err.message || "An error occurred.",
+    });
+  }
+});
+
 // POST add a single objective
 router.post("/objective", async (req, res) => {
   try {

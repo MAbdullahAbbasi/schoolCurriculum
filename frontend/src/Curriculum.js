@@ -33,6 +33,8 @@ const Curriculum = () => {
   const objectivesInputId = 'objectives-file-input';
   const [singleObjectiveForm, setSingleObjectiveForm] = useState({ grade: '', code: '', title: '', description: '' });
   const [addingObjective, setAddingObjective] = useState(false);
+  const [deletingAllObjectives, setDeletingAllObjectives] = useState(false);
+  const [deletingObjectiveKey, setDeletingObjectiveKey] = useState(null);
   const [formData, setFormData] = useState({
     courseName: '',
     durationType: '', // 'days', 'weeks', 'months'
@@ -278,6 +280,48 @@ const Curriculum = () => {
       alert(msg);
     } finally {
       setAddingObjective(false);
+    }
+  };
+
+  const handleDeleteAllObjectives = async () => {
+    if (!window.confirm('Are you sure you want to delete ALL objectives? This cannot be undone.')) {
+      return;
+    }
+    try {
+      setDeletingAllObjectives(true);
+      const res = await axios.delete(`${API_URL}/api/curriculum/all`);
+      if (res.data.success) {
+        alert(res.data.message || 'All objectives have been deleted.');
+        setLoading(true);
+        await fetchCurriculum();
+      } else {
+        alert(res.data.error || res.data.message || 'Failed to delete.');
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || err.response?.data?.error || err.message || 'Failed to delete objectives.';
+      alert(msg);
+    } finally {
+      setDeletingAllObjectives(false);
+    }
+  };
+
+  const handleDeleteObjective = async (grade, topic, topicKey) => {
+    const label = topic.title || topic.code || 'this objective';
+    if (!window.confirm(`Delete "${label}"? This cannot be undone.`)) {
+      return;
+    }
+    try {
+      setDeletingObjectiveKey(topicKey);
+      await axios.delete(`${API_URL}/api/curriculum/objective`, {
+        data: { grade: grade.grade, code: topic.code || '' },
+      });
+      setLoading(true);
+      await fetchCurriculum();
+    } catch (err) {
+      const msg = err.response?.data?.message || err.response?.data?.error || err.message || 'Failed to delete objective.';
+      alert(msg);
+    } finally {
+      setDeletingObjectiveKey(null);
     }
   };
 
@@ -744,6 +788,14 @@ const Curriculum = () => {
             <button type="submit" className="add-objective-submit-btn" disabled={addingObjective}>
               {addingObjective ? 'Adding...' : 'Add'}
             </button>
+            <button
+              type="button"
+              className="delete-all-objectives-btn"
+              onClick={handleDeleteAllObjectives}
+              disabled={deletingAllObjectives || data.length === 0}
+            >
+              {deletingAllObjectives ? 'Deleting...' : 'Delete all objectives'}
+            </button>
           </form>
         </div>
 
@@ -963,11 +1015,32 @@ const Curriculum = () => {
                           <div className="topic-code-badge">{topic.code}</div>
                           <h3 className="topic-title">{topic.title}</h3>
                           {!isSelectionMode && (
-                            <div className={`expand-arrow ${isExpanded ? 'expanded' : ''}`}>
-                              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                                <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                            </div>
+                            <>
+                              <button
+                                type="button"
+                                className="topic-delete-icon"
+                                onClick={(e) => { e.stopPropagation(); handleDeleteObjective(grade, topic, topicKey); }}
+                                disabled={deletingObjectiveKey === topicKey}
+                                title="Delete this objective"
+                                aria-label="Delete objective"
+                              >
+                                {deletingObjectiveKey === topicKey ? (
+                                  <span className="topic-delete-spinner">...</span>
+                                ) : (
+                                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="3 6 5 6 21 6" />
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                    <line x1="10" y1="11" x2="10" y2="17" />
+                                    <line x1="14" y1="11" x2="14" y2="17" />
+                                  </svg>
+                                )}
+                              </button>
+                              <div className={`expand-arrow ${isExpanded ? 'expanded' : ''}`}>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                  <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                              </div>
+                            </>
                           )}
                         </div>
                         
