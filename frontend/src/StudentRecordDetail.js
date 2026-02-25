@@ -15,7 +15,6 @@ const StudentRecordDetail = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [hasExistingRecord, setHasExistingRecord] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
 
   const topics = course?.topics || [];
@@ -60,14 +59,11 @@ const StudentRecordDetail = () => {
             }, {});
           });
           setObjectiveMarks(marks);
-          setHasExistingRecord(true);
           setIsEditMode(false);
         } else {
-          setHasExistingRecord(false);
           setIsEditMode(true);
         }
       } catch (recordError) {
-        setHasExistingRecord(false);
         setIsEditMode(true);
       }
     } catch (err) {
@@ -161,7 +157,6 @@ const StudentRecordDetail = () => {
       setError(null);
       const response = await axios.post(`${API_URL}/api/records`, recordData);
       if (response.data.success) {
-        setHasExistingRecord(true);
         setIsEditMode(false);
         showToast('Record saved successfully!', 'success');
       } else {

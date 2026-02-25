@@ -298,11 +298,6 @@ const Curriculum = () => {
   };
 
   const objKey = (grade, code) => `${grade}::${(code != null ? String(code) : '').trim()}`;
-  const parseObjKey = (key) => {
-    const i = key.indexOf('::');
-    if (i === -1) return { grade: parseInt(key, 10), code: '' };
-    return { grade: parseInt(key.slice(0, i), 10), code: key.slice(i + 2) };
-  };
   // Row-unique key for delete-selection (grade + index) so one checkbox doesn't select all rows with same code
   const rowKey = (gradeNum, topicIndex) => `${gradeNum}::${topicIndex}`;
   const parseRowKey = (key) => {
