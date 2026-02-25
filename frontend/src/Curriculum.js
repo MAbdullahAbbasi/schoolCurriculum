@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
 import './Curriculum.css';
 
 const Curriculum = () => {
+  const navigate = useNavigate();
   const [data, setData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,7 +24,6 @@ const Curriculum = () => {
   // Course creation states
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedTopics, setSelectedTopics] = useState([]);
-  const [showForm, setShowForm] = useState(false);
   // Upload objectives state
   const [objectivesFile, setObjectivesFile] = useState(null);
   const [uploadingObjectives, setUploadingObjectives] = useState(false);
@@ -39,18 +40,6 @@ const Curriculum = () => {
   const [editingObjectiveKey, setEditingObjectiveKey] = useState(null);
   const [editObjectiveForm, setEditObjectiveForm] = useState({ subject: '', title: '', description: '' });
   const [savingObjectiveKey, setSavingObjectiveKey] = useState(null);
-  const [formData, setFormData] = useState({
-    courseName: '',
-    durationType: '', // 'days', 'weeks', 'months'
-    durationValue: '',
-    weightageItems: [
-      { id: 1, label: 'assignment', checked: false, percentage: '' },
-      { id: 2, label: 'paper', checked: false, percentage: '' },
-      { id: 3, label: 'quiz', checked: false, percentage: '' },
-      { id: 4, label: 'presentation', checked: false, percentage: '' }
-    ],
-    startDate: ''
-  });
 
   const fetchCurriculum = () => {
     return axios.get(`${API_URL}/api/curriculum`, {
@@ -314,6 +303,13 @@ const Curriculum = () => {
     if (i === -1) return { grade: parseInt(key, 10), code: '' };
     return { grade: parseInt(key.slice(0, i), 10), code: key.slice(i + 2) };
   };
+  // Row-unique key for delete-selection (grade + index) so one checkbox doesn't select all rows with same code
+  const rowKey = (gradeNum, topicIndex) => `${gradeNum}::${topicIndex}`;
+  const parseRowKey = (key) => {
+    const i = key.indexOf('::');
+    if (i === -1) return { grade: parseInt(key, 10), index: 0 };
+    return { grade: parseInt(key.slice(0, i), 10), index: parseInt(key.slice(i + 2), 10) };
+  };
 
   const handleDeleteObjective = async (grade, topic) => {
     const key = objKey(grade.grade, topic.code);
@@ -338,8 +334,8 @@ const Curriculum = () => {
     if (objectivesSelectMode) setSelectedObjectives(new Set());
   };
 
-  const toggleObjectiveSelection = (gradeNum, code) => {
-    const key = objKey(gradeNum, code);
+  const toggleObjectiveSelection = (gradeNum, topicIndex) => {
+    const key = rowKey(gradeNum, topicIndex);
     setSelectedObjectives((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
@@ -351,14 +347,21 @@ const Curriculum = () => {
   const handleSelectAllInGrade = (gradeNum, objectives, checked) => {
     setSelectedObjectives((prev) => {
       const next = new Set(prev);
-      objectives.forEach((obj) => next.add(objKey(gradeNum, obj.code)));
-      if (!checked) objectives.forEach((obj) => next.delete(objKey(gradeNum, obj.code)));
+      objectives.forEach((_, index) => next.add(rowKey(gradeNum, index)));
+      if (!checked) objectives.forEach((_, index) => next.delete(rowKey(gradeNum, index)));
       return next;
     });
   };
 
   const handleDeleteSelectedObjectives = async () => {
-    const items = Array.from(selectedObjectives).map((key) => parseObjKey(key));
+    const items = Array.from(selectedObjectives)
+      .map((key) => {
+        const { grade, index } = parseRowKey(key);
+        const gradeDoc = filteredData.find((g) => g.grade === grade);
+        const obj = gradeDoc?.objectives?.[index];
+        return obj != null ? { grade, code: (obj.code != null ? String(obj.code) : '').trim() } : null;
+      })
+      .filter(Boolean);
     if (items.length === 0) return;
     if (!window.confirm(`Delete ${items.length} selected objective(s)? This cannot be undone.`)) return;
     try {
@@ -438,10 +441,10 @@ const Curriculum = () => {
     });
   };
 
-  // Handle Next button click
+  // Handle Next button click – go to create course page
   const handleNextClick = () => {
     if (selectedTopics.length > 0) {
-      setShowForm(true);
+      navigate('/create-course', { state: { selectedTopics, data } });
       setIsSelectionMode(false);
     }
   };
@@ -452,184 +455,26 @@ const Curriculum = () => {
     setSelectedTopics([]);
   };
 
-  // Handle form field changes
-  const handleFormChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  // Handle duration type change
-  const handleDurationTypeChange = (type) => {
-    setFormData(prev => ({
-      ...prev,
-      durationType: prev.durationType === type ? '' : type,
-      durationValue: prev.durationType === type ? '' : prev.durationValue
-    }));
-  };
-
-  // Handle weightage checkbox change
-  const handleWeightageCheckboxChange = (id, checked) => {
-    setFormData(prev => ({
-      ...prev,
-      weightageItems: prev.weightageItems.map(item =>
-        item.id === id ? { ...item, checked } : item
-      )
-    }));
-  };
-
-  // Handle weightage percentage change
-  const handleWeightagePercentageChange = (id, percentage) => {
-    setFormData(prev => ({
-      ...prev,
-      weightageItems: prev.weightageItems.map(item =>
-        item.id === id ? { ...item, percentage } : item
-      )
-    }));
-  };
-
-  // Add new weightage item
-  const handleAddWeightageItem = () => {
-    const newLabel = prompt('Enter label for new weightage item:');
-    if (newLabel && newLabel.trim()) {
-      const newId = Math.max(...formData.weightageItems.map(item => item.id), 0) + 1;
-      setFormData(prev => ({
-        ...prev,
-        weightageItems: [
-          ...prev.weightageItems,
-          { id: newId, label: newLabel.trim(), checked: false, percentage: '' }
-        ]
-      }));
-    }
-  };
-
-  // Handle form submission
-  const handleFormSubmit = async (e) => {
-    e.preventDefault();
-    
-    // Validate course name
-    if (!formData.courseName || !formData.courseName.trim()) {
-      alert('Error: Course name required');
-      return;
-    }
-
-    // Validate duration
-    if (!formData.durationType || !formData.durationValue) {
-      alert('Error: Duration required');
-      return;
-    }
-
-    // Validate weightage - at least one checked item
-    const checkedWeightage = formData.weightageItems.filter(item => item.checked);
-    if (checkedWeightage.length === 0) {
-      alert('Error: Weightage required');
-      return;
-    }
-
-    // Validate weightage percentages
-    const totalWeightage = checkedWeightage.reduce((sum, item) => {
-      const percentage = Number(item.percentage) || 0;
-      return sum + percentage;
-    }, 0);
-
-    if (Math.abs(totalWeightage - 100) > 0.01) {
-      alert('Error: Weightage must total 100%');
-      return;
-    }
-
-    // Validate start date
-    if (!formData.startDate) {
-      alert('Error: Start date required');
-      return;
-    }
-
-    // Map selectedTopics to actual topic data
-    const topics = selectedTopics.map(topicKey => {
-      const [gradeId, topicIndex] = topicKey.split('-');
-      const grade = data.find(g => g._id === gradeId);
-      if (grade && grade.objectives && grade.objectives[parseInt(topicIndex)]) {
-        const topic = grade.objectives[parseInt(topicIndex)];
-        return {
-          courseCode: topic.code || '',
-          topicName: topic.title || '',
-        };
-      }
-      return null;
-    }).filter(topic => topic !== null);
-
-    if (topics.length === 0) {
-      alert('Error: Topics required');
-      return;
-    }
-
-    // Prepare data for API
-    const courseData = {
-      courseName: formData.courseName.trim(),
-      courseDuration: {
-        type: formData.durationType,
-        value: Number(formData.durationValue),
-      },
-      weightage: checkedWeightage.map(item => ({
-        label: item.label,
-        percentage: Number(item.percentage),
-      })),
-      startingDate: formData.startDate,
-      topics: topics,
-    };
-
-    try {
-      const response = await axios.post(`${API_URL}/api/courses`, courseData, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.data.success) {
-        alert('Success: Course created successfully');
-        // Reset form
-        setShowForm(false);
-        setSelectedTopics([]);
-        setFormData({
-          courseName: '',
-          durationType: '',
-          durationValue: '',
-          weightageItems: [
-            { id: 1, label: 'assignment', checked: false, percentage: '' },
-            { id: 2, label: 'paper', checked: false, percentage: '' },
-            { id: 3, label: 'quiz', checked: false, percentage: '' },
-            { id: 4, label: 'presentation', checked: false, percentage: '' }
-          ],
-          startDate: ''
-        });
-      } else {
-        alert(`Error: ${response.data.message || 'Failed to create course'}`);
-      }
-    } catch (error) {
-      console.error('Error creating course:', error);
-      const errorMessage = error.response?.data?.message || error.response?.data?.error || error.message || 'Failed to create course';
-      // Extract first 4-5 words for alert
-      const shortMessage = errorMessage.split(' ').slice(0, 5).join(' ');
-      alert(`Error: ${shortMessage}`);
-    }
-  };
-
-  // Close form modal
-  const handleCloseForm = () => {
-    setShowForm(false);
-    setSelectedTopics([]);
-    setFormData({
-      courseName: '',
-      durationType: '',
-      durationValue: '',
-      weightageItems: [
-        { id: 1, label: 'assignment', checked: false, percentage: '' },
-        { id: 2, label: 'paper', checked: false, percentage: '' },
-        { id: 3, label: 'quiz', checked: false, percentage: '' },
-        { id: 4, label: 'presentation', checked: false, percentage: '' }
-      ],
-      startDate: ''
+  // Select all objectives from a single grade (for course creation)
+  const handleSelectAllFromGrade = (grade) => {
+    if (!grade.objectives || grade.objectives.length === 0) return;
+    const keysToAdd = grade.objectives.map((_, topicIndex) => `${grade._id}-${topicIndex}`);
+    setSelectedTopics(prev => {
+      const next = new Set(prev);
+      keysToAdd.forEach(k => next.add(k));
+      return Array.from(next);
     });
+  };
+
+  // Select all objectives from every grade (for course creation)
+  const handleSelectAllFromAllGrades = () => {
+    const keysToAdd = [];
+    filteredData.forEach(grade => {
+      if (grade.objectives && grade.objectives.length > 0) {
+        grade.objectives.forEach((_, topicIndex) => keysToAdd.push(`${grade._id}-${topicIndex}`));
+      }
+    });
+    setSelectedTopics(Array.from(new Set(keysToAdd)));
   };
 
   // Extract unique filter options from data
@@ -1090,10 +935,30 @@ const Curriculum = () => {
               </button>
             )}
           </div>
+          {isSelectionMode && (
+            <div className="course-select-all-row">
+              <button
+                type="button"
+                className="course-select-all-btn"
+                onClick={handleSelectAllFromAllGrades}
+              >
+                Select all
+              </button>
+            </div>
+          )}
           {filteredData.map((grade) => (
             <div key={grade._id || grade.grade} className="grade-section">
               <div className="grade-heading-wrapper">
                 <h2 className="grade-main-heading">Grade {grade.grade}</h2>
+                {isSelectionMode && grade.objectives && grade.objectives.length > 0 && (
+                  <button
+                    type="button"
+                    className="course-select-grade-btn"
+                    onClick={() => handleSelectAllFromGrade(grade)}
+                  >
+                    Select all from Grade {grade.grade}
+                  </button>
+                )}
                 <div className="grade-divider-line"></div>
               </div>
               {grade.objectives && grade.objectives.length > 0 ? (
@@ -1106,7 +971,7 @@ const Curriculum = () => {
                             <input
                               type="checkbox"
                               aria-label="Select all in grade"
-                              checked={grade.objectives.length > 0 && grade.objectives.every((obj) => selectedObjectives.has(objKey(grade.grade, obj.code)))}
+                              checked={grade.objectives.length > 0 && grade.objectives.every((_, i) => selectedObjectives.has(rowKey(grade.grade, i)))}
                               onChange={(e) => handleSelectAllInGrade(grade.grade, grade.objectives, e.target.checked)}
                             />
                           </th>
@@ -1137,8 +1002,8 @@ const Curriculum = () => {
                                 <input
                                   type="checkbox"
                                   aria-label={`Select ${topic.code}`}
-                                  checked={selectedObjectives.has(key)}
-                                  onChange={() => toggleObjectiveSelection(grade.grade, topic.code)}
+                                  checked={selectedObjectives.has(rowKey(grade.grade, topicIndex))}
+                                  onChange={() => toggleObjectiveSelection(grade.grade, topicIndex)}
                                 />
                               </td>
                             )}
@@ -1257,144 +1122,6 @@ const Curriculum = () => {
         </div>
       )}
 
-      {/* Course Creation Form Modal */}
-      {showForm && (
-        <div className="form-modal-overlay" onClick={handleCloseForm}>
-          <div className="form-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="form-modal-header">
-              <h2>Create Course</h2>
-              <button className="close-modal-button" onClick={handleCloseForm}>
-                ×
-              </button>
-            </div>
-            
-            <form onSubmit={handleFormSubmit} className="course-form">
-              {/* Course Name */}
-              <div className="form-field">
-                <label htmlFor="course-name" className="form-label">Course Name</label>
-                <input
-                  type="text"
-                  id="course-name"
-                  className="course-name-input"
-                  placeholder="Enter course name"
-                  value={formData.courseName}
-                  onChange={(e) => handleFormChange('courseName', e.target.value)}
-                  required
-                />
-              </div>
-
-              {/* Course Duration */}
-              <div className="form-field">
-                <label className="form-label">Course Duration</label>
-                <div className="duration-options">
-                  <label className="duration-checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={formData.durationType === 'days'}
-                      onChange={() => handleDurationTypeChange('days')}
-                    />
-                    <span>Days</span>
-                  </label>
-                  <label className="duration-checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={formData.durationType === 'weeks'}
-                      onChange={() => handleDurationTypeChange('weeks')}
-                    />
-                    <span>Weeks</span>
-                  </label>
-                  <label className="duration-checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={formData.durationType === 'months'}
-                      onChange={() => handleDurationTypeChange('months')}
-                    />
-                    <span>Months</span>
-                  </label>
-                </div>
-                {formData.durationType && (
-                  <div className="duration-input-wrapper">
-                    <input
-                      type="number"
-                      min="1"
-                      className="duration-input"
-                      placeholder="Enter duration"
-                      value={formData.durationValue}
-                      onChange={(e) => handleFormChange('durationValue', e.target.value)}
-                      required
-                    />
-                    <span className="duration-unit">{formData.durationType}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Weightage */}
-              <div className="form-field">
-                <label className="form-label">Weightage</label>
-                <div className="weightage-items">
-                  {formData.weightageItems.map((item) => (
-                    <div key={item.id} className="weightage-item">
-                      <label className="weightage-checkbox-label">
-                        <input
-                          type="checkbox"
-                          checked={item.checked}
-                          onChange={(e) => handleWeightageCheckboxChange(item.id, e.target.checked)}
-                        />
-                        <span className="weightage-label-text">{item.label.charAt(0).toUpperCase() + item.label.slice(1)}</span>
-                      </label>
-                      {item.checked && (
-                        <div className="weightage-percentage-wrapper">
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            className="weightage-percentage-input"
-                            placeholder="%"
-                            value={item.percentage}
-                            onChange={(e) => handleWeightagePercentageChange(item.id, e.target.value)}
-                            required={item.checked}
-                          />
-                          <span className="percentage-symbol">%</span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  className="add-weightage-button"
-                  onClick={handleAddWeightageItem}
-                >
-                  + Add
-                </button>
-              </div>
-
-              {/* Starting Date */}
-              <div className="form-field">
-                <label htmlFor="start-date" className="form-label">Starting Date</label>
-                <input
-                  type="date"
-                  id="start-date"
-                  className="date-input"
-                  value={formData.startDate}
-                  onChange={(e) => handleFormChange('startDate', e.target.value)}
-                  required
-                />
-              </div>
-
-              {/* Form Actions */}
-              <div className="form-actions">
-                <button type="button" className="cancel-form-button" onClick={handleCloseForm}>
-                  Cancel
-                </button>
-                <button type="submit" className="create-form-button">
-                  Create
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

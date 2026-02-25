@@ -566,6 +566,10 @@
 .grade-heading-wrapper {
   margin-bottom: 2.5rem;
   position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
 }
 
 .grade-main-heading {
@@ -587,6 +591,41 @@
   border-radius: 2px;
   width: 100px;
   margin-top: 0.5rem;
+  flex-basis: 100%;
+}
+
+.course-select-all-row {
+  margin-bottom: 1.25rem;
+}
+
+.course-select-all-btn {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.course-select-all-btn:hover {
+  background: #2980b9;
+}
+
+.course-select-grade-btn {
+  background: #e8f4fc;
+  color: #2980b9;
+  border: 1px solid #3498db;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.course-select-grade-btn:hover {
+  background: #d0e8f7;
 }
 
 /* Topics Grid */

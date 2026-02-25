@@ -109,6 +109,20 @@ router.post('/', async (req, res) => {
       });
     }
 
+    const topicsWithMarks = topics.map(t => ({
+      courseCode: (t.courseCode != null ? String(t.courseCode) : '').trim(),
+      topicName: (t.topicName != null ? String(t.topicName) : '').trim(),
+      marks: Number(t.marks) || 0,
+    }));
+    const totalMarks = topicsWithMarks.reduce((sum, t) => sum + (t.marks || 0), 0);
+    if (Math.abs(totalMarks - 100) > 0.01) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid marks',
+        message: 'Total marks for all objectives must equal 100.',
+      });
+    }
+
     // Generate unique course code
     const code = await generateCourseCode();
 
@@ -125,10 +139,7 @@ router.post('/', async (req, res) => {
         percentage: Number(item.percentage),
       })),
       startingDate: new Date(startingDate),
-      topics: topics.map(topic => ({
-        courseCode: topic.courseCode ? String(topic.courseCode).trim() : '',
-        topicName: topic.topicName ? String(topic.topicName).trim() : '',
-      })),
+      topics: topicsWithMarks,
     };
 
     // Save to database

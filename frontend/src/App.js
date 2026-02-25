@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Curriculum from './Curriculum';
+import CreateCourse from './CreateCourse';
 import StudentData from './StudentData';
 import StudentsRecord from './StudentsRecord';
 import StudentRecordDetail from './StudentRecordDetail';
@@ -95,6 +96,7 @@ function App() {
       <div className="App">
         <Routes>
           <Route path="/" element={<Curriculum />} />
+          <Route path="/create-course" element={<CreateCourse />} />
           <Route path="/students-data" element={<StudentData />} />
           <Route path="/record" element={<StudentsRecord />} />
           <Route path="/studentRecord/:courseCode" element={<StudentRecordDetail />} />

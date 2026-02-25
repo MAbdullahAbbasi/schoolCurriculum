@@ -143,6 +143,7 @@ router.post('/', async (req, res) => {
         registrationNumber: student.registrationNumber.trim(),
         studentName: student.studentName.trim(),
         weightageScores: student.weightageScores || {},
+        objectiveMarks: student.objectiveMarks || {},
         overallPercentage: student.overallPercentage,
         overallGrade: student.overallGrade.trim(),
       })),

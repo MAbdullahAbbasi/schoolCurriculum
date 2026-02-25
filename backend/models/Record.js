@@ -28,6 +28,11 @@ const recordSchema = new mongoose.Schema(
           type: Object,
           default: {},
         },
+        // Marks per course objective: { "0": 10, "1": 15, ... } (topic index -> marks)
+        objectiveMarks: {
+          type: Object,
+          default: {},
+        },
         overallPercentage: {
           type: Number,
           required: true,

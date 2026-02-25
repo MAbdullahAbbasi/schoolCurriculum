@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
@@ -7,15 +7,19 @@ import './StudentRecordDetail.css';
 
 const StudentRecordDetail = () => {
   const { courseCode } = useParams();
+  const navigate = useNavigate();
   const [course, setCourse] = useState(null);
   const [students, setStudents] = useState([]);
-  const [studentScores, setStudentScores] = useState({});
+  const [objectiveMarks, setObjectiveMarks] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [hasExistingRecord, setHasExistingRecord] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
+
+  const topics = course?.topics || [];
+  const totalMarksForCourse = topics.reduce((sum, t) => sum + (t.marks || 0), 0);
 
   useEffect(() => {
     fetchData();
@@ -27,7 +31,6 @@ const StudentRecordDetail = () => {
       setLoading(true);
       setError(null);
 
-      // Fetch course data
       const courseResponse = await axios.get(`${API_URL}/api/courses`);
       if (courseResponse.data.success) {
         const foundCourse = courseResponse.data.data.find(c => c.code === courseCode);
@@ -40,36 +43,32 @@ const StudentRecordDetail = () => {
         }
       }
 
-      // Fetch students data
       const studentsResponse = await axios.get(`${API_URL}/api/students-data`);
-      setStudents(studentsResponse.data || []);
+      const studentsList = Array.isArray(studentsResponse.data) ? studentsResponse.data : [];
+      setStudents(studentsList);
 
-      // Fetch existing record if any
       try {
         const recordResponse = await axios.get(`${API_URL}/api/records/course/${courseCode}`);
         if (recordResponse.data.success && recordResponse.data.data) {
           const record = recordResponse.data.data;
-          // Populate scores from existing record
-          const scores = {};
-          record.students.forEach(student => {
-            scores[student.registrationNumber] = {
-              weightageScores: student.weightageScores || {},
-              overallPercentage: student.overallPercentage || 0,
-              overallGrade: student.overallGrade || '',
-            };
+          const marks = {};
+          (record.students || []).forEach(student => {
+            const om = student.objectiveMarks || {};
+            marks[student.registrationNumber] = Object.keys(om).reduce((acc, k) => {
+              acc[k] = typeof om[k] === 'number' ? om[k] : parseFloat(om[k]) || 0;
+              return acc;
+            }, {});
           });
-          setStudentScores(scores);
+          setObjectiveMarks(marks);
           setHasExistingRecord(true);
-          setIsEditMode(false); // Start in view mode if record exists
+          setIsEditMode(false);
         } else {
           setHasExistingRecord(false);
-          setIsEditMode(true); // Start in edit mode if no record exists
+          setIsEditMode(true);
         }
       } catch (recordError) {
-        // No existing record, that's okay
-        console.log('No existing record found');
         setHasExistingRecord(false);
-        setIsEditMode(true); // Start in edit mode if no record exists
+        setIsEditMode(true);
       }
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -79,128 +78,91 @@ const StudentRecordDetail = () => {
     }
   };
 
-  const handleScoreChange = (registrationNumber, weightageLabel, value) => {
-    setStudentScores(prev => {
-      const updated = { ...prev };
-      if (!updated[registrationNumber]) {
-        updated[registrationNumber] = {
-          weightageScores: {},
-          overallPercentage: 0,
-          overallGrade: '',
-        };
+  const getMark = (registrationNumber, topicIndex) => {
+    const byStudent = objectiveMarks[registrationNumber];
+    if (!byStudent) return '';
+    const v = byStudent[String(topicIndex)];
+    return v === undefined || v === null ? '' : String(v);
+  };
+
+  const setMark = (registrationNumber, topicIndex, value) => {
+    const num = value === '' ? undefined : (parseFloat(value) || 0);
+    setObjectiveMarks(prev => {
+      const next = { ...prev };
+      if (!next[registrationNumber]) next[registrationNumber] = {};
+      if (num === undefined) {
+        delete next[registrationNumber][String(topicIndex)];
+      } else {
+        next[registrationNumber][String(topicIndex)] = num;
       }
-      updated[registrationNumber].weightageScores[weightageLabel] = parseFloat(value) || 0;
-      
-      // Calculate overall percentage
-      const overall = calculateOverallPercentage(registrationNumber, updated[registrationNumber].weightageScores);
-      updated[registrationNumber].overallPercentage = overall;
-      updated[registrationNumber].overallGrade = calculateGrade(overall);
-      
-      return updated;
+      return next;
     });
   };
 
-  const calculateOverallPercentage = (registrationNumber, weightageScores) => {
-    if (!course || !course.weightage) return 0;
-
-    let total = 0;
-    course.weightage.forEach(weightageItem => {
-      const score = weightageScores[weightageItem.label] || 0;
-      const weight = weightageItem.percentage / 100;
-      total += score * weight;
-    });
-
-    return Math.round(total * 100) / 100; // Round to 2 decimal places
+  const getTotalForStudent = (registrationNumber) => {
+    const byStudent = objectiveMarks[registrationNumber];
+    if (!byStudent) return 0;
+    return topics.reduce((sum, _, idx) => sum + (byStudent[String(idx)] || 0), 0);
   };
 
-  const calculateGrade = (percentage) => {
-    if (percentage >= 90) return 'A+';
-    if (percentage >= 85) return 'A';
-    if (percentage >= 80) return 'B+';
-    if (percentage >= 75) return 'B';
-    if (percentage >= 70) return 'C+';
-    if (percentage >= 65) return 'C';
-    if (percentage >= 60) return 'D+';
-    if (percentage >= 55) return 'D';
-    if (percentage >= 50) return 'E';
+  const calculateGrade = (totalOutOfHundred) => {
+    const p = totalOutOfHundred;
+    if (p >= 90) return 'A+';
+    if (p >= 85) return 'A';
+    if (p >= 80) return 'B+';
+    if (p >= 75) return 'B';
+    if (p >= 70) return 'C+';
+    if (p >= 65) return 'C';
+    if (p >= 60) return 'D+';
+    if (p >= 55) return 'D';
+    if (p >= 50) return 'E';
     return 'F';
-  };
-
-  const validateAllFields = () => {
-    if (!course || !course.weightage) return { isValid: false, message: 'Course data not available' };
-
-    const missingFields = [];
-    
-    students.forEach(student => {
-      course.weightage.forEach(weightageItem => {
-        const scores = studentScores[student.registrationNumber];
-        const score = scores?.weightageScores?.[weightageItem.label];
-        
-        if (score === undefined || score === null || score === '') {
-          missingFields.push(`${student.studentName} - ${weightageItem.label}`);
-        }
-      });
-    });
-
-    if (missingFields.length > 0) {
-      return {
-        isValid: false,
-        message: `Please fill all fields. Missing: ${missingFields.slice(0, 3).join(', ')}${missingFields.length > 3 ? '...' : ''}`
-      };
-    }
-
-    return { isValid: true };
   };
 
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type });
-    setTimeout(() => {
-      setToast({ show: false, message: '', type: '' });
-    }, 3000);
+    setTimeout(() => setToast({ show: false, message: '', type: '' }), 3000);
+  };
+
+  const handleCancel = () => {
+    navigate('/record');
   };
 
   const handleSaveRecord = async () => {
     if (!course) return;
 
-    // Validate all fields are filled
-    const validation = validateAllFields();
-    if (!validation.isValid) {
-      showToast(validation.message, 'error');
-      return;
-    }
+    const studentsData = students.map(student => {
+      const byStudent = objectiveMarks[student.registrationNumber] || {};
+      const total = topics.reduce((sum, _, idx) => sum + (byStudent[String(idx)] || 0), 0);
+      const objectiveMarksPayload = {};
+      topics.forEach((_, idx) => {
+        const v = byStudent[String(idx)];
+        if (v !== undefined && v !== null) objectiveMarksPayload[String(idx)] = Number(v);
+      });
+
+      return {
+        registrationNumber: student.registrationNumber,
+        studentName: student.studentName,
+        weightageScores: {},
+        objectiveMarks: objectiveMarksPayload,
+        overallPercentage: Math.round(total * 100) / 100,
+        overallGrade: calculateGrade(total),
+      };
+    });
+
+    const recordData = {
+      courseCode: course.code,
+      courseName: course.courseName,
+      students: studentsData,
+    };
 
     try {
       setSaving(true);
       setError(null);
-
-      // Prepare students data
-      const studentsData = students.map(student => {
-        const scores = studentScores[student.registrationNumber] || {
-          weightageScores: {},
-          overallPercentage: 0,
-          overallGrade: 'F',
-        };
-
-        return {
-          registrationNumber: student.registrationNumber,
-          studentName: student.studentName,
-          weightageScores: scores.weightageScores,
-          overallPercentage: scores.overallPercentage,
-          overallGrade: scores.overallGrade,
-        };
-      });
-
-      const recordData = {
-        courseCode: course.code,
-        courseName: course.courseName,
-        students: studentsData,
-      };
-
       const response = await axios.post(`${API_URL}/api/records`, recordData);
-
       if (response.data.success) {
         setHasExistingRecord(true);
-        setIsEditMode(false); // Switch to view mode after successful save
+        setIsEditMode(false);
         showToast('Record saved successfully!', 'success');
       } else {
         showToast(response.data.message || 'Failed to save record', 'error');
@@ -208,8 +170,7 @@ const StudentRecordDetail = () => {
     } catch (err) {
       console.error('Error saving record:', err);
       const errorMessage = err.response?.data?.message || err.response?.data?.error || err.message || 'Failed to save record';
-      const shortMessage = errorMessage.split(' ').slice(0, 5).join(' ');
-      showToast(shortMessage, 'error');
+      showToast(errorMessage, 'error');
     } finally {
       setSaving(false);
     }
@@ -219,14 +180,10 @@ const StudentRecordDetail = () => {
     setIsEditMode(true);
   };
 
-  const handleCreateCourseClick = () => {
-    // This will be handled by the header's navigation
-  };
-
   if (loading) {
     return (
       <div className="student-record-detail-container">
-        <CurriculumHeader onCreateCourseClick={handleCreateCourseClick} />
+        <CurriculumHeader />
         <div className="loading-spinner">
           <div className="spinner"></div>
           <p>Loading course and student data...</p>
@@ -238,20 +195,17 @@ const StudentRecordDetail = () => {
   if (error || !course) {
     return (
       <div className="student-record-detail-container">
-        <CurriculumHeader onCreateCourseClick={handleCreateCourseClick} />
-        <div className="error-message">
-          {error || 'Course not found'}
-        </div>
+        <CurriculumHeader />
+        <div className="error-message">{error || 'Course not found'}</div>
       </div>
     );
   }
 
   return (
     <div className="student-record-detail-container">
-      <CurriculumHeader onCreateCourseClick={handleCreateCourseClick} />
-      
+      <CurriculumHeader />
+
       <div className="record-detail-content">
-        {/* Course Details Section */}
         <div className="course-details-section">
           <h2>{course.courseName}</h2>
           <div className="course-info-grid">
@@ -266,114 +220,122 @@ const StudentRecordDetail = () => {
               </span>
             </div>
             <div className="info-item">
-              <span className="info-label">Start Date:</span>
-              <span className="info-value">
-                {course.startingDate ? new Date(course.startingDate).toLocaleDateString() : 'N/A'}
-              </span>
+              <span className="info-label">Objectives:</span>
+              <span className="info-value">{topics.length}</span>
             </div>
             <div className="info-item">
-              <span className="info-label">Topics:</span>
-              <span className="info-value">{course.topics?.length || 0}</span>
+              <span className="info-label">Total Marks:</span>
+              <span className="info-value">{totalMarksForCourse}</span>
             </div>
           </div>
         </div>
 
-        {/* Students Table Section */}
         <div className="students-table-section">
           <div className="table-header-section">
-            <h3>Student Records</h3>
-            {!isEditMode && hasExistingRecord && (
-              <button
-                className="edit-record-button"
-                onClick={handleEditClick}
-              >
-                Edit
-              </button>
-            )}
+            <h3>Marks by objective and student</h3>
           </div>
-          {students.length > 0 ? (
-            <div className="table-wrapper">
-              <table className={`students-record-table ${!isEditMode ? 'read-only' : ''}`}>
-                <thead>
-                  <tr>
-                    <th>Registration Number</th>
-                    <th>Student Name</th>
-                    {course.weightage?.map((item, index) => (
-                      <th key={index}>
-                        {item.label.charAt(0).toUpperCase() + item.label.slice(1)}
-                        <span className="weightage-percent">({item.percentage}%)</span>
-                      </th>
-                    ))}
-                    <th>Overall Grade</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {students.map((student, index) => {
-                    const scores = studentScores[student.registrationNumber] || {
-                      weightageScores: {},
-                      overallPercentage: 0,
-                      overallGrade: 'F',
-                    };
 
-                    return (
-                      <tr key={index}>
-                        <td>{student.registrationNumber}</td>
-                        <td>{student.studentName}</td>
-                        {course.weightage?.map((item, weightIndex) => (
-                          <td key={weightIndex}>
+          {students.length > 0 && topics.length > 0 ? (
+            <>
+              <div className="table-wrapper matrix-table-wrapper">
+                <table className={`students-record-table matrix-table ${!isEditMode ? 'read-only' : ''}`}>
+                  <thead>
+                    <tr>
+                      <th className="matrix-th-objective">Objective</th>
+                      {students.map((student) => (
+                        <th key={student.registrationNumber} className="matrix-th-student">
+                          {student.studentName} ({student.registrationNumber})
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {topics.map((topic, topicIndex) => (
+                      <tr key={topicIndex}>
+                        <td className="matrix-td-objective">
+                          {topic.topicName || topic.courseCode || `Objective ${topicIndex + 1}`}
+                          {topic.marks != null && (
+                            <span className="objective-max-marks"> (max {topic.marks})</span>
+                          )}
+                        </td>
+                        {students.map((student) => (
+                          <td key={student.registrationNumber} className="matrix-td-mark">
                             {isEditMode ? (
                               <input
                                 type="number"
                                 min="0"
-                                max="100"
+                                max={topic.marks != null ? topic.marks : 100}
                                 step="0.01"
-                                className="score-input"
-                                value={scores.weightageScores[item.label] || ''}
-                                onChange={(e) => handleScoreChange(student.registrationNumber, item.label, e.target.value)}
+                                className="score-input matrix-score-input"
+                                value={getMark(student.registrationNumber, topicIndex)}
+                                onChange={(e) => setMark(student.registrationNumber, topicIndex, e.target.value)}
                                 placeholder="0"
                               />
                             ) : (
                               <span className="score-display">
-                                {scores.weightageScores[item.label] !== undefined && scores.weightageScores[item.label] !== null && scores.weightageScores[item.label] !== ''
-                                  ? parseFloat(scores.weightageScores[item.label]).toFixed(2)
+                                {getMark(student.registrationNumber, topicIndex) !== ''
+                                  ? parseFloat(getMark(student.registrationNumber, topicIndex)).toFixed(2)
                                   : '-'}
                               </span>
                             )}
                           </td>
                         ))}
-                        <td className="grade-cell">
-                          <span className="percentage-display">{scores.overallPercentage.toFixed(2)}%</span>
-                          <span className="grade-display">{scores.overallGrade}</span>
-                        </td>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                    ))}
+                    <tr className="matrix-total-row">
+                      <td className="matrix-td-objective total-label">Total</td>
+                      {students.map((student) => {
+                        const total = getTotalForStudent(student.registrationNumber);
+                        return (
+                          <td key={student.registrationNumber} className="matrix-td-total">
+                            <span className="total-value">{total.toFixed(2)}</span>
+                            {totalMarksForCourse > 0 && (
+                              <span className="total-out-of"> / {totalMarksForCourse}</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="matrix-form-actions">
+                <button type="button" className="cancel-record-button" onClick={handleCancel}>
+                  Cancel
+                </button>
+                {!isEditMode ? (
+                  <button type="button" className="edit-record-button" onClick={handleEditClick}>
+                    Edit
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="save-record-button"
+                    onClick={handleSaveRecord}
+                    disabled={saving}
+                  >
+                    {saving ? 'Saving...' : 'Submit'}
+                  </button>
+                )}
+              </div>
+            </>
           ) : (
             <div className="empty-state">
               <div className="empty-icon">👥</div>
-              <h2>No Students Available</h2>
-              <p>Please upload student data first.</p>
-            </div>
-          )}
-
-          {students.length > 0 && isEditMode && (
-            <div className="save-button-container">
-              <button
-                className="save-record-button"
-                onClick={handleSaveRecord}
-                disabled={saving}
-              >
-                {saving ? 'Saving...' : 'Save Record'}
-              </button>
+              <h2>No data to show</h2>
+              <p>
+                {students.length === 0 && topics.length === 0
+                  ? 'Add students and ensure the course has objectives.'
+                  : students.length === 0
+                    ? 'Please upload student data first.'
+                    : 'This course has no objectives.'}
+              </p>
             </div>
           )}
         </div>
       </div>
 
-      {/* Toast Notification */}
       {toast.show && (
         <div className={`toast toast-${toast.type}`}>
           <span className="toast-message">{toast.message}</span>

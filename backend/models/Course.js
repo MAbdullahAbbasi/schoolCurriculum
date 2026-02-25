@@ -55,6 +55,11 @@ const courseSchema = new mongoose.Schema(
           required: true,
           trim: true,
         },
+        marks: {
+          type: Number,
+          required: true,
+          min: 0,
+        },
       },
     ],
   },

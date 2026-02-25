@@ -145,7 +145,8 @@
   pointer-events: none;
 }
 
-.students-record-table.read-only .score-input {
+.students-record-table.read-only .score-input,
+.matrix-table.read-only .matrix-score-input {
   pointer-events: none;
   background: #f8f9fa;
   border-color: #e0e0e0;
@@ -211,6 +212,118 @@
   padding-top: 1.5rem;
   border-top: 2px solid #e0e0e0;
   margin-top: 1rem;
+}
+
+/* Matrix table: objectives (rows) x students (columns) */
+.matrix-table-wrapper {
+  margin-bottom: 1.5rem;
+}
+
+.matrix-table {
+  table-layout: fixed;
+  min-width: 600px;
+}
+
+.matrix-table .matrix-th-objective {
+  width: 220px;
+  min-width: 180px;
+  font-weight: 700;
+  color: #2c3e50;
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  padding: 0.75rem 1rem;
+  vertical-align: middle;
+}
+
+.matrix-table .matrix-th-student {
+  min-width: 140px;
+  font-weight: 600;
+  color: #2c3e50;
+  background: #e8eaf6;
+  border: 1px solid #e0e0e0;
+  padding: 0.75rem;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.matrix-table .matrix-td-objective {
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  padding: 0.6rem 1rem;
+  font-size: 0.9rem;
+  vertical-align: middle;
+}
+
+.objective-max-marks {
+  font-size: 0.8rem;
+  color: #7f8c8d;
+  font-weight: 500;
+}
+
+.matrix-table .matrix-td-mark {
+  border: 1px solid #e0e0e0;
+  padding: 0.4rem;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.matrix-table .matrix-score-input {
+  max-width: 80px;
+  margin: 0 auto;
+}
+
+.matrix-table .matrix-total-row {
+  background: #e3f2fd;
+  font-weight: 700;
+}
+
+.matrix-table .matrix-total-row .total-label {
+  background: #bbdefb;
+  border: 1px solid #90caf9;
+  padding: 0.75rem 1rem;
+}
+
+.matrix-table .matrix-td-total {
+  border: 1px solid #90caf9;
+  padding: 0.75rem;
+  text-align: center;
+}
+
+.matrix-table .total-value {
+  color: #1565c0;
+  font-size: 1rem;
+}
+
+.matrix-table .total-out-of {
+  font-size: 0.85rem;
+  color: #5c6bc0;
+  font-weight: 500;
+}
+
+.matrix-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid #e0e0e0;
+  margin-top: 0.5rem;
+}
+
+.cancel-record-button {
+  background: #f5f5f5;
+  color: #333;
+  border: 2px solid #e0e0e0;
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-record-button:hover {
+  background: #eeeeee;
+  border-color: #bdbdbd;
 }
 
 .save-record-button {
