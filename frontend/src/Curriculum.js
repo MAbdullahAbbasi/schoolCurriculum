@@ -172,24 +172,6 @@ const Curriculum = () => {
     setFilteredData(filtered);
   }, [filters, data]);
 
-  const toggleCourseDetails = (gradeId, courseIndex) => {
-    if (isSelectionMode) {
-      // In selection mode, toggle topic selection instead of expanding
-      const topicKey = `${gradeId}-${courseIndex}`;
-      setSelectedTopics(prev => {
-        if (prev.includes(topicKey)) {
-          return prev.filter(key => key !== topicKey);
-        } else {
-          return [...prev, topicKey];
-        }
-      });
-    } else {
-      // Normal mode: expand/collapse
-      const key = `${gradeId}-${courseIndex}`;
-      setExpandedCourse(expandedCourse === key ? null : key);
-    }
-  };
-
   // Handle filter changes
   const handleFilterChange = (filterName, value) => {
     setFilters(prev => ({
@@ -441,11 +423,6 @@ const Curriculum = () => {
     setIsSelectionMode(true);
     setSelectedTopics([]);
     setExpandedCourse(null); // Close any expanded cards
-  };
-
-  // Handle students data button click
-  const handleStudentsDataClick = () => {
-    setCurrentView('studentsData');
   };
 
   // Handle back to curriculum view (kept for potential future use)
