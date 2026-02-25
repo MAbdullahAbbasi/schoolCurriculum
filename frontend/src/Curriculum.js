@@ -31,10 +31,17 @@ const Curriculum = () => {
   const [uploadingObjectives, setUploadingObjectives] = useState(false);
   const [lastUploadedFileKey, setLastUploadedFileKey] = useState(null);
   const objectivesInputId = 'objectives-file-input';
-  const [singleObjectiveForm, setSingleObjectiveForm] = useState({ grade: '', code: '', title: '', description: '' });
+  const [singleObjectiveForm, setSingleObjectiveForm] = useState({ grade: '', subject: '', code: '', title: '', description: '' });
+  const [objectivesUploadError, setObjectivesUploadError] = useState(null);
   const [addingObjective, setAddingObjective] = useState(false);
   const [deletingAllObjectives, setDeletingAllObjectives] = useState(false);
   const [deletingObjectiveKey, setDeletingObjectiveKey] = useState(null);
+  const [objectivesSelectMode, setObjectivesSelectMode] = useState(false);
+  const [selectedObjectives, setSelectedObjectives] = useState(new Set());
+  const [deletingSelectedObjectives, setDeletingSelectedObjectives] = useState(false);
+  const [editingObjectiveKey, setEditingObjectiveKey] = useState(null);
+  const [editObjectiveForm, setEditObjectiveForm] = useState({ subject: '', title: '', description: '' });
+  const [savingObjectiveKey, setSavingObjectiveKey] = useState(null);
   const [formData, setFormData] = useState({
     courseName: '',
     durationType: '', // 'days', 'weeks', 'months'
@@ -197,8 +204,12 @@ const Curriculum = () => {
       const ok = /\.(xlsx|xls|csv)$/i.test(file.name);
       if (ok) {
         setObjectivesFile(file);
+        setObjectivesUploadError(null);
       } else {
-        alert('Please select an Excel or CSV file (.xlsx, .xls, .csv).');
+        setObjectivesUploadError({
+          message: 'Invalid file type.',
+          solution: 'Please select an Excel (.xlsx, .xls) or CSV file. Your file must have columns in this exact order: Grade, Subject, Code, Title, Description.',
+        });
         e.target.value = '';
       }
     }
@@ -209,25 +220,31 @@ const Curriculum = () => {
 
   const handleUploadObjectives = async () => {
     if (!objectivesFile) {
-      alert('Please select a file first.');
+      setObjectivesUploadError({
+        message: 'No file selected.',
+        solution: 'Click "Upload Objectives" and choose an Excel or CSV file with columns in this exact order: Grade, Subject, Code, Title, Description.',
+      });
       return;
     }
     const fileKey = getFileKey(objectivesFile);
     if (lastUploadedFileKey && fileKey === lastUploadedFileKey) {
-      alert('This file was already uploaded. Select a different file to upload again.');
+      setObjectivesUploadError({
+        message: 'This file was already uploaded.',
+        solution: 'Select a different file to upload again, or make changes and re-upload.',
+      });
       return;
     }
     const formData = new FormData();
     formData.append('file', objectivesFile);
     try {
       setUploadingObjectives(true);
+      setObjectivesUploadError(null);
       const res = await axios.post(`${API_URL}/api/curriculum/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         timeout: 30000,
       });
       if (res.data.success) {
         setLastUploadedFileKey(fileKey);
-        alert(res.data.message || 'Objectives uploaded successfully.');
         setObjectivesFile(null);
         const input = document.getElementById(objectivesInputId);
         if (input) input.value = '';
@@ -242,11 +259,17 @@ const Curriculum = () => {
         setLoading(true);
         await fetchCurriculum();
       } else {
-        alert(res.data.message || res.data.error || 'Upload failed.');
+        setObjectivesUploadError({
+          message: res.data.message || res.data.error || 'Upload failed.',
+          solution: res.data.solution || 'Ensure your file has columns in this exact order: Grade, Subject, Code, Title, Description.',
+        });
       }
     } catch (err) {
-      const msg = err.response?.data?.message || err.response?.data?.error || err.message || 'Upload failed.';
-      alert(msg);
+      const data = err.response?.data;
+      setObjectivesUploadError({
+        message: data?.message || data?.error || err.message || 'Upload failed.',
+        solution: data?.solution || 'Ensure your Excel/CSV file has columns in this exact order: Grade, Subject, Code, Title, Description. Check that the first row contains these headers and that Grade contains numbers.',
+      });
     } finally {
       setUploadingObjectives(false);
     }
@@ -258,7 +281,7 @@ const Curriculum = () => {
 
   const handleAddSingleObjective = async (e) => {
     e.preventDefault();
-    const { grade, code, title, description } = singleObjectiveForm;
+    const { grade, subject, code, title, description } = singleObjectiveForm;
     if (!grade || parseInt(grade, 10) < 1) {
       alert('Please enter a valid grade (1 or higher).');
       return;
@@ -267,11 +290,12 @@ const Curriculum = () => {
       setAddingObjective(true);
       await axios.post(`${API_URL}/api/curriculum/objective`, {
         grade: parseInt(grade, 10),
+        subject: subject != null ? String(subject).trim() : '',
         code: code != null ? String(code).trim() : '',
         title: title != null ? String(title).trim() : '',
         description: description != null ? String(description).trim() : '',
       });
-      setSingleObjectiveForm({ grade: '', code: '', title: '', description: '' });
+      setSingleObjectiveForm({ grade: '', subject: '', code: '', title: '', description: '' });
       setFilters({ ageGroup: '', grade: '', code: '', subject: '', topic: '', learningObjective: '' });
       setLoading(true);
       await fetchCurriculum();
@@ -305,23 +329,110 @@ const Curriculum = () => {
     }
   };
 
-  const handleDeleteObjective = async (grade, topic, topicKey) => {
+  const objKey = (grade, code) => `${grade}::${(code != null ? String(code) : '').trim()}`;
+  const parseObjKey = (key) => {
+    const i = key.indexOf('::');
+    if (i === -1) return { grade: parseInt(key, 10), code: '' };
+    return { grade: parseInt(key.slice(0, i), 10), code: key.slice(i + 2) };
+  };
+
+  const handleDeleteObjective = async (grade, topic) => {
+    const key = objKey(grade.grade, topic.code);
     const label = topic.title || topic.code || 'this objective';
-    if (!window.confirm(`Delete "${label}"? This cannot be undone.`)) {
-      return;
-    }
+    if (!window.confirm(`Delete "${label}"? This cannot be undone.`)) return;
     try {
-      setDeletingObjectiveKey(topicKey);
+      setDeletingObjectiveKey(key);
       await axios.delete(`${API_URL}/api/curriculum/objective`, {
         data: { grade: grade.grade, code: topic.code || '' },
       });
-      setLoading(true);
       await fetchCurriculum();
     } catch (err) {
       const msg = err.response?.data?.message || err.response?.data?.error || err.message || 'Failed to delete objective.';
       alert(msg);
     } finally {
       setDeletingObjectiveKey(null);
+    }
+  };
+
+  const toggleObjectivesSelectMode = () => {
+    setObjectivesSelectMode((prev) => !prev);
+    if (objectivesSelectMode) setSelectedObjectives(new Set());
+  };
+
+  const toggleObjectiveSelection = (gradeNum, code) => {
+    const key = objKey(gradeNum, code);
+    setSelectedObjectives((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const handleSelectAllInGrade = (gradeNum, objectives, checked) => {
+    setSelectedObjectives((prev) => {
+      const next = new Set(prev);
+      objectives.forEach((obj) => next.add(objKey(gradeNum, obj.code)));
+      if (!checked) objectives.forEach((obj) => next.delete(objKey(gradeNum, obj.code)));
+      return next;
+    });
+  };
+
+  const handleDeleteSelectedObjectives = async () => {
+    const items = Array.from(selectedObjectives).map((key) => parseObjKey(key));
+    if (items.length === 0) return;
+    if (!window.confirm(`Delete ${items.length} selected objective(s)? This cannot be undone.`)) return;
+    try {
+      setDeletingSelectedObjectives(true);
+      await axios.delete(`${API_URL}/api/curriculum/objectives/selected`, { data: { items } });
+      setSelectedObjectives(new Set());
+      setObjectivesSelectMode(false);
+      await fetchCurriculum();
+    } catch (err) {
+      const msg = err.response?.data?.message || err.response?.data?.error || err.message || 'Failed to delete.';
+      alert(msg);
+    } finally {
+      setDeletingSelectedObjectives(false);
+    }
+  };
+
+  const handleEditObjectiveClick = (gradeNum, obj) => {
+    setEditingObjectiveKey(objKey(gradeNum, obj.code));
+    setEditObjectiveForm({
+      subject: (obj.subject != null ? String(obj.subject) : '').trim(),
+      title: (obj.title != null ? String(obj.title) : '').trim(),
+      description: (obj.description != null ? String(obj.description) : '').trim(),
+    });
+  };
+
+  const handleCancelEditObjective = () => {
+    setEditingObjectiveKey(null);
+    setEditObjectiveForm({ subject: '', title: '', description: '' });
+  };
+
+  const handleEditObjectiveFormChange = (field, value) => {
+    setEditObjectiveForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveObjective = async (gradeNum, code) => {
+    const key = objKey(gradeNum, code);
+    try {
+      setSavingObjectiveKey(key);
+      await axios.put(`${API_URL}/api/curriculum/objective`, {
+        grade: gradeNum,
+        code: (code != null ? String(code) : '').trim(),
+        subject: editObjectiveForm.subject.trim(),
+        title: editObjectiveForm.title.trim(),
+        description: editObjectiveForm.description.trim(),
+      });
+      await fetchCurriculum();
+      setEditingObjectiveKey(null);
+      setEditObjectiveForm({ subject: '', title: '', description: '' });
+    } catch (err) {
+      const msg = err.response?.data?.message || err.response?.data?.error || err.message || 'Failed to update.';
+      alert(msg);
+    } finally {
+      setSavingObjectiveKey(null);
     }
   };
 
@@ -623,10 +734,7 @@ const Curriculum = () => {
   if (currentView === 'studentsData') {
     return (
       <div className="curriculum-container">
-        <CurriculumHeader 
-          onCreateCourseClick={handleCreateCourseClick}
-          onStudentsDataClick={handleStudentsDataClick}
-        />
+        <CurriculumHeader />
         <StudentData />
       </div>
     );
@@ -634,10 +742,7 @@ const Curriculum = () => {
 
   return (
     <div className="curriculum-container">
-      <CurriculumHeader 
-        onCreateCourseClick={handleCreateCourseClick}
-        onStudentsDataClick={handleStudentsDataClick}
-      />
+      <CurriculumHeader />
       
       <div className="filters-section">
           <div className="filter-group">
@@ -752,6 +857,15 @@ const Curriculum = () => {
           </div>
         </div>
 
+        {objectivesUploadError && (
+          <div className="objectives-upload-error" role="alert">
+            <strong>Upload error:</strong> {objectivesUploadError.message}
+            {objectivesUploadError.solution && (
+              <p className="objectives-upload-error-solution">{objectivesUploadError.solution}</p>
+            )}
+          </div>
+        )}
+
         <div className="add-single-objective-section">
           <h4 className="add-objective-heading">Add objective individually</h4>
           <form onSubmit={handleAddSingleObjective} className="add-objective-form">
@@ -763,6 +877,13 @@ const Curriculum = () => {
               onChange={(e) => handleSingleObjectiveChange('grade', e.target.value)}
               className="add-objective-input"
               required
+            />
+            <input
+              type="text"
+              placeholder="Subject"
+              value={singleObjectiveForm.subject}
+              onChange={(e) => handleSingleObjectiveChange('subject', e.target.value)}
+              className="add-objective-input"
             />
             <input
               type="text"
@@ -800,7 +921,7 @@ const Curriculum = () => {
         </div>
 
         <p className="objectives-upload-hint">
-          Excel file should contain columns: <strong>Grade</strong>, <strong>Code</strong>, <strong>Title</strong>, <strong>Description</strong> (column names can vary slightly, e.g. Class for Grade, Topic for Title).
+          You are strictly required to follow the order of the columns in your Excel file. Use exactly this order: <strong>Grade</strong>, <strong>Subject</strong>, <strong>Code</strong>, <strong>Title</strong>, <strong>Description</strong>. The first row must be these headers; column names can vary slightly (e.g. Class for Grade, Topic for Title), but the column order must match.
         </p>
 
         <div className="upload-objectives-bar">
@@ -831,6 +952,16 @@ const Curriculum = () => {
               </button>
             </>
           )}
+        </div>
+
+        <div className="create-course-row">
+          <button
+            type="button"
+            className="create-course-page-btn"
+            onClick={handleCreateCourseClick}
+          >
+            + Create Courses
+          </button>
         </div>
 
       {/* Selection Mode Banner */}
@@ -976,103 +1107,186 @@ const Curriculum = () => {
         </div>
       ) : (
         <div className="grades-section">
+          <div className="objectives-table-actions">
+            <button
+              type="button"
+              className={objectivesSelectMode ? 'objectives-select-btn active' : 'objectives-select-btn'}
+              onClick={toggleObjectivesSelectMode}
+              disabled={deletingSelectedObjectives}
+            >
+              {objectivesSelectMode ? 'Cancel' : 'Select'}
+            </button>
+            {objectivesSelectMode && (
+              <button
+                type="button"
+                className="objectives-delete-selected-btn"
+                onClick={handleDeleteSelectedObjectives}
+                disabled={selectedObjectives.size === 0 || deletingSelectedObjectives}
+              >
+                {deletingSelectedObjectives ? 'Deleting...' : `Delete selected (${selectedObjectives.size})`}
+              </button>
+            )}
+          </div>
           {filteredData.map((grade) => (
-            <div key={grade._id} className="grade-section">
+            <div key={grade._id || grade.grade} className="grade-section">
               <div className="grade-heading-wrapper">
                 <h2 className="grade-main-heading">Grade {grade.grade}</h2>
                 <div className="grade-divider-line"></div>
               </div>
-              
               {grade.objectives && grade.objectives.length > 0 ? (
-                <div className="topics-grid">
-                  {grade.objectives.map((topic, topicIndex) => {
-                    const topicKey = `${grade._id}-${topicIndex}`;
-                    const isExpanded = expandedCourse === topicKey;
-                    const isSelected = selectedTopics.includes(topicKey);
-                    
-                    return (
-                      <div 
-                        key={topic.code || topicIndex} 
-                        className={`topic-card ${isExpanded ? 'expanded' : ''} ${isSelectionMode ? 'selection-mode' : ''} ${isSelected ? 'selected' : ''}`}
-                        onClick={() => toggleCourseDetails(grade._id, topicIndex)}
-                        onMouseEnter={(e) => !isSelectionMode && e.currentTarget.classList.add('hovered')}
-                        onMouseLeave={(e) => e.currentTarget.classList.remove('hovered')}
-                      >
-                        {isSelectionMode && (
-                          <div className="selection-checkbox" onClick={(e) => e.stopPropagation()}>
+                <div className="objectives-table-wrapper">
+                  <table className="objectives-table">
+                    <thead>
+                      <tr>
+                        {objectivesSelectMode && (
+                          <th className="objectives-th-checkbox">
                             <input
                               type="checkbox"
-                              checked={isSelected}
-                              onChange={(e) => {
-                                e.stopPropagation();
-                                handleTopicSelect(grade._id, topicIndex);
-                              }}
-                              onClick={(e) => e.stopPropagation()}
+                              aria-label="Select all in grade"
+                              checked={grade.objectives.length > 0 && grade.objectives.every((obj) => selectedObjectives.has(objKey(grade.grade, obj.code)))}
+                              onChange={(e) => handleSelectAllInGrade(grade.grade, grade.objectives, e.target.checked)}
                             />
-                          </div>
+                          </th>
                         )}
-                        <div className="topic-card-header">
-                          <div className="topic-code-badge">{topic.code}</div>
-                          <h3 className="topic-title">{topic.title}</h3>
-                          {!isSelectionMode && (
-                            <>
-                              <button
-                                type="button"
-                                className="topic-delete-icon"
-                                onClick={(e) => { e.stopPropagation(); handleDeleteObjective(grade, topic, topicKey); }}
-                                disabled={deletingObjectiveKey === topicKey}
-                                title="Delete this objective"
-                                aria-label="Delete objective"
-                              >
-                                {deletingObjectiveKey === topicKey ? (
-                                  <span className="topic-delete-spinner">...</span>
-                                ) : (
-                                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <polyline points="3 6 5 6 21 6" />
-                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                    <line x1="10" y1="11" x2="10" y2="17" />
-                                    <line x1="14" y1="11" x2="14" y2="17" />
-                                  </svg>
-                                )}
-                              </button>
-                              <div className={`expand-arrow ${isExpanded ? 'expanded' : ''}`}>
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                                  <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                                </svg>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                        
-                        {!isSelectionMode && (
-                          <div className={`topic-details ${isExpanded ? 'show' : ''}`}>
-                            <div className="topic-description">
-                              <p>{topic.description}</p>
-                            </div>
-                            
-                            {topic.details && (
-                              <div className="topic-additional-info">
-                                <h4>Additional Information:</h4>
-                                <ul>
-                                  {Array.isArray(topic.details) ? (
-                                    topic.details.map((detail, idx) => (
-                                      <li key={idx}>{detail}</li>
-                                    ))
-                                  ) : (
-                                    <li>{topic.details}</li>
-                                  )}
-                                </ul>
-                              </div>
+                        {isSelectionMode && (
+                          <th className="objectives-th-checkbox">Add to course</th>
+                        )}
+                        <th>Grade</th>
+                        <th>Subject</th>
+                        <th>Code</th>
+                        <th>Title</th>
+                        <th>Description</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {grade.objectives.map((topic, topicIndex) => {
+                        const key = objKey(grade.grade, topic.code);
+                        const topicKey = `${grade._id}-${topicIndex}`;
+                        const isSelectedForCourse = selectedTopics.includes(topicKey);
+                        const isEditing = editingObjectiveKey === key;
+                        const isSaving = savingObjectiveKey === key;
+                        const isDeleting = deletingObjectiveKey === key;
+                        return (
+                          <tr key={topic.code || topicIndex} className={isEditing ? 'objectives-row-editing' : ''}>
+                            {objectivesSelectMode && (
+                              <td className="objectives-td-checkbox">
+                                <input
+                                  type="checkbox"
+                                  aria-label={`Select ${topic.code}`}
+                                  checked={selectedObjectives.has(key)}
+                                  onChange={() => toggleObjectiveSelection(grade.grade, topic.code)}
+                                />
+                              </td>
                             )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                            {isSelectionMode && (
+                              <td className="objectives-td-checkbox">
+                                <input
+                                  type="checkbox"
+                                  aria-label={`Add to course ${topic.code}`}
+                                  checked={isSelectedForCourse}
+                                  onChange={() => handleTopicSelect(grade._id, topicIndex)}
+                                />
+                              </td>
+                            )}
+                            <td>{grade.grade}</td>
+                            <td>{isEditing ? (
+                              <input
+                                type="text"
+                                className="objectives-edit-input"
+                                value={editObjectiveForm.subject}
+                                onChange={(e) => handleEditObjectiveFormChange('subject', e.target.value)}
+                                placeholder="Subject"
+                              />
+                            ) : (topic.subject || '-')}</td>
+                            <td>{topic.code || '-'}</td>
+                            {isEditing ? (
+                              <>
+                                <td>
+                                  <input
+                                    type="text"
+                                    className="objectives-edit-input"
+                                    value={editObjectiveForm.title}
+                                    onChange={(e) => handleEditObjectiveFormChange('title', e.target.value)}
+                                    placeholder="Title"
+                                  />
+                                </td>
+                                <td>
+                                  <input
+                                    type="text"
+                                    className="objectives-edit-input"
+                                    value={editObjectiveForm.description}
+                                    onChange={(e) => handleEditObjectiveFormChange('description', e.target.value)}
+                                    placeholder="Description"
+                                  />
+                                </td>
+                                <td>
+                                  <button
+                                    type="button"
+                                    className="objectives-save-btn"
+                                    onClick={() => handleSaveObjective(grade.grade, topic.code)}
+                                    disabled={isSaving}
+                                  >
+                                    {isSaving ? 'Saving...' : 'Save'}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="objectives-cancel-btn"
+                                    onClick={handleCancelEditObjective}
+                                    disabled={isSaving}
+                                  >
+                                    Cancel
+                                  </button>
+                                </td>
+                              </>
+                            ) : (
+                              <>
+                                <td>{topic.title || '-'}</td>
+                                <td className="objectives-desc-cell">{topic.description || '-'}</td>
+                                <td className="objectives-action-cell">
+                                  <button
+                                    type="button"
+                                    className="objectives-action-btn objectives-edit-btn"
+                                    onClick={() => handleEditObjectiveClick(grade.grade, topic)}
+                                    title="Edit"
+                                    aria-label="Edit"
+                                  >
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                    </svg>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="objectives-action-btn objectives-delete-btn"
+                                    onClick={() => handleDeleteObjective(grade, topic)}
+                                    disabled={isDeleting}
+                                    title="Delete"
+                                    aria-label="Delete"
+                                  >
+                                    {isDeleting ? (
+                                      <span className="objectives-delete-spinner">...</span>
+                                    ) : (
+                                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="3 6 5 6 21 6" />
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                        <line x1="10" y1="11" x2="10" y2="17" />
+                                        <line x1="14" y1="11" x2="14" y2="17" />
+                                      </svg>
+                                    )}
+                                  </button>
+                                </td>
+                              </>
+                            )}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               ) : (
                 <div className="no-topics">
-                  <p>No topics available for this grade.</p>
+                  <p>No objectives for this grade.</p>
                 </div>
               )}
             </div>

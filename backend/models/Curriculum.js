@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 
 const objectiveSchema = mongoose.Schema({
+  subject: { type: String, default: "" },
   code: String,
   title: String,
   description: String,

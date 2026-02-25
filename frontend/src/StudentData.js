@@ -5,9 +5,6 @@ import { API_URL } from './config/api';
 import './StudentData.css';
 
 const StudentData = () => {
-  const handleCreateCourseClick = () => {
-    // This will be handled by the header's navigation
-  };
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [studentsData, setStudentsData] = useState([]);
@@ -283,7 +280,7 @@ const StudentData = () => {
   if (loading && studentsData.length === 0) {
     return (
       <div className="student-data-container">
-        <CurriculumHeader onCreateCourseClick={handleCreateCourseClick} />
+        <CurriculumHeader />
         <div className="loading-spinner">
           <div className="spinner"></div>
           <p>Loading students data...</p>
@@ -294,7 +291,7 @@ const StudentData = () => {
 
   return (
     <div className="student-data-container">
-      <CurriculumHeader onCreateCourseClick={handleCreateCourseClick} />
+      <CurriculumHeader />
       <div className="student-data-header">
         <h2>Students Data Management</h2>
         <p>Upload and manage student information in bulk</p>

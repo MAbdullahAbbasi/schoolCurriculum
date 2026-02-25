@@ -201,6 +201,27 @@
   color: #2c3e50;
 }
 
+.objectives-upload-error {
+  margin-bottom: 1rem;
+  padding: 1rem 1.25rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #b91c1c;
+  font-size: 0.95rem;
+}
+
+.objectives-upload-error strong {
+  color: #991b1b;
+}
+
+.objectives-upload-error-solution {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.9rem;
+  color: #7f1d1d;
+  line-height: 1.4;
+}
+
 /* Upload Objectives bar - below filters, on the left */
 .upload-objectives-bar {
   display: flex;
@@ -208,8 +229,33 @@
   align-items: center;
   gap: 0.75rem 1rem;
   margin-top: 1rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.75rem;
   justify-content: flex-start;
+}
+
+.create-course-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1.5rem;
+}
+
+.create-course-page-btn {
+  background: linear-gradient(135deg, #3498db 0%, #2ecc71 100%);
+  color: white;
+  border: none;
+  padding: 0.6rem 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.2);
+}
+
+.create-course-page-btn:hover {
+  background: linear-gradient(135deg, #2980b9 0%, #27ae60 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
 }
 
 .objectives-file-input {
@@ -330,8 +376,190 @@
   margin: 0 auto;
 }
 
+.objectives-table-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.objectives-select-btn {
+  background: #e8e8e8;
+  color: #333;
+  border: 1px solid #ccc;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.objectives-select-btn:hover:not(:disabled) {
+  background: #ddd;
+}
+
+.objectives-select-btn.active {
+  background: #ccc;
+}
+
+.objectives-delete-selected-btn {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.objectives-delete-selected-btn:hover:not(:disabled) {
+  background: #c0392b;
+}
+
+.objectives-delete-selected-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 .grade-section {
-  margin-bottom: 5rem;
+  margin-bottom: 3rem;
+}
+
+.objectives-table-wrapper {
+  overflow-x: auto;
+  margin-top: 1rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.objectives-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.objectives-table th,
+.objectives-table td {
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.objectives-table th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.objectives-table tbody tr:hover {
+  background: #fafafa;
+}
+
+.objectives-th-checkbox,
+.objectives-td-checkbox {
+  width: 2.5rem;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.objectives-th-checkbox input,
+.objectives-td-checkbox input {
+  cursor: pointer;
+}
+
+.objectives-desc-cell {
+  max-width: 320px;
+  word-wrap: break-word;
+}
+
+.objectives-edit-input {
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.objectives-row-editing .objectives-edit-input {
+  min-width: 120px;
+}
+
+.objectives-save-btn {
+  background: #27ae60;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 0.5rem;
+}
+
+.objectives-save-btn:hover:not(:disabled) {
+  background: #219a52;
+}
+
+.objectives-cancel-btn {
+  background: #95a5a6;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.objectives-cancel-btn:hover:not(:disabled) {
+  background: #7f8c8d;
+}
+
+.objectives-action-cell {
+  white-space: nowrap;
+}
+
+.objectives-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 0.35rem;
+  transition: background 0.15s ease;
+}
+
+.objectives-edit-btn {
+  background: #e8f4fc;
+  color: #2980b9;
+}
+
+.objectives-edit-btn:hover {
+  background: #d0e8f7;
+}
+
+.objectives-delete-btn {
+  background: #fdeaea;
+  color: #e74c3c;
+}
+
+.objectives-delete-btn:hover:not(:disabled) {
+  background: #fad4d4;
+}
+
+.objectives-delete-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.objectives-delete-spinner {
+  font-size: 0.75rem;
 }
 
 /* Grade Heading - LARGEST */

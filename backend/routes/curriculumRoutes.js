@@ -105,6 +105,7 @@ router.post("/upload", upload.single("file"), async (req, res) => {
         success: false,
         error: "No file uploaded",
         message: "Please select an Excel or CSV file.",
+        solution: "Click 'Upload Objectives' and choose a file with columns in this exact order: Grade, Subject, Code, Title, Description.",
       });
     }
 
@@ -116,6 +117,7 @@ router.post("/upload", upload.single("file"), async (req, res) => {
         success: false,
         error: "Invalid file",
         message: "Could not read the file as Excel or CSV.",
+        solution: "Save your file as .xlsx, .xls, or .csv and ensure it is not corrupted. The first row must contain headers: Grade, Subject, Code, Title, Description (in that order).",
       });
     }
 
@@ -128,10 +130,12 @@ router.post("/upload", upload.single("file"), async (req, res) => {
         success: false,
         error: "Empty file",
         message: "The file has no data rows.",
+        solution: "Add at least one data row below the header row. Header must be: Grade, Subject, Code, Title, Description (in that order).",
       });
     }
 
     const gradeCol = findCol(rows[0], ["grade", "class", "level"]);
+    const subjectCol = findCol(rows[0], ["subject"]);
     const codeCol = findCol(rows[0], ["code", "objective code", "obj code"]);
     const titleCol = findCol(rows[0], ["title", "topic", "name", "objective title"]);
     const descCol = findCol(rows[0], ["description", "desc", "learning objective"]);
@@ -139,8 +143,17 @@ router.post("/upload", upload.single("file"), async (req, res) => {
     if (!gradeCol) {
       return res.status(400).json({
         success: false,
-        error: "Missing Grade column",
-        message: "The file must have a column for Grade (e.g. Grade, Class, Level).",
+        error: "Missing required column",
+        message: "The file must have a Grade column (e.g. Grade, Class, Level).",
+        solution: "Use an Excel file with columns in this exact order: Grade, Subject, Code, Title, Description. Ensure the first row contains these headers.",
+      });
+    }
+    if (!subjectCol) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing required column",
+        message: "The file must have a Subject column.",
+        solution: "Use an Excel file with columns in this exact order: Grade, Subject, Code, Title, Description. Add a 'Subject' column after Grade.",
       });
     }
 
@@ -151,12 +164,13 @@ router.post("/upload", upload.single("file"), async (req, res) => {
       const gradeNum = parseInt(gradeRaw, 10);
       if (isNaN(gradeNum) || gradeNum < 1) continue;
 
+      const subject = subjectCol && row[subjectCol] != null ? String(row[subjectCol]).trim() : "";
       const code = codeCol && row[codeCol] != null ? String(row[codeCol]).trim() : "";
       const title = titleCol && row[titleCol] != null ? String(row[titleCol]).trim() : "";
       const description = descCol && row[descCol] != null ? String(row[descCol]).trim() : "";
 
       if (!byGrade[gradeNum]) byGrade[gradeNum] = [];
-      byGrade[gradeNum].push({ code, title, description });
+      byGrade[gradeNum].push({ subject, code, title, description });
     }
 
     const grades = Object.keys(byGrade).map(Number);
@@ -164,7 +178,8 @@ router.post("/upload", upload.single("file"), async (req, res) => {
       return res.status(400).json({
         success: false,
         error: "No valid data",
-        message: "No valid grade and objective rows found. Ensure Grade is a number.",
+        message: "No valid grade and objective rows found. Ensure Grade is a number (1 or higher).",
+        solution: "Check that your data rows have numeric grades in the Grade column and that columns follow the order: Grade, Subject, Code, Title, Description.",
       });
     }
 
@@ -200,10 +215,13 @@ router.post("/upload", upload.single("file"), async (req, res) => {
     });
   } catch (err) {
     console.error("Error uploading objectives:", err);
+    const message = err.message || "An error occurred while processing the file.";
+    const solution = "Ensure your file is a valid Excel (.xlsx, .xls) or CSV with columns in this exact order: Grade, Subject, Code, Title, Description. Check that the first row contains these headers and that Grade contains numbers.";
     res.status(500).json({
       success: false,
       error: "Upload failed",
-      message: err.message || "An error occurred while processing the file.",
+      message,
+      solution,
     });
   }
 });
@@ -284,6 +302,110 @@ router.delete("/objective", async (req, res) => {
   }
 });
 
+// PUT update a single objective (by grade and code)
+router.put("/objective", async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        error: "Database not connected",
+      });
+    }
+    const { grade, code, title, description, subject } = req.body;
+    const gradeNum = parseInt(grade, 10);
+    if (isNaN(gradeNum) || gradeNum < 1) {
+      return res.status(400).json({
+        success: false,
+        error: "Valid grade is required",
+      });
+    }
+    const codeStr = code != null ? String(code).trim() : "";
+    const doc = await Curriculum.findOne({ grade: gradeNum });
+    if (!doc) {
+      return res.status(404).json({
+        success: false,
+        error: "Grade not found",
+        message: "No curriculum found for this grade.",
+      });
+    }
+    const objectives = doc.objectives || [];
+    const idx = objectives.findIndex((obj) => String(obj.code || "").trim() === codeStr);
+    if (idx === -1) {
+      return res.status(404).json({
+        success: false,
+        error: "Objective not found",
+        message: "No objective with this code in this grade.",
+      });
+    }
+    if (subject !== undefined) doc.objectives[idx].subject = String(subject).trim();
+    if (title !== undefined) doc.objectives[idx].title = String(title).trim();
+    if (description !== undefined) doc.objectives[idx].description = String(description).trim();
+    await doc.save();
+    res.json({
+      success: true,
+      message: "Objective updated successfully.",
+    });
+  } catch (err) {
+    console.error("Error updating objective:", err);
+    res.status(500).json({
+      success: false,
+      error: "Failed to update objective",
+      message: err.message || "An error occurred.",
+    });
+  }
+});
+
+// DELETE multiple objectives (body: { items: [{ grade, code }, ...] })
+router.delete("/objectives/selected", async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        error: "Database not connected",
+      });
+    }
+    const { items } = req.body;
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Items required",
+        message: "Provide an array of { grade, code } to delete.",
+      });
+    }
+    let deletedCount = 0;
+    const byGrade = {};
+    for (const it of items) {
+      const g = parseInt(it.grade, 10);
+      if (isNaN(g)) continue;
+      if (!byGrade[g]) byGrade[g] = new Set();
+      byGrade[g].add(String(it.code || "").trim());
+    }
+    for (const [gradeStr, codes] of Object.entries(byGrade)) {
+      const gradeNum = parseInt(gradeStr, 10);
+      const doc = await Curriculum.findOne({ grade: gradeNum });
+      if (!doc || !doc.objectives || !doc.objectives.length) continue;
+      const before = doc.objectives.length;
+      doc.objectives = doc.objectives.filter(
+        (obj) => !codes.has(String(obj.code || "").trim())
+      );
+      deletedCount += before - doc.objectives.length;
+      await doc.save();
+    }
+    res.json({
+      success: true,
+      message: `Deleted ${deletedCount} objective(s).`,
+      deletedCount,
+    });
+  } catch (err) {
+    console.error("Error deleting selected objectives:", err);
+    res.status(500).json({
+      success: false,
+      error: "Failed to delete objectives",
+      message: err.message || "An error occurred.",
+    });
+  }
+});
+
 // POST add a single objective
 router.post("/objective", async (req, res) => {
   try {
@@ -293,7 +415,7 @@ router.post("/objective", async (req, res) => {
         error: "Database not connected",
       });
     }
-    const { grade, code, title, description } = req.body;
+    const { grade, subject, code, title, description } = req.body;
     const gradeNum = parseInt(grade, 10);
     if (isNaN(gradeNum) || gradeNum < 1) {
       return res.status(400).json({
@@ -302,6 +424,7 @@ router.post("/objective", async (req, res) => {
       });
     }
     const objective = {
+      subject: subject != null ? String(subject).trim() : "",
       code: code != null ? String(code).trim() : "",
       title: title != null ? String(title).trim() : "",
       description: description != null ? String(description).trim() : "",

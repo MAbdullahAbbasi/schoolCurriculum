@@ -13,10 +13,6 @@ const StudentsRecord = () => {
   const [deletingCourseCode, setDeletingCourseCode] = useState(null);
   const [deletingAll, setDeletingAll] = useState(false);
 
-  const handleCreateCourseClick = () => {
-    // This will be handled by the header's navigation
-  };
-
   useEffect(() => {
     fetchCourses();
   }, []);
@@ -78,7 +74,7 @@ const StudentsRecord = () => {
   if (loading) {
     return (
       <div className="students-record-container">
-        <CurriculumHeader onCreateCourseClick={handleCreateCourseClick} />
+        <CurriculumHeader />
         <div className="loading-spinner">
           <div className="spinner"></div>
           <p>Loading courses...</p>
@@ -89,7 +85,7 @@ const StudentsRecord = () => {
 
   return (
     <div className="students-record-container">
-      <CurriculumHeader onCreateCourseClick={handleCreateCourseClick} />
+      <CurriculumHeader />
       <div className="students-record-content">
         <h2>Students Record</h2>
         <p>Select a course to view and manage student records</p>

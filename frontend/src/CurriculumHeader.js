@@ -2,27 +2,15 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './CurriculumHeader.css';
 
-const CurriculumHeader = ({ onCreateCourseClick }) => {
+const CurriculumHeader = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const path = location.pathname;
 
-  const handleStudentsDataClick = () => {
-    navigate('/students-data');
-  };
-
-  const handleRecordClick = () => {
-    navigate('/record');
-  };
-
-  const handleCreateCourseClick = () => {
-    if (location.pathname !== '/') {
-      navigate('/');
-    }
-    if (onCreateCourseClick) {
-      onCreateCourseClick();
-    }
-  };
-
+  const handleStudentsDataClick = () => navigate('/students-data');
+  const handleRecordClick = () => navigate('/record');
+  const handleObjectivesClick = () => navigate('/');
+  const handleReportsClick = () => { /* Reports – to be implemented later */ };
   const handleLogout = () => {
     localStorage.removeItem('curriculum_auth');
     window.location.reload();
@@ -37,22 +25,32 @@ const CurriculumHeader = ({ onCreateCourseClick }) => {
         </div>
         <div className="header-buttons-group">
           <button
-            className="students-data-button"
+            type="button"
+            className={`nav-btn ${path === '/students-data' ? 'active' : ''}`}
             onClick={handleStudentsDataClick}
           >
             Students Data
           </button>
           <button
-            className="record-button"
+            type="button"
+            className={`nav-btn ${path === '/record' ? 'active' : ''}`}
             onClick={handleRecordClick}
           >
             Record
           </button>
           <button
-            className="create-course-button"
-            onClick={handleCreateCourseClick}
+            type="button"
+            className={`nav-btn ${path === '/' ? 'active' : ''}`}
+            onClick={handleObjectivesClick}
           >
-            + Create Course
+            Objectives
+          </button>
+          <button
+            type="button"
+            className={`nav-btn ${path === '/reports' ? 'active' : ''}`}
+            onClick={handleReportsClick}
+          >
+            Reports
           </button>
           <button type="button" className="logout-button" onClick={handleLogout}>
             Log out
