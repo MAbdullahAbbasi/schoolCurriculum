@@ -88,6 +88,27 @@
   margin-top: 0.5rem;
 }
 
+.upload-error-message {
+  margin-bottom: 1rem;
+  padding: 1rem 1.25rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #b91c1c;
+  font-size: 0.95rem;
+}
+
+.upload-error-message strong {
+  color: #991b1b;
+}
+
+.upload-error-solution {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.9rem;
+  color: #7f1d1d;
+  line-height: 1.4;
+}
+
 .file-input {
   display: none;
 }

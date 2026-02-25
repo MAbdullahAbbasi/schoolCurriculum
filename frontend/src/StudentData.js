@@ -14,7 +14,8 @@ const StudentData = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [editingRegistrationNumber, setEditingRegistrationNumber] = useState(null);
-  const [editForm, setEditForm] = useState({ studentName: '', grade: '', dateOfBirth: '' });
+  const [editForm, setEditForm] = useState({ studentName: '', fathersName: '', grade: '', dateOfBirth: '' });
+  const [uploadError, setUploadError] = useState(null);
   const [savingRegistrationNumber, setSavingRegistrationNumber] = useState(null);
   const [deletingAll, setDeletingAll] = useState(false);
   const [deletingRegistrationNumber, setDeletingRegistrationNumber] = useState(null);
@@ -57,9 +58,12 @@ const StudentData = () => {
           selectedFile.name.endsWith('.xls') || 
           selectedFile.name.endsWith('.csv')) {
         setFile(selectedFile);
-        setError(null);
+        setUploadError(null);
       } else {
-        setError('Please upload a valid Excel file (.xlsx, .xls, or .csv)');
+        setUploadError({
+          message: 'Invalid file type.',
+          solution: 'Please upload a valid Excel file (.xlsx, .xls) or CSV file.',
+        });
         setFile(null);
       }
     }
@@ -73,6 +77,7 @@ const StudentData = () => {
     }
     setEditForm({
       studentName: student.studentName || '',
+      fathersName: student.fathersName || '',
       grade: student.grade || '',
       dateOfBirth: dob,
     });
@@ -84,7 +89,7 @@ const StudentData = () => {
 
   const handleCancelEdit = () => {
     setEditingRegistrationNumber(null);
-    setEditForm({ studentName: '', grade: '', dateOfBirth: '' });
+    setEditForm({ studentName: '', fathersName: '', grade: '', dateOfBirth: '' });
   };
 
   const handleSaveClick = async (registrationNumber) => {
@@ -98,12 +103,13 @@ const StudentData = () => {
       await axios.put(`${API_URL}/api/students-data/update`, {
         registrationNumber,
         studentName: editForm.studentName.trim(),
+        fathersName: (editForm.fathersName != null) ? String(editForm.fathersName).trim() : '',
         grade: editForm.grade.trim(),
         dateOfBirth: editForm.dateOfBirth,
       });
       await fetchStudentsData();
       setEditingRegistrationNumber(null);
-      setEditForm({ studentName: '', grade: '', dateOfBirth: '' });
+      setEditForm({ studentName: '', fathersName: '', grade: '', dateOfBirth: '' });
     } catch (err) {
       console.error('Error updating student:', err);
       const msg = err.response?.data?.message || err.response?.data?.error || err.message || 'Failed to update record';
@@ -160,7 +166,7 @@ const StudentData = () => {
 
   const handleFileUpload = async () => {
     if (!file) {
-      setError('Please select a file to upload');
+      setUploadError({ message: 'Please select a file to upload.', solution: 'Click the area above and choose an Excel or CSV file.' });
       return;
     }
 
@@ -169,7 +175,7 @@ const StudentData = () => {
 
     try {
       setUploading(true);
-      setError(null);
+      setUploadError(null);
 
       const response = await axios.post(`${API_URL}/api/students-data/upload`, formData, {
         headers: {
@@ -178,19 +184,17 @@ const StudentData = () => {
       });
 
       if (response.data.success) {
-        alert('Data has been uploaded successfully!');
-        // Refresh the students data table
         await fetchStudentsData();
-        // Reset file input
         setFile(null);
         document.getElementById('file-input').value = '';
       }
     } catch (err) {
       console.error('Error uploading file:', err);
-      const errorMessage = err.response?.data?.error || err.message || 'Failed to upload file';
-      alert(`Upload failed: ${errorMessage}`);
-      setError(errorMessage);
-      // Still fetch existing data to display
+      const data = err.response?.data;
+      setUploadError({
+        message: data?.message || data?.error || err.message || 'Failed to upload file.',
+        solution: data?.solution || 'Check that your file has the required columns in the correct order and that all required fields have valid values.',
+      });
       await fetchStudentsData();
     } finally {
       setUploading(false);
@@ -218,6 +222,14 @@ const StudentData = () => {
       </div>
 
       <div className="upload-section">
+        {uploadError && (
+          <div className="upload-error-message" role="alert">
+            <strong>Upload error:</strong> {uploadError.message}
+            {uploadError.solution && (
+              <p className="upload-error-solution">{uploadError.solution}</p>
+            )}
+          </div>
+        )}
         <div className="upload-box">
           <label htmlFor="file-input" className="upload-label">
             <div className="upload-icon">📁</div>
@@ -225,7 +237,7 @@ const StudentData = () => {
               <strong>Upload Students Data in Bulk</strong>
               <span className="upload-hint">Click to select Excel file (.xlsx, .xls, or .csv)</span>
               <span className="upload-requirements">
-                Required columns: Registration Number, Student Name, Grade, Date of Birth
+                Strictly follow this format and order of columns in your Excel file: Registration Number, Student Name, Fathers Name, Grade, Date of Birth.
               </span>
             </div>
           </label>
@@ -277,6 +289,7 @@ const StudentData = () => {
                 <tr>
                   <th>Registration Number</th>
                   <th>Student Name</th>
+                  <th>Fathers Name</th>
                   <th>Grade</th>
                   <th>Date of Birth</th>
                   <th>Actions</th>
@@ -298,6 +311,15 @@ const StudentData = () => {
                               value={editForm.studentName}
                               onChange={(e) => handleEditFormChange('studentName', e.target.value)}
                               placeholder="Student Name"
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              className="student-edit-input"
+                              value={editForm.fathersName}
+                              onChange={(e) => handleEditFormChange('fathersName', e.target.value)}
+                              placeholder="Fathers Name"
                             />
                           </td>
                           <td>
@@ -340,6 +362,7 @@ const StudentData = () => {
                       ) : (
                         <>
                           <td>{student.studentName || '-'}</td>
+                          <td>{student.fathersName || '-'}</td>
                           <td>{student.grade || '-'}</td>
                           <td>
                             {student.dateOfBirth

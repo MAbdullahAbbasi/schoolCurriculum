@@ -92,7 +92,7 @@ const updateStudentHandler = async (req, res) => {
       });
     }
 
-    const { registrationNumber, studentName, grade, dateOfBirth } = req.body;
+    const { registrationNumber, studentName, fathersName, grade, dateOfBirth } = req.body;
 
     if (!registrationNumber || !registrationNumber.toString().trim()) {
       return res.status(400).json({
@@ -103,6 +103,7 @@ const updateStudentHandler = async (req, res) => {
 
     const updateFields = {};
     if (studentName !== undefined) updateFields.studentName = String(studentName).trim();
+    if (fathersName !== undefined) updateFields.fathersName = String(fathersName).trim();
     if (grade !== undefined) updateFields.grade = String(grade).trim();
     if (dateOfBirth !== undefined) {
       const d = new Date(dateOfBirth);
@@ -295,34 +296,51 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       return null;
     };
 
+    const firstRow = jsonData[0];
+    const requiredColumns = [
+      { key: findColumn(firstRow, ['registration', 'reg', 'reg no', 'registration number']), name: 'Registration Number' },
+      { key: findColumn(firstRow, ['name', 'student name', 'student\'s name', 'student', 'full name']), name: 'Student Name' },
+      { key: findColumn(firstRow, ['father', 'fathers name', 'father\'s name', 'fathers name']), name: 'Fathers Name' },
+      { key: findColumn(firstRow, ['grade', 'class', 'level', 'standard']), name: 'Grade' },
+      { key: findColumn(firstRow, ['date of birth', 'dob', 'birth date', 'birthdate', 'date']), name: 'Date of Birth' },
+    ];
+    const missing = requiredColumns.filter(c => !c.key).map(c => c.name);
+    if (missing.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required columns',
+        message: `Your file is missing the following required column(s): ${missing.join(', ')}. Please add these columns to your Excel file in the correct order.`,
+        solution: 'Strictly follow the column order: Registration Number, Student Name, Fathers Name, Grade, Date of Birth. Use the exact column headers (or common variations like "Father\'s Name", "DOB" for Date of Birth).',
+      });
+    }
+
     // Map Excel data to schema fields
     const mappedData = jsonData.map((row, index) => {
       const mapped = {};
 
-      // Find registration number column
-      const regNumKey = findColumn(row, ['registration', 'reg', 'reg no', 'reg number', 'registration number']);
-      if (!regNumKey || !row[regNumKey]) {
+      const regNumKey = requiredColumns[0].key;
+      if (!row[regNumKey] || String(row[regNumKey]).trim() === '') {
         throw new Error(`Row ${index + 2}: Registration Number is required`);
       }
       mapped.registrationNumber = String(row[regNumKey]).trim();
 
-      // Find student name column
-      const nameKey = findColumn(row, ['name', 'student name', 'student\'s name', 'student', 'full name']);
-      if (!nameKey || !row[nameKey]) {
+      const nameKey = requiredColumns[1].key;
+      if (!row[nameKey] || String(row[nameKey]).trim() === '') {
         throw new Error(`Row ${index + 2}: Student Name is required`);
       }
       mapped.studentName = String(row[nameKey]).trim();
 
-      // Find grade column
-      const gradeKey = findColumn(row, ['grade', 'class', 'level', 'standard']);
-      if (!gradeKey || !row[gradeKey]) {
+      const fathersKey = requiredColumns[2].key;
+      mapped.fathersName = (row[fathersKey] != null && String(row[fathersKey]).trim() !== '') ? String(row[fathersKey]).trim() : '';
+
+      const gradeKey = requiredColumns[3].key;
+      if (!row[gradeKey] || String(row[gradeKey]).trim() === '') {
         throw new Error(`Row ${index + 2}: Grade is required`);
       }
       mapped.grade = String(row[gradeKey]).trim();
 
-      // Find date of birth column
-      const dobKey = findColumn(row, ['date of birth', 'dob', 'birth date', 'birthdate', 'date']);
-      if (!dobKey || !row[dobKey]) {
+      const dobKey = requiredColumns[4].key;
+      if (!row[dobKey] || String(row[dobKey]).trim() === '') {
         throw new Error(`Row ${index + 2}: Date of Birth is required`);
       }
 
@@ -436,10 +454,16 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     }
   } catch (error) {
     console.error('Error uploading file:', error);
-    res.status(500).json({
+    const message = error.message || 'An error occurred while processing the file.';
+    const isValidationError = /row \d+|required|invalid|missing|format|column/i.test(message);
+    const solution = isValidationError
+      ? 'Please ensure your Excel file has the required columns in this exact order: Registration Number, Student Name, Fathers Name, Grade, Date of Birth. Each row must have valid values; dates should be in a recognisable format (e.g. YYYY-MM-DD or DD/MM/YYYY).'
+      : 'Check that the file is a valid Excel (.xlsx, .xls) or CSV file, that column headers match the required names, and that data types are correct (e.g. dates, numbers).';
+    res.status(isValidationError ? 400 : 500).json({
       success: false,
-      error: 'Upload failed',
-      message: error.message || 'An error occurred while processing the file.',
+      error: isValidationError ? 'Invalid file or data' : 'Upload failed',
+      message,
+      solution,
     });
   }
 });

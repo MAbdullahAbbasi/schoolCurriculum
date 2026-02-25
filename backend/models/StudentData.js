@@ -12,6 +12,11 @@ const studentDataSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    fathersName: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     grade: {
       type: String,
       required: true,
