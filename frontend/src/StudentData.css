@@ -29,63 +29,17 @@
   margin: 0;
 }
 
-/* Upload Section */
-.upload-section {
-  max-width: 800px;
-  margin: 0 auto 3rem;
-}
-
-.upload-box {
-  border: 2px dashed #3498db;
-  border-radius: 12px;
-  padding: 2rem;
-  background: #f8f9fa;
-  transition: all 0.3s ease;
-}
-
-.upload-box:hover {
-  border-color: #2980b9;
-  background: #e3f2fd;
-}
-
-.upload-label {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: 1rem;
-}
-
-.upload-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-}
-
-.upload-text {
-  text-align: center;
-}
-
-.upload-text strong {
-  display: block;
-  font-size: 1.2rem;
-  color: #2c3e50;
-  margin-bottom: 0.5rem;
-}
-
-.upload-hint {
-  display: block;
-  font-size: 0.9rem;
-  color: #7f8c8d;
-  margin-bottom: 0.5rem;
-}
-
 .upload-requirements {
   display: block;
   font-size: 0.85rem;
   color: #3498db;
   font-weight: 500;
   margin-top: 0.5rem;
+}
+
+.upload-requirements-above {
+  margin-top: 0;
+  margin-bottom: 1rem;
 }
 
 .upload-error-message {
@@ -109,54 +63,17 @@
   line-height: 1.4;
 }
 
-.file-input {
-  display: none;
-}
-
-.file-info {
-  margin-top: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-}
-
-.file-name {
-  color: #2c3e50;
-  font-weight: 600;
-  padding: 0.5rem 1rem;
-  background: white;
-  border-radius: 8px;
-  border: 1px solid #e0e0e0;
-}
-
-.upload-button {
-  background: linear-gradient(135deg, #3498db 0%, #2ecc71 100%);
-  color: white;
-  border: none;
-  padding: 0.75rem 2rem;
-  font-size: 1rem;
-  font-weight: 600;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
-}
-
-.upload-button:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(52, 152, 219, 0.3);
-  background: linear-gradient(135deg, #2980b9 0%, #27ae60 100%);
-}
-
-.upload-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.file-input-hidden {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* Add student individually */
 .add-student-section {
-  max-width: 800px;
+  max-width: 1200px;
   margin: 0 auto 3rem;
   padding: 1.5rem 2rem;
   background: #f8f9fa;
@@ -165,7 +82,7 @@
 }
 
 .add-student-title {
-  margin: 0 0 1rem 0;
+  margin: 0 0 0.5rem 0;
   font-size: 1.2rem;
   color: #2c3e50;
   font-weight: 600;
@@ -197,6 +114,22 @@
   flex-wrap: wrap;
   align-items: flex-end;
   gap: 1rem;
+}
+
+@media (min-width: 992px) {
+  .add-student-form {
+    flex-wrap: nowrap;
+  }
+  .add-student-fields {
+    flex-wrap: nowrap;
+    flex: 1;
+    min-width: 0;
+  }
+  .add-field {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: none;
+  }
 }
 
 .add-student-fields {
@@ -262,6 +195,31 @@
 }
 
 .add-student-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.upload-file-btn {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 0.65rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.upload-file-btn:hover:not(:disabled) {
+  background: #5a6268;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+.upload-file-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -443,6 +401,20 @@
 .delete-record-btn:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+}
+
+.icon-btn svg {
+  display: block;
+  flex-shrink: 0;
 }
 
 .table-wrapper {

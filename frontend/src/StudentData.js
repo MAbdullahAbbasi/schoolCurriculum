@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
@@ -31,6 +31,7 @@ const StudentData = () => {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedRegistrationNumbers, setSelectedRegistrationNumbers] = useState(new Set());
   const [deletingSelected, setDeletingSelected] = useState(false);
+  const fileInputRef = useRef(null);
 
   // Fetch existing students data on component mount
   useEffect(() => {
@@ -56,28 +57,50 @@ const StudentData = () => {
   };
 
   const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0];
-    if (selectedFile) {
-      // Validate file type
-      const validTypes = [
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
-        'application/vnd.ms-excel', // .xls
-        'text/csv' // .csv
-      ];
-      
-      if (validTypes.includes(selectedFile.type) || 
-          selectedFile.name.endsWith('.xlsx') || 
-          selectedFile.name.endsWith('.xls') || 
-          selectedFile.name.endsWith('.csv')) {
-        setFile(selectedFile);
-        setUploadError(null);
-      } else {
-        setUploadError({
-          message: 'Invalid file type.',
-          solution: 'Please upload a valid Excel file (.xlsx, .xls) or CSV file.',
-        });
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) return;
+    const validTypes = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel',
+      'text/csv',
+    ];
+    if (validTypes.includes(selectedFile.type) || /\.(xlsx|xls|csv)$/i.test(selectedFile.name)) {
+      setFile(selectedFile);
+      setUploadError(null);
+      uploadFile(selectedFile);
+    } else {
+      setUploadError({
+        message: 'Invalid file type.',
+        solution: 'Please upload a valid Excel file (.xlsx, .xls) or CSV file.',
+      });
+      setFile(null);
+    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const uploadFile = async (fileToUpload) => {
+    if (!fileToUpload) return;
+    const formData = new FormData();
+    formData.append('file', fileToUpload);
+    try {
+      setUploading(true);
+      setUploadError(null);
+      const response = await axios.post(`${API_URL}/api/students-data/upload`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      if (response.data.success) {
+        await fetchStudentsData();
         setFile(null);
       }
+    } catch (err) {
+      const data = err.response?.data;
+      setUploadError({
+        message: data?.message || data?.error || err.message || 'Failed to upload file.',
+        solution: data?.solution || 'Check that your file has the required columns in the correct order and that all required fields have valid values.',
+      });
+      await fetchStudentsData();
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -256,42 +279,6 @@ const StudentData = () => {
     }
   };
 
-  const handleFileUpload = async () => {
-    if (!file) {
-      setUploadError({ message: 'Please select a file to upload.', solution: 'Click the area above and choose an Excel or CSV file.' });
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      setUploading(true);
-      setUploadError(null);
-
-      const response = await axios.post(`${API_URL}/api/students-data/upload`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      if (response.data.success) {
-        await fetchStudentsData();
-        setFile(null);
-        document.getElementById('file-input').value = '';
-      }
-    } catch (err) {
-      console.error('Error uploading file:', err);
-      const data = err.response?.data;
-      setUploadError({
-        message: data?.message || data?.error || err.message || 'Failed to upload file.',
-        solution: data?.solution || 'Check that your file has the required columns in the correct order and that all required fields have valid values.',
-      });
-      await fetchStudentsData();
-    } finally {
-      setUploading(false);
-    }
-  };
 
   if (loading && studentsData.length === 0) {
     return (
@@ -313,56 +300,24 @@ const StudentData = () => {
         <p>Upload and manage student information in bulk</p>
       </div>
 
-      <div className="upload-section">
-        {uploadError && (
-          <div className="upload-error-message" role="alert">
-            <strong>Upload error:</strong> {uploadError.message}
-            {uploadError.solution && (
-              <p className="upload-error-solution">{uploadError.solution}</p>
-            )}
-          </div>
-        )}
-        <div className="upload-box">
-          <label htmlFor="file-input" className="upload-label">
-            <div className="upload-icon">📁</div>
-            <div className="upload-text">
-              <strong>Upload Students Data in Bulk</strong>
-              <span className="upload-hint">Click to select Excel file (.xlsx, .xls, or .csv)</span>
-              <span className="upload-requirements">
-                Strictly follow this format and order of columns in your Excel file: Registration Number, Student Name, Fathers Name, Grade, Date of Birth.
-              </span>
-            </div>
-          </label>
-          <input
-            id="file-input"
-            type="file"
-            accept=".xlsx,.xls,.csv"
-            onChange={handleFileChange}
-            className="file-input"
-            disabled={uploading}
-          />
-          {file && (
-            <div className="file-info">
-              <span className="file-name">Selected: {file.name}</span>
-              <button
-                className="upload-button"
-                onClick={handleFileUpload}
-                disabled={uploading}
-              >
-                {uploading ? 'Uploading...' : 'Upload File'}
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
       <div className="add-student-section">
         <h3 className="add-student-title">Add student individually</h3>
+        <p className="upload-requirements upload-requirements-above">
+          Strictly follow this format and order of columns in your Excel file: Registration Number, Student Name, Fathers Name, Grade, Date of Birth.
+        </p>
         {addError && (
           <div className="add-error-message" role="alert">
             <strong>Error:</strong> {addError.message}
             {addError.solution && (
               <p className="add-error-solution">{addError.solution}</p>
+            )}
+          </div>
+        )}
+        {uploadError && (
+          <div className="upload-error-message" role="alert">
+            <strong>Upload error:</strong> {uploadError.message}
+            {uploadError.solution && (
+              <p className="upload-error-solution">{uploadError.solution}</p>
             )}
           </div>
         )}
@@ -425,6 +380,23 @@ const StudentData = () => {
           </div>
           <button type="submit" className="add-student-btn" disabled={addingStudent}>
             {addingStudent ? 'Adding...' : 'Add Student'}
+          </button>
+          <input
+            ref={fileInputRef}
+            id="file-input"
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            onChange={handleFileChange}
+            className="file-input-hidden"
+            disabled={uploading}
+          />
+          <button
+            type="button"
+            className="upload-file-btn"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+          >
+            {uploading ? 'Uploading...' : 'Upload file'}
           </button>
         </form>
       </div>
@@ -582,18 +554,30 @@ const StudentData = () => {
                           <td>
                             <button
                               type="button"
-                              className="edit-record-btn"
+                              className="edit-record-btn icon-btn"
                               onClick={() => handleEditClick(student)}
+                              title="Edit"
+                              aria-label="Edit"
                             >
-                              Edit
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                              </svg>
                             </button>
                             <button
                               type="button"
-                              className="delete-record-btn"
+                              className="delete-record-btn icon-btn"
                               onClick={() => handleDeleteOne(student.registrationNumber, student.studentName)}
                               disabled={deletingRegistrationNumber === student.registrationNumber}
+                              title={deletingRegistrationNumber === student.registrationNumber ? 'Deleting...' : 'Delete'}
+                              aria-label={deletingRegistrationNumber === student.registrationNumber ? 'Deleting...' : 'Delete'}
                             >
-                              {deletingRegistrationNumber === student.registrationNumber ? 'Deleting...' : 'Delete'}
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <polyline points="3 6 5 6 21 6" />
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                <line x1="10" y1="11" x2="10" y2="17" />
+                                <line x1="14" y1="11" x2="14" y2="17" />
+                              </svg>
                             </button>
                           </td>
                         </>
