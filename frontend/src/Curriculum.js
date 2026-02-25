@@ -1,16 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import CurriculumHeader from './CurriculumHeader';
-import StudentData from './StudentData';
 import { API_URL } from './config/api';
 import './Curriculum.css';
 
 const Curriculum = () => {
-  const [currentView, setCurrentView] = useState('curriculum'); // 'curriculum' or 'studentsData'
   const [data, setData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [expandedCourse, setExpandedCourse] = useState(null);
   
   // Filter states
   const [filters, setFilters] = useState({
@@ -422,7 +419,6 @@ const Curriculum = () => {
   const handleCreateCourseClick = () => {
     setIsSelectionMode(true);
     setSelectedTopics([]);
-    setExpandedCourse(null); // Close any expanded cards
   };
 
   // Handle back to curriculum view (kept for potential future use)
@@ -703,16 +699,6 @@ const Curriculum = () => {
           <div className="spinner"></div>
           <p>Loading curriculum data...</p>
         </div>
-      </div>
-    );
-  }
-
-  // If viewing students data, show StudentData component
-  if (currentView === 'studentsData') {
-    return (
-      <div className="curriculum-container">
-        <CurriculumHeader />
-        <StudentData />
       </div>
     );
   }
