@@ -1,6 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import Course from '../models/Course.js';
+import Record from '../models/Record.js';
 
 const router = express.Router();
 
@@ -205,6 +206,74 @@ router.get('/', async (req, res) => {
       success: false,
       error: 'Server error',
       message: 'Failed to fetch courses',
+    });
+  }
+});
+
+// DELETE all courses (and all records) – must be before /:code
+router.delete('/', async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        error: 'Database not connected',
+        message: 'Database connection failed',
+      });
+    }
+    const courseResult = await Course.deleteMany({});
+    await Record.deleteMany({});
+    res.json({
+      success: true,
+      message: `Deleted ${courseResult.deletedCount} course(s) and all associated records.`,
+      deletedCount: courseResult.deletedCount,
+    });
+  } catch (error) {
+    console.error('Error deleting all courses:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server error',
+      message: 'Failed to delete courses',
+    });
+  }
+});
+
+// DELETE a single course by code (and its record if any)
+router.delete('/:code', async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        error: 'Database not connected',
+        message: 'Database connection failed',
+      });
+    }
+    const code = req.params.code?.trim();
+    if (!code) {
+      return res.status(400).json({
+        success: false,
+        error: 'Course code required',
+        message: 'Course code is required',
+      });
+    }
+    const deleted = await Course.findOneAndDelete({ code });
+    if (!deleted) {
+      return res.status(404).json({
+        success: false,
+        error: 'Not found',
+        message: 'Course not found',
+      });
+    }
+    await Record.deleteOne({ courseCode: code });
+    res.json({
+      success: true,
+      message: 'Course deleted successfully',
+    });
+  } catch (error) {
+    console.error('Error deleting course:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server error',
+      message: 'Failed to delete course',
     });
   }
 });

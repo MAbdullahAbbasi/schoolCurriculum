@@ -40,6 +40,35 @@
   border: 1px solid #fcc;
 }
 
+.courses-record-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+  margin-top: 0.5rem;
+}
+
+.delete-all-courses-btn {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.delete-all-courses-btn:hover:not(:disabled) {
+  background: #c0392b;
+  transform: translateY(-1px);
+}
+
+.delete-all-courses-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 .courses-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -70,6 +99,7 @@
   margin-bottom: 1rem;
   padding-bottom: 1rem;
   border-bottom: 2px solid #e0e0e0;
+  gap: 0.5rem;
 }
 
 .course-card-title {
@@ -79,6 +109,7 @@
   margin: 0;
   flex: 1;
   text-align: left;
+  min-width: 0;
 }
 
 .course-card-code {
@@ -88,6 +119,33 @@
   padding: 0.25rem 0.75rem;
   border-radius: 6px;
   font-weight: 600;
+  flex-shrink: 0;
+}
+
+.course-card-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: #e74c3c;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.course-card-delete-btn:hover:not(:disabled) {
+  background: #fee;
+  color: #c0392b;
+}
+
+.course-card-delete-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .course-card-details {
