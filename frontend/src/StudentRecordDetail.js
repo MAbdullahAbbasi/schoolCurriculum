@@ -17,7 +17,7 @@ const StudentRecordDetail = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
 
-  const topics = course?.topics || [];
+  const topics = React.useMemo(() => course?.topics || [], [course]);
   const totalMarksForCourse = topics.reduce((sum, t) => sum + (t.marks || 0), 0);
 
   // Grades that this course's objectives belong to (from curriculum selection)
