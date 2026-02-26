@@ -16,6 +16,7 @@ const defaultFormData = {
     { id: 4, label: 'presentation', checked: false, percentage: '' },
   ],
   startDate: '',
+  totalMarks: '',
 };
 
 const CreateCourse = () => {
@@ -48,11 +49,13 @@ const CreateCourse = () => {
     }).filter(Boolean);
   }, [selectedTopics, curriculumData]);
 
-  const totalMarks = useMemo(() => {
+  const sumObjectiveMarks = useMemo(() => {
     return resolvedTopics.reduce((sum, t) => sum + (Number(objectiveMarks[t.topicKey]) || 0), 0);
   }, [resolvedTopics, objectiveMarks]);
 
-  const marksError = resolvedTopics.length > 0 && Math.abs(totalMarks - 100) > 0.01;
+  const enteredTotalMarks = Number(formData.totalMarks);
+  const totalMarksValid = !Number.isNaN(enteredTotalMarks) && enteredTotalMarks > 0;
+  const marksError = resolvedTopics.length > 0 && totalMarksValid && Math.abs(sumObjectiveMarks - enteredTotalMarks) > 0.01;
 
   React.useEffect(() => {
     if (resolvedTopics.length === 0) {
@@ -125,8 +128,13 @@ const CreateCourse = () => {
       setCreateError('Starting date is required.');
       return;
     }
-    if (Math.abs(totalMarks - 100) > 0.01) {
-      setCreateError('Total marks for all objectives must equal 100.');
+    const totalMarksNum = Number(formData.totalMarks);
+    if (Number.isNaN(totalMarksNum) || totalMarksNum < 1) {
+      setCreateError('Please enter a valid total marks (number greater than 0).');
+      return;
+    }
+    if (Math.abs(sumObjectiveMarks - totalMarksNum) > 0.01) {
+      setCreateError(`Total marks for all objectives must equal ${totalMarksNum}.`);
       return;
     }
 
@@ -148,6 +156,7 @@ const CreateCourse = () => {
         percentage: Number(item.percentage),
       })),
       startingDate: formData.startDate,
+      totalMarks: totalMarksNum,
       topics,
     };
 
@@ -281,10 +290,27 @@ const CreateCourse = () => {
                 onChange={(e) => handleFormChange('startDate', e.target.value)}
               />
             </div>
+
+            <div className="form-field">
+              <label htmlFor="total-marks" className="form-label">Total Marks</label>
+              <input
+                type="number"
+                id="total-marks"
+                min="1"
+                step="1"
+                className="total-marks-input"
+                placeholder="e.g. 100"
+                value={formData.totalMarks}
+                onChange={(e) => handleFormChange('totalMarks', e.target.value)}
+              />
+              <span className="form-hint">Sum of all objective marks below must equal this value.</span>
+            </div>
           </div>
 
           <div className="objectives-marks-section">
-            <h3 className="objectives-marks-heading">Selected objectives – enter marks (total must be 100)</h3>
+            <h3 className="objectives-marks-heading">
+              Selected objectives – enter marks (total must equal {formData.totalMarks ? formData.totalMarks : '—'})
+            </h3>
             <div className="objectives-marks-table-wrapper">
               <table className="objectives-marks-table">
                 <thead>
@@ -318,10 +344,14 @@ const CreateCourse = () => {
               </table>
             </div>
             <p className={`marks-total ${marksError ? 'marks-total-error' : ''}`}>
-              Total marks: <strong>{totalMarks}</strong> / 100
+              Total marks: <strong>{sumObjectiveMarks}</strong>
+              {formData.totalMarks ? ` / ${formData.totalMarks}` : ''}
             </p>
-            {marksError && (
-              <p className="marks-error-msg">Total marks should be 100.</p>
+            {marksError && formData.totalMarks && (
+              <p className="marks-error-msg">Sum of objective marks must equal {formData.totalMarks}.</p>
+            )}
+            {resolvedTopics.length > 0 && formData.totalMarks && !totalMarksValid && (
+              <p className="marks-error-msg">Please enter a valid total marks above.</p>
             )}
           </div>
 

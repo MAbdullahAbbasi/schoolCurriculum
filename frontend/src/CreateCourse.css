@@ -43,12 +43,20 @@
 
 .create-course-fields .course-name-input,
 .create-course-fields .duration-input,
-.create-course-fields .date-input {
+.create-course-fields .date-input,
+.create-course-fields .total-marks-input {
   width: 100%;
   padding: 0.5rem 0.75rem;
   border: 1px solid #ccc;
   border-radius: 6px;
   font-size: 1rem;
+}
+
+.create-course-fields .form-hint {
+  display: block;
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin-top: 0.35rem;
 }
 
 .duration-options {

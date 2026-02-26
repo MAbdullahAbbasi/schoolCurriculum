@@ -6,6 +6,7 @@ import CreateCourse from './CreateCourse';
 import StudentData from './StudentData';
 import StudentsRecord from './StudentsRecord';
 import StudentRecordDetail from './StudentRecordDetail';
+import Reports from './Reports';
 import Login from './Login';
 import { API_URL } from './config/api';
 
@@ -100,6 +101,7 @@ function App() {
           <Route path="/students-data" element={<StudentData />} />
           <Route path="/record" element={<StudentsRecord />} />
           <Route path="/studentRecord/:courseCode" element={<StudentRecordDetail />} />
+          <Route path="/reports" element={<Reports />} />
           <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

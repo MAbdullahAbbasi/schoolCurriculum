@@ -1,0 +1,153 @@
+.reports-container {
+  min-height: 100vh;
+  background: #fff;
+  padding: 2rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+}
+
+.reports-content {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 0;
+}
+
+.reports-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0 0 0.5rem 0;
+}
+
+.reports-subtitle {
+  font-size: 1rem;
+  color: #6c757d;
+  margin: 0 0 2rem 0;
+}
+
+.reports-select-wrapper {
+  margin-bottom: 2rem;
+}
+
+.reports-select-label {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
+.reports-select {
+  width: 100%;
+  max-width: 400px;
+  padding: 0.6rem 0.75rem;
+  font-size: 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.reports-select:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
+.reports-prompt {
+  padding: 2rem;
+  text-align: center;
+  background: #f8f9fa;
+  border: 1px dashed #dee2e6;
+  border-radius: 8px;
+  color: #6c757d;
+  font-size: 1rem;
+}
+
+.reports-loading,
+.reports-error {
+  padding: 2rem;
+  text-align: center;
+  color: #6c757d;
+}
+
+.reports-error {
+  color: #c62828;
+  background: #ffebee;
+  border-radius: 8px;
+}
+
+.reports-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.reports-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.reports-table thead {
+  background: #f8f9fa;
+}
+
+.reports-th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 700;
+  color: #2c3e50;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.reports-th-report {
+  text-align: center;
+  width: 100px;
+}
+
+.reports-td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  color: #2c3e50;
+}
+
+.reports-td-report {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.reports-download-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: #1565c0;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.reports-download-btn:hover {
+  cursor: pointer;
+}
+
+.reports-download-btn:hover {
+  background: rgba(21, 101, 192, 0.1);
+  color: #0d47a1;
+}
+
+.reports-download-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.reports-empty-cell {
+  text-align: center;
+  padding: 2rem;
+  color: #6c757d;
+  font-style: italic;
+}

@@ -10,7 +10,7 @@ const CurriculumHeader = () => {
   const handleStudentsDataClick = () => navigate('/students-data');
   const handleRecordClick = () => navigate('/record');
   const handleObjectivesClick = () => navigate('/');
-  const handleReportsClick = () => { /* Reports – to be implemented later */ };
+  const handleReportsClick = () => navigate('/reports');
   const handleLogout = () => {
     localStorage.removeItem('curriculum_auth');
     window.location.reload();

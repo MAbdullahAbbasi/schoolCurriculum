@@ -52,7 +52,7 @@ router.post('/', async (req, res) => {
       });
     }
 
-    const { courseName, courseDuration, weightage, startingDate, topics } = req.body;
+    const { courseName, courseDuration, weightage, startingDate, topics, totalMarks: bodyTotalMarks } = req.body;
 
     // Validate required fields
     if (!courseName || !courseName.trim()) {
@@ -115,12 +115,20 @@ router.post('/', async (req, res) => {
       marks: Number(t.marks) || 0,
       grade: t.grade != null ? Number(t.grade) : null,
     }));
-    const totalMarks = topicsWithMarks.reduce((sum, t) => sum + (t.marks || 0), 0);
-    if (Math.abs(totalMarks - 100) > 0.01) {
+    const sumMarks = topicsWithMarks.reduce((sum, t) => sum + (t.marks || 0), 0);
+    const expectedTotal = bodyTotalMarks != null ? Number(bodyTotalMarks) : 100;
+    if (!Number.isFinite(expectedTotal) || expectedTotal < 1) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid total marks',
+        message: 'Total marks must be a number greater than 0.',
+      });
+    }
+    if (Math.abs(sumMarks - expectedTotal) > 0.01) {
       return res.status(400).json({
         success: false,
         error: 'Invalid marks',
-        message: 'Total marks for all objectives must equal 100.',
+        message: `Total marks for all objectives must equal ${expectedTotal}.`,
       });
     }
 
