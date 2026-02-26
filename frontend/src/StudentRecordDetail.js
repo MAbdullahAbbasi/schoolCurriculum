@@ -230,17 +230,24 @@ const StudentRecordDetail = () => {
     triggerDownload(`${course.courseName || courseCode}_all_reports.csv`, '\uFEFF' + csvRows.join('\r\n'));
   };
 
-  const handleDownloadRowReport = (topicIndex) => {
-    if (!course || enrolledStudents.length === 0 || topicIndex < 0 || !topics[topicIndex]) return;
-    const topic = topics[topicIndex];
-    const name = topic.topicName || topic.courseCode || `Objective ${topicIndex + 1}`;
-    const headers = ['Student Name', 'Registration Number', 'Marks'];
-    const rows = enrolledStudents.map(s => {
-      const mark = getMark(s.registrationNumber, topicIndex);
-      return [s.studentName, s.registrationNumber, mark !== '' ? mark : '-'];
+  const handleDownloadStudentReport = (student) => {
+    if (!course || !student || topics.length === 0) return;
+    const headers = ['Objective', 'Max Marks', 'Marks'];
+    const rows = topics.map((topic, topicIndex) => {
+      const name = topic.topicName || topic.courseCode || `Objective ${topicIndex + 1}`;
+      const maxMarks = topic.marks != null ? String(topic.marks) : '';
+      const mark = getMark(student.registrationNumber, topicIndex);
+      return [name, maxMarks, mark !== '' ? mark : '-'];
     });
-    const csvRows = [headers.join(','), ...rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(','))];
-    triggerDownload(`${course.courseName || courseCode}_${name.replace(/[^a-zA-Z0-9]/g, '_')}.csv`, '\uFEFF' + csvRows.join('\r\n'));
+    const total = getTotalForStudent(student.registrationNumber);
+    const totalRow = ['Total', totalMarksForCourse, total.toFixed(2)];
+    const csvRows = [
+      headers.join(','),
+      ...rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')),
+      totalRow.map(c => `"${String(c).replace(/"/g, '""')}"`).join(','),
+    ];
+    const filename = `${course.courseName || courseCode}_${student.studentName}_${student.registrationNumber}.csv`.replace(/[^a-zA-Z0-9._-]/g, '_');
+    triggerDownload(filename, '\uFEFF' + csvRows.join('\r\n'));
   };
 
   if (loading) {
@@ -319,7 +326,6 @@ const StudentRecordDetail = () => {
                           {student.studentName} ({student.registrationNumber})
                         </th>
                       ))}
-                      <th className="matrix-th-action">Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -362,17 +368,6 @@ const StudentRecordDetail = () => {
                           </td>
                           );
                         })}
-                        <td className="matrix-td-action">
-                          <button
-                            type="button"
-                            className="download-row-btn"
-                            onClick={() => handleDownloadRowReport(topicIndex)}
-                            title="Download this objective's report"
-                            aria-label="Download report for this objective"
-                          >
-                            {downloadIcon}
-                          </button>
-                        </td>
                       </tr>
                     ))}
                     <tr className="matrix-total-row">
@@ -381,14 +376,24 @@ const StudentRecordDetail = () => {
                         const total = getTotalForStudent(student.registrationNumber);
                         return (
                           <td key={student.registrationNumber} className="matrix-td-total">
-                            <span className="total-value">{total.toFixed(2)}</span>
-                            {totalMarksForCourse > 0 && (
-                              <span className="total-out-of"> / {totalMarksForCourse}</span>
-                            )}
+                            <div className="matrix-total-cell-content">
+                              <span className="total-value">{total.toFixed(2)}</span>
+                              {totalMarksForCourse > 0 && (
+                                <span className="total-out-of"> / {totalMarksForCourse}</span>
+                              )}
+                              <button
+                                type="button"
+                                className="download-row-btn download-student-btn"
+                                onClick={() => handleDownloadStudentReport(student)}
+                                title={`Download report for ${student.studentName}`}
+                                aria-label={`Download report for ${student.studentName}`}
+                              >
+                                {downloadIcon}
+                              </button>
+                            </div>
                           </td>
                         );
                       })}
-                      <td className="matrix-td-action matrix-td-action-total" />
                     </tr>
                   </tbody>
                 </table>

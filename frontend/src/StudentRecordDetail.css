@@ -350,27 +350,24 @@
   font-weight: 500;
 }
 
-.matrix-th-action,
-.matrix-td-action {
-  width: 80px;
-  min-width: 80px;
-  text-align: center;
-  vertical-align: middle;
-  border: 1px solid #e0e0e0;
-  background: #fafafa;
+.matrix-total-cell-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
 }
 
-.matrix-total-row .matrix-td-action-total {
-  background: #e3f2fd;
-  border-color: #90caf9;
+.matrix-total-cell-content .total-value,
+.matrix-total-cell-content .total-out-of {
+  display: inline;
 }
 
-.download-row-btn {
+.download-student-btn.download-row-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   background: transparent;
   border: none;
@@ -380,14 +377,14 @@
   transition: background 0.2s ease, color 0.2s ease;
 }
 
-.download-row-btn:hover {
+.download-student-btn.download-row-btn:hover {
   background: rgba(198, 40, 40, 0.1);
   color: #b71c1c;
 }
 
-.download-row-btn svg {
-  width: 20px;
-  height: 20px;
+.download-student-btn.download-row-btn svg {
+  width: 18px;
+  height: 18px;
 }
 
 .matrix-form-actions {
