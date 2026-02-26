@@ -134,6 +134,7 @@ const CreateCourse = () => {
       courseCode: t.courseCode,
       topicName: t.topicName,
       marks: Number(objectiveMarks[t.topicKey]) || 0,
+      grade: t.grade,
     }));
 
     const coursePayload = {

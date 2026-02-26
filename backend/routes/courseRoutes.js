@@ -113,6 +113,7 @@ router.post('/', async (req, res) => {
       courseCode: (t.courseCode != null ? String(t.courseCode) : '').trim(),
       topicName: (t.topicName != null ? String(t.topicName) : '').trim(),
       marks: Number(t.marks) || 0,
+      grade: t.grade != null ? Number(t.grade) : null,
     }));
     const totalMarks = topicsWithMarks.reduce((sum, t) => sum + (t.marks || 0), 0);
     if (Math.abs(totalMarks - 100) > 0.01) {

@@ -60,6 +60,10 @@ const courseSchema = new mongoose.Schema(
           required: true,
           min: 0,
         },
+        grade: {
+          type: Number,
+          default: null,
+        },
       },
     ],
   },

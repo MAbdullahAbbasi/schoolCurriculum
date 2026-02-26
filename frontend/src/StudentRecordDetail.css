@@ -78,6 +78,42 @@
   margin: 0;
 }
 
+.download-all-reports-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #2c3e50;
+  background: #f8f9fa;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.download-all-reports-btn:hover:not(:disabled) {
+  background: #e9ecef;
+  border-color: #3498db;
+  color: #3498db;
+}
+
+.download-all-reports-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.download-all-reports-icon {
+  display: inline-flex;
+  color: inherit;
+}
+
+.download-all-reports-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
 .edit-record-button {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
@@ -267,6 +303,20 @@
   vertical-align: middle;
 }
 
+.matrix-mark-cell-with-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.matrix-mark-max-hint {
+  font-size: 0.7rem;
+  color: #7f8c8d;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
 .matrix-table .matrix-score-input {
   max-width: 80px;
   margin: 0 auto;
@@ -298,6 +348,46 @@
   font-size: 0.85rem;
   color: #5c6bc0;
   font-weight: 500;
+}
+
+.matrix-th-action,
+.matrix-td-action {
+  width: 80px;
+  min-width: 80px;
+  text-align: center;
+  vertical-align: middle;
+  border: 1px solid #e0e0e0;
+  background: #fafafa;
+}
+
+.matrix-total-row .matrix-td-action-total {
+  background: #e3f2fd;
+  border-color: #90caf9;
+}
+
+.download-row-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #c62828;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.download-row-btn:hover {
+  background: rgba(198, 40, 40, 0.1);
+  color: #b71c1c;
+}
+
+.download-row-btn svg {
+  width: 20px;
+  height: 20px;
 }
 
 .matrix-form-actions {

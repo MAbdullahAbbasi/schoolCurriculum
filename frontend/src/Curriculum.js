@@ -64,66 +64,65 @@ const Curriculum = () => {
     fetchCurriculum();
   }, []);
 
+  const ageToGrades = React.useMemo(() => ({
+    '4-5': [],
+    '5-6': [1], '6-7': [2], '7-8': [3], '8-9': [4], '9-10': [5],
+    '10-11': [6], '11-12': [7], '12-13': [8], '13-14': [9], '14-15': [10],
+    '15-16': [11], '16-17': [12], '17-18': [13],
+  }), []);
+
+  // Data filtered by grade and/or age group only (used for subject options and cascading)
+  const dataByGradeAndAge = React.useMemo(() => {
+    let out = [...data];
+    if (filters.grade) {
+      out = out.filter(item => item.grade === Number(filters.grade));
+    }
+    if (filters.ageGroup && ageToGrades[filters.ageGroup]) {
+      const gradesForAge = ageToGrades[filters.ageGroup];
+      if (gradesForAge.length > 0) {
+        out = out.filter(item => gradesForAge.includes(item.grade));
+      } else {
+        out = [];
+      }
+    }
+    return out;
+  }, [data, filters.grade, filters.ageGroup, ageToGrades]);
+
   // Apply filters whenever filters or data change
   useEffect(() => {
     let filtered = [...data];
 
-    // Filter by grade
     if (filters.grade) {
       filtered = filtered.filter(item => item.grade === Number(filters.grade));
     }
-
-    // Filter by age group - maps age ranges to grades
-    if (filters.ageGroup) {
-      // Age to Grade mapping based on user requirements
-      // Grade 1: Year 5-6, Grade 2: Year 6-7, Grade 8: Year 12-13
-      // Service range: 4-15 years (learners), but will entertain up to 18 years
-      const ageToGrades = {
-        '4-5': [], // Pre-school age, no specific grade
-        '5-6': [1], // Grade 1: Year 5-6
-        '6-7': [2], // Grade 2: Year 6-7
-        '7-8': [3], // Grade 3: Year 7-8
-        '8-9': [4], // Grade 4: Year 8-9
-        '9-10': [5], // Grade 5: Year 9-10
-        '10-11': [6], // Grade 6: Year 10-11
-        '11-12': [7], // Grade 7: Year 11-12
-        '12-13': [8], // Grade 8: Year 12-13
-        '13-14': [9], // Grade 9: Year 13-14
-        '14-15': [10], // Grade 10: Year 14-15
-        '15-16': [11], // Grade 11: Year 15-16
-        '16-17': [12], // Grade 12: Year 16-17
-        '17-18': [13] // Grade 13: Year 17-18 (extended range)
-      };
-      
-      if (ageToGrades[filters.ageGroup]) {
-        const gradesForAge = ageToGrades[filters.ageGroup];
-        if (gradesForAge.length > 0) {
-          filtered = filtered.filter(item => gradesForAge.includes(item.grade));
-        } else {
-          // For age groups with no grade mapping (like 4-5), show no results
-          filtered = [];
-        }
+    if (filters.ageGroup && ageToGrades[filters.ageGroup]) {
+      const gradesForAge = ageToGrades[filters.ageGroup];
+      if (gradesForAge.length > 0) {
+        filtered = filtered.filter(item => gradesForAge.includes(item.grade));
+      } else {
+        filtered = [];
       }
+    }
+
+    // Filter by subject (objectives of the selected subject for the grade)
+    if (filters.subject) {
+      const subjectLower = String(filters.subject).trim().toLowerCase();
+      filtered = filtered.map(grade => {
+        const filteredObjectives = grade.objectives?.filter(obj =>
+          String(obj.subject || '').trim().toLowerCase() === subjectLower
+        ) || [];
+        return { ...grade, objectives: filteredObjectives };
+      }).filter(grade => grade.objectives && grade.objectives.length > 0);
     }
 
     // Filter by code (exact match)
     if (filters.code) {
       filtered = filtered.map(grade => {
-        const filteredObjectives = grade.objectives?.filter(obj => 
+        const filteredObjectives = grade.objectives?.filter(obj =>
           obj.code && obj.code === filters.code
         ) || [];
-        
-        return {
-          ...grade,
-          objectives: filteredObjectives
-        };
+        return { ...grade, objectives: filteredObjectives };
       }).filter(grade => grade.objectives && grade.objectives.length > 0);
-    }
-
-    // Filter by subject (matches subject name - to be implemented when subject data is available)
-    if (filters.subject) {
-      // For now, subject filtering can be added when subject field exists in data
-      // This is a placeholder for future implementation
     }
 
     // Filter by topic (matches objective title exactly)
@@ -156,14 +155,24 @@ const Curriculum = () => {
     }
 
     setFilteredData(filtered);
-  }, [filters, data]);
+  }, [filters, data, ageToGrades]);
 
-  // Handle filter changes
+  // Handle filter changes; clear dependent filters when parent changes
   const handleFilterChange = (filterName, value) => {
-    setFilters(prev => ({
-      ...prev,
-      [filterName]: value
-    }));
+    setFilters(prev => {
+      const next = { ...prev, [filterName]: value };
+      if (filterName === 'grade' || filterName === 'ageGroup') {
+        next.subject = '';
+        next.code = '';
+        next.topic = '';
+        next.learningObjective = '';
+      } else if (filterName === 'subject') {
+        next.code = '';
+        next.topic = '';
+        next.learningObjective = '';
+      }
+      return next;
+    });
   };
 
   const handleObjectivesFileChange = (e) => {
@@ -472,61 +481,50 @@ const Curriculum = () => {
     setSelectedTopics(Array.from(new Set(keysToAdd)));
   };
 
-  // Extract unique filter options from data
+  // Filter options: subjects from selected grade(s); code/topic/objective from grade + subject
   const getFilterOptions = () => {
+    const subjectsSet = new Set();
+    dataByGradeAndAge.forEach(grade => {
+      (grade.objectives || []).forEach(obj => {
+        const sub = String(obj.subject || '').trim();
+        if (sub) subjectsSet.add(sub);
+      });
+    });
+    const subjects = Array.from(subjectsSet).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+
+    // Data for code/topic/objective options: grade-filtered and optionally subject-filtered
+    let dataForOptions = dataByGradeAndAge;
+    if (filters.subject) {
+      const subjectLower = String(filters.subject).trim().toLowerCase();
+      dataForOptions = dataByGradeAndAge.map(grade => {
+        const objs = (grade.objectives || []).filter(obj =>
+          String(obj.subject || '').trim().toLowerCase() === subjectLower
+        );
+        return { ...grade, objectives: objs };
+      }).filter(grade => (grade.objectives || []).length > 0);
+    }
+
     const codes = new Set();
     const topics = new Set();
     const learningObjectives = new Set();
-
-    data.forEach(grade => {
-      if (grade.objectives && Array.isArray(grade.objectives)) {
-        grade.objectives.forEach(obj => {
-          // Extract all unique codes
-          if (obj.code) {
-            codes.add(obj.code);
-          }
-          
-          // Topic is the objective title
-          if (obj.title) {
-            topics.add(obj.title);
-          }
-          
-          // Learning objective keywords from description
-          if (obj.description) {
-            // Extract key phrases or use full description
-            const descWords = obj.description.toLowerCase().split(/\s+/);
-            descWords.forEach(word => {
-              if (word.length > 4) { // Only meaningful words
-                learningObjectives.add(word);
-              }
-            });
-          }
-        });
-      }
+    dataForOptions.forEach(grade => {
+      (grade.objectives || []).forEach(obj => {
+        if (obj.code) codes.add(obj.code);
+        if (obj.title) topics.add(obj.title);
+        if (obj.description) {
+          const descWords = obj.description.toLowerCase().split(/\s+/);
+          descWords.forEach(word => {
+            if (word.length > 4) learningObjectives.add(word);
+          });
+        }
+      });
     });
-
-    // Actual subjects list (sorted A-Z)
-    const subjects = [
-      'chemistry',
-      'computer',
-      'english',
-      'islamiat',
-      'math',
-      'nazra',
-      'pakistan studies',
-      'physics',
-      'robotics',
-      'science',
-      'social studies',
-      'tarjuma tul quran',
-      'urdu'
-    ];
 
     return {
       codes: Array.from(codes).sort(),
-      subjects: subjects,
+      subjects,
       topics: Array.from(topics).sort(),
-      learningObjectives: Array.from(learningObjectives).slice(0, 50).sort() // Limit to avoid too many options
+      learningObjectives: Array.from(learningObjectives).slice(0, 50).sort(),
     };
   };
 
@@ -789,7 +787,7 @@ const Curriculum = () => {
       )}
 
       {/* Results count indicator */}
-      {!loading && !isSelectionMode && data.length > 0 && !(filters.subject && filters.subject !== '' && filters.subject.toLowerCase() !== 'math' && filters.subject.toLowerCase() !== 'mathematics') && (
+      {!loading && !isSelectionMode && data.length > 0 && (
         <div className="results-count-indicator" style={{
           textAlign: 'center',
           marginBottom: '2rem',
@@ -809,45 +807,7 @@ const Curriculum = () => {
         </div>
       )}
 
-      {/* Check if subject is selected and not "All Subjects" or "Mathematics" */}
-      {filters.subject && filters.subject !== '' && filters.subject.toLowerCase() !== 'math' && filters.subject.toLowerCase() !== 'mathematics' ? (
-        <div className="empty-state">
-          <div className="empty-icon">📚</div>
-          <h2>No data uploaded yet</h2>
-          <p>Curriculum data for this subject is not available at the moment.</p>
-          <p className="empty-hint" style={{marginTop: '1rem'}}>
-            Please select "All Subjects" or "Mathematics" to view available courses.
-          </p>
-          <button 
-            onClick={() => setFilters({
-              ...filters,
-              subject: ''
-            })}
-            style={{
-              marginTop: '1.5rem',
-              padding: '0.75rem 1.5rem',
-              backgroundColor: '#3498db',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '1rem',
-              fontWeight: '600',
-              transition: 'all 0.3s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.backgroundColor = '#2980b9';
-              e.target.style.transform = 'translateY(-2px)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = '#3498db';
-              e.target.style.transform = 'translateY(0)';
-            }}
-          >
-            View All Subjects
-          </button>
-        </div>
-      ) : filteredData.length === 0 && !loading ? (
+      {filteredData.length === 0 && !loading ? (
         <div className="empty-state">
           <div className="empty-icon">📚</div>
           {data.length === 0 ? (

@@ -20,6 +20,21 @@ const StudentRecordDetail = () => {
   const topics = course?.topics || [];
   const totalMarksForCourse = topics.reduce((sum, t) => sum + (t.marks || 0), 0);
 
+  // Grades that this course's objectives belong to (from curriculum selection)
+  const courseGrades = React.useMemo(() => {
+    const grades = new Set();
+    topics.forEach((t) => {
+      if (t.grade != null && t.grade !== '') grades.add(String(t.grade));
+    });
+    return grades;
+  }, [topics]);
+
+  // Only students in those grades are "enrolled" (shown in the matrix)
+  const enrolledStudents = React.useMemo(() => {
+    if (courseGrades.size === 0) return students;
+    return students.filter((s) => courseGrades.has(String(s.grade)));
+  }, [students, courseGrades]);
+
   useEffect(() => {
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -81,16 +96,25 @@ const StudentRecordDetail = () => {
     return v === undefined || v === null ? '' : String(v);
   };
 
-  const setMark = (registrationNumber, topicIndex, value) => {
-    const num = value === '' ? undefined : (parseFloat(value) || 0);
+  const setMark = (registrationNumber, topicIndex, value, maxMarks) => {
+    if (value === '') {
+      setObjectiveMarks(prev => {
+        const next = { ...prev };
+        if (next[registrationNumber]) {
+          delete next[registrationNumber][String(topicIndex)];
+        }
+        return next;
+      });
+      return;
+    }
+    let num = parseFloat(value);
+    if (Number.isNaN(num)) return;
+    if (num < 0) num = 0;
+    if (maxMarks != null && Number(maxMarks) >= 0 && num > Number(maxMarks)) num = Number(maxMarks);
     setObjectiveMarks(prev => {
       const next = { ...prev };
       if (!next[registrationNumber]) next[registrationNumber] = {};
-      if (num === undefined) {
-        delete next[registrationNumber][String(topicIndex)];
-      } else {
-        next[registrationNumber][String(topicIndex)] = num;
-      }
+      next[registrationNumber][String(topicIndex)] = num;
       return next;
     });
   };
@@ -127,7 +151,7 @@ const StudentRecordDetail = () => {
   const handleSaveRecord = async () => {
     if (!course) return;
 
-    const studentsData = students.map(student => {
+    const studentsData = enrolledStudents.map(student => {
       const byStudent = objectiveMarks[student.registrationNumber] || {};
       const total = topics.reduce((sum, _, idx) => sum + (byStudent[String(idx)] || 0), 0);
       const objectiveMarksPayload = {};
@@ -173,6 +197,50 @@ const StudentRecordDetail = () => {
 
   const handleEditClick = () => {
     setIsEditMode(true);
+  };
+
+  const downloadIcon = (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  );
+
+  const triggerDownload = (filename, csvContent) => {
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+
+  const handleDownloadAllReports = () => {
+    if (!course || enrolledStudents.length === 0 || topics.length === 0) return;
+    const headers = ['Objective', 'Max Marks', ...enrolledStudents.map(s => `${s.studentName} (${s.registrationNumber})`)];
+    const rows = topics.map((topic, topicIndex) => {
+      const name = topic.topicName || topic.courseCode || `Objective ${topicIndex + 1}`;
+      const maxMarks = topic.marks != null ? String(topic.marks) : '';
+      const studentMarks = enrolledStudents.map(s => getMark(s.registrationNumber, topicIndex) !== '' ? getMark(s.registrationNumber, topicIndex) : '');
+      return [name, maxMarks, ...studentMarks];
+    });
+    const totalRow = ['Total', totalMarksForCourse, ...enrolledStudents.map(s => getTotalForStudent(s.registrationNumber).toFixed(2))];
+    const csvRows = [headers.join(','), ...rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')), totalRow.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')];
+    triggerDownload(`${course.courseName || courseCode}_all_reports.csv`, '\uFEFF' + csvRows.join('\r\n'));
+  };
+
+  const handleDownloadRowReport = (topicIndex) => {
+    if (!course || enrolledStudents.length === 0 || topicIndex < 0 || !topics[topicIndex]) return;
+    const topic = topics[topicIndex];
+    const name = topic.topicName || topic.courseCode || `Objective ${topicIndex + 1}`;
+    const headers = ['Student Name', 'Registration Number', 'Marks'];
+    const rows = enrolledStudents.map(s => {
+      const mark = getMark(s.registrationNumber, topicIndex);
+      return [s.studentName, s.registrationNumber, mark !== '' ? mark : '-'];
+    });
+    const csvRows = [headers.join(','), ...rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(','))];
+    triggerDownload(`${course.courseName || courseCode}_${name.replace(/[^a-zA-Z0-9]/g, '_')}.csv`, '\uFEFF' + csvRows.join('\r\n'));
   };
 
   if (loading) {
@@ -228,20 +296,30 @@ const StudentRecordDetail = () => {
         <div className="students-table-section">
           <div className="table-header-section">
             <h3>Marks by objective and student</h3>
+            <button
+              type="button"
+              className="download-all-reports-btn"
+              onClick={handleDownloadAllReports}
+              disabled={enrolledStudents.length === 0 || topics.length === 0}
+            >
+              <span className="download-all-reports-icon">{downloadIcon}</span>
+              Download all Reports
+            </button>
           </div>
 
-          {students.length > 0 && topics.length > 0 ? (
+          {enrolledStudents.length > 0 && topics.length > 0 ? (
             <>
               <div className="table-wrapper matrix-table-wrapper">
                 <table className={`students-record-table matrix-table ${!isEditMode ? 'read-only' : ''}`}>
                   <thead>
                     <tr>
                       <th className="matrix-th-objective">Objective</th>
-                      {students.map((student) => (
+                      {enrolledStudents.map((student) => (
                         <th key={student.registrationNumber} className="matrix-th-student">
                           {student.studentName} ({student.registrationNumber})
                         </th>
                       ))}
+                      <th className="matrix-th-action">Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -253,19 +331,27 @@ const StudentRecordDetail = () => {
                             <span className="objective-max-marks"> (max {topic.marks})</span>
                           )}
                         </td>
-                        {students.map((student) => (
+                        {enrolledStudents.map((student) => {
+                          const maxForObjective = topic.marks != null ? topic.marks : 100;
+                          return (
                           <td key={student.registrationNumber} className="matrix-td-mark">
                             {isEditMode ? (
-                              <input
-                                type="number"
-                                min="0"
-                                max={topic.marks != null ? topic.marks : 100}
-                                step="0.01"
-                                className="score-input matrix-score-input"
-                                value={getMark(student.registrationNumber, topicIndex)}
-                                onChange={(e) => setMark(student.registrationNumber, topicIndex, e.target.value)}
-                                placeholder="0"
-                              />
+                              <div className="matrix-mark-cell-with-hint">
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={maxForObjective}
+                                  step="0.01"
+                                  className="score-input matrix-score-input"
+                                  value={getMark(student.registrationNumber, topicIndex)}
+                                  onChange={(e) => setMark(student.registrationNumber, topicIndex, e.target.value, maxForObjective)}
+                                  placeholder="0"
+                                  aria-describedby={`hint-${topicIndex}-${student.registrationNumber}`}
+                                />
+                                <span id={`hint-${topicIndex}-${student.registrationNumber}`} className="matrix-mark-max-hint">
+                                  Max: {maxForObjective}
+                                </span>
+                              </div>
                             ) : (
                               <span className="score-display">
                                 {getMark(student.registrationNumber, topicIndex) !== ''
@@ -274,12 +360,24 @@ const StudentRecordDetail = () => {
                               </span>
                             )}
                           </td>
-                        ))}
+                          );
+                        })}
+                        <td className="matrix-td-action">
+                          <button
+                            type="button"
+                            className="download-row-btn"
+                            onClick={() => handleDownloadRowReport(topicIndex)}
+                            title="Download this objective's report"
+                            aria-label="Download report for this objective"
+                          >
+                            {downloadIcon}
+                          </button>
+                        </td>
                       </tr>
                     ))}
                     <tr className="matrix-total-row">
                       <td className="matrix-td-objective total-label">Total</td>
-                      {students.map((student) => {
+                      {enrolledStudents.map((student) => {
                         const total = getTotalForStudent(student.registrationNumber);
                         return (
                           <td key={student.registrationNumber} className="matrix-td-total">
@@ -290,6 +388,7 @@ const StudentRecordDetail = () => {
                           </td>
                         );
                       })}
+                      <td className="matrix-td-action matrix-td-action-total" />
                     </tr>
                   </tbody>
                 </table>
@@ -320,10 +419,10 @@ const StudentRecordDetail = () => {
               <div className="empty-icon">👥</div>
               <h2>No data to show</h2>
               <p>
-                {students.length === 0 && topics.length === 0
-                  ? 'Add students and ensure the course has objectives.'
-                  : students.length === 0
-                    ? 'Please upload student data first.'
+                {enrolledStudents.length === 0 && topics.length === 0
+                  ? 'Add students in the course grade(s) and ensure the course has objectives.'
+                  : enrolledStudents.length === 0
+                    ? 'No students in this course\'s grade(s). Upload student data for the relevant grade(s).'
                     : 'This course has no objectives.'}
               </p>
             </div>
