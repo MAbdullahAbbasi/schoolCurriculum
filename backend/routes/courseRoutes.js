@@ -116,12 +116,15 @@ router.post('/', async (req, res) => {
       grade: t.grade != null ? Number(t.grade) : null,
     }));
     const sumMarks = topicsWithMarks.reduce((sum, t) => sum + (t.marks || 0), 0);
-    const expectedTotal = bodyTotalMarks != null ? Number(bodyTotalMarks) : 100;
-    if (!Number.isFinite(expectedTotal) || expectedTotal < 1) {
+    const expectedTotal =
+      bodyTotalMarks != null && Number.isFinite(Number(bodyTotalMarks)) && Number(bodyTotalMarks) >= 1
+        ? Number(bodyTotalMarks)
+        : sumMarks;
+    if (expectedTotal < 1) {
       return res.status(400).json({
         success: false,
         error: 'Invalid total marks',
-        message: 'Total marks must be a number greater than 0.',
+        message: 'Total marks must be a number greater than 0, or provide objective marks that sum to at least 1.',
       });
     }
     if (Math.abs(sumMarks - expectedTotal) > 0.01) {
