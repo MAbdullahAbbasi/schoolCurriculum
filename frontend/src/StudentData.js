@@ -1,13 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import axios from 'axios';
 import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
 import './StudentData.css';
 
+const GRADES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
 const StudentData = () => {
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [studentsData, setStudentsData] = useState([]);
+  const [gradeFilter, setGradeFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [editingRegistrationNumber, setEditingRegistrationNumber] = useState(null);
@@ -29,6 +32,12 @@ const StudentData = () => {
   const [selectedRegistrationNumbers, setSelectedRegistrationNumbers] = useState(new Set());
   const [deletingSelected, setDeletingSelected] = useState(false);
   const fileInputRef = useRef(null);
+
+  const filteredStudents = useMemo(() => {
+    if (!gradeFilter) return studentsData;
+    const g = String(gradeFilter);
+    return studentsData.filter((s) => String(s.grade) === g);
+  }, [studentsData, gradeFilter]);
 
   // Fetch existing students data on component mount
   useEffect(() => {
@@ -249,7 +258,7 @@ const StudentData = () => {
 
   const handleSelectAll = (checked) => {
     if (checked) {
-      setSelectedRegistrationNumbers(new Set(studentsData.map((s) => s.registrationNumber).filter(Boolean)));
+      setSelectedRegistrationNumbers(new Set(filteredStudents.map((s) => s.registrationNumber).filter(Boolean)));
     } else {
       setSelectedRegistrationNumbers(new Set());
     }
@@ -408,7 +417,28 @@ const StudentData = () => {
       {studentsData.length > 0 && (
         <div className="students-table-section">
           <div className="students-table-header-row">
-            <h3>Students Data ({studentsData.length} records)</h3>
+            <h3>
+              Students Data ({filteredStudents.length}
+              {gradeFilter ? ` of ${studentsData.length}` : ''} records)
+            </h3>
+            <div className="grade-filter-wrapper">
+              <label htmlFor="student-data-grade-filter" className="grade-filter-label">
+                Filter by grade
+              </label>
+              <select
+                id="student-data-grade-filter"
+                className="grade-filter-select"
+                value={gradeFilter}
+                onChange={(e) => setGradeFilter(e.target.value)}
+              >
+                <option value="">All grades</option>
+                {GRADES.map((g) => (
+                  <option key={g} value={g}>
+                    Grade {g}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className="table-actions">
               <button
                 type="button"
@@ -447,7 +477,7 @@ const StudentData = () => {
                       <input
                         type="checkbox"
                         aria-label="Select all"
-                        checked={studentsData.length > 0 && selectedRegistrationNumbers.size === studentsData.length}
+                        checked={filteredStudents.length > 0 && filteredStudents.every((s) => selectedRegistrationNumbers.has(s.registrationNumber))}
                         onChange={(e) => handleSelectAll(e.target.checked)}
                       />
                     </th>
@@ -461,7 +491,7 @@ const StudentData = () => {
                 </tr>
               </thead>
               <tbody>
-                {studentsData.map((student, index) => {
+                {filteredStudents.map((student, index) => {
                   const isEditing = editingRegistrationNumber === student.registrationNumber;
                   const isSaving = savingRegistrationNumber === student.registrationNumber;
                   const isSelected = selectedRegistrationNumbers.has(student.registrationNumber);

@@ -87,7 +87,7 @@ const StudentsRecord = () => {
     <div className="students-record-container">
       <CurriculumHeader />
       <div className="students-record-content">
-        <h2>Students Record</h2>
+        <h2>Courses Record</h2>
         <p>Select a course to view and manage student records</p>
         
         {error && (
@@ -108,58 +108,56 @@ const StudentsRecord = () => {
                 {deletingAll ? 'Deleting...' : 'Delete all'}
               </button>
             </div>
-            <div className="courses-grid">
-              {courses.map((course) => (
-                <div
-                  key={course._id || course.code}
-                  className="course-card"
-                  onClick={() => handleCourseClick(course.code)}
-                >
-                  <div className="course-card-header">
-                    <h3 className="course-card-title">{course.courseName}</h3>
-                    <span className="course-card-code">{course.code}</span>
-                    <button
-                      type="button"
-                      className="course-card-delete-btn"
-                      onClick={(e) => handleDeleteCourse(e, course.code, course.courseName)}
-                      disabled={deletingCourseCode === course.code}
-                      title="Delete course"
-                      aria-label="Delete course"
+            <div className="courses-table-wrapper">
+              <table className="courses-record-table">
+                <thead>
+                  <tr>
+                    <th>Course Name</th>
+                    <th>Course Code</th>
+                    <th>Duration</th>
+                    <th>Start Date</th>
+                    <th>Topics</th>
+                    <th>Weightage</th>
+                    <th className="courses-table-th-actions">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {courses.map((course) => (
+                    <tr
+                      key={course._id || course.code}
+                      className="courses-record-row"
+                      onClick={() => handleCourseClick(course.code)}
                     >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <polyline points="3 6 5 6 21 6" />
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                        <line x1="10" y1="11" x2="10" y2="17" />
-                        <line x1="14" y1="11" x2="14" y2="17" />
-                      </svg>
-                    </button>
-                  </div>
-                <div className="course-card-details">
-                  <div className="course-detail-item">
-                    <span className="detail-label">Duration:</span>
-                    <span className="detail-value">
-                      {course.courseDuration?.value} {course.courseDuration?.type}
-                    </span>
-                  </div>
-                  <div className="course-detail-item">
-                    <span className="detail-label">Start Date:</span>
-                    <span className="detail-value">
-                      {course.startingDate ? new Date(course.startingDate).toLocaleDateString() : 'N/A'}
-                    </span>
-                  </div>
-                  <div className="course-detail-item">
-                    <span className="detail-label">Topics:</span>
-                    <span className="detail-value">{course.topics?.length || 0}</span>
-                  </div>
-                  <div className="course-detail-item">
-                    <span className="detail-label">Weightage Items:</span>
-                    <span className="detail-value">
-                      {course.weightage?.map(w => w.label).join(', ') || 'N/A'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
+                      <td>{course.courseName || '-'}</td>
+                      <td>{course.code || '-'}</td>
+                      <td>
+                        {course.courseDuration?.value != null && course.courseDuration?.type
+                          ? `${course.courseDuration.value} ${course.courseDuration.type}`
+                          : '-'}
+                      </td>
+                      <td>
+                        {course.startingDate
+                          ? new Date(course.startingDate).toLocaleDateString()
+                          : 'N/A'}
+                      </td>
+                      <td>{course.topics?.length ?? 0}</td>
+                      <td>{course.weightage?.map((w) => w.label).join(', ') || 'N/A'}</td>
+                      <td className="courses-table-td-actions" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          className="course-row-delete-btn"
+                          onClick={(e) => handleDeleteCourse(e, course.code, course.courseName)}
+                          disabled={deletingCourseCode === course.code}
+                          title="Delete course"
+                          aria-label="Delete course"
+                        >
+                          {deletingCourseCode === course.code ? 'Deleting...' : 'Delete'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </>
         ) : (

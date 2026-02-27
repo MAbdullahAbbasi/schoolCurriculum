@@ -69,6 +69,74 @@
   cursor: not-allowed;
 }
 
+.courses-table-wrapper {
+  overflow-x: auto;
+  margin-top: 1.5rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.courses-record-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.courses-record-table thead {
+  background: #f8f9fa;
+}
+
+.courses-record-table th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 700;
+  color: #2c3e50;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.courses-record-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  color: #2c3e50;
+}
+
+.courses-record-row {
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.courses-record-row:hover {
+  background: #e3f2fd;
+}
+
+.courses-record-table .courses-table-th-actions,
+.courses-record-table .courses-table-td-actions {
+  text-align: center;
+  width: 100px;
+}
+
+.course-row-delete-btn {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #fff;
+  background: #e74c3c;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.course-row-delete-btn:hover:not(:disabled) {
+  background: #c0392b;
+}
+
+.course-row-delete-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 .courses-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
