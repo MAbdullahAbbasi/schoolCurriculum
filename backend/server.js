@@ -109,11 +109,21 @@ const connectDB = async (retryCount = 0) => {
       // If it's already SchoolCurriculum, use as-is
     }
     
-    // Reconstruct full URI
-    if (queryString && !mongoUri.includes('?')) {
-      mongoUri = mongoUri + '?' + queryString;
+    // Reconstruct full URI; for mongodb+srv add retryWrites and w=majority if missing (helps on cloud e.g. Render)
+    let query = queryString;
+    if (baseUri.startsWith('mongodb+srv://')) {
+      const params = new URLSearchParams(query || '');
+      if (!params.has('retryWrites')) params.set('retryWrites', 'true');
+      if (!params.has('w')) params.set('w', 'majority');
+      query = params.toString();
     }
-    
+    if (query && !mongoUri.includes('?')) {
+      mongoUri = mongoUri + '?' + query;
+    } else if (query && mongoUri.includes('?')) {
+      const [base, _] = mongoUri.split('?');
+      mongoUri = base + '?' + query;
+    }
+
     // Validate the final URI before connecting
     if (!mongoUri.includes('@') || !mongoUri.match(/@[^/]+/)) {
       throw new Error(`Invalid MongoDB URI format after processing. URI must contain hostname after @ symbol.`);
