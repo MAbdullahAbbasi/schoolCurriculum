@@ -1,8 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import axios from 'axios';
 import CurriculumHeader from './CurriculumHeader';
-import { API_URL } from './config/api';
 import './CreateCourse.css';
 
 const defaultFormData = {
