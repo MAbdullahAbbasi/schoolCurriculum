@@ -66,6 +66,24 @@ const courseSchema = new mongoose.Schema(
         },
       },
     ],
+    totalQuestions: {
+      type: Number,
+      default: null,
+      min: 1,
+    },
+    questions: [
+      {
+        questionIndex: {
+          type: Number,
+          required: true,
+          min: 1,
+        },
+        topicIndices: {
+          type: [Number],
+          default: [],
+        },
+      },
+    ],
   },
   {
     collection: 'courses',

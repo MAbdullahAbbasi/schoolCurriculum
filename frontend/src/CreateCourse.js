@@ -17,6 +17,7 @@ const defaultFormData = {
   ],
   startDate: '',
   totalMarks: '',
+  totalQuestions: '',
 };
 
 const CreateCourse = () => {
@@ -27,7 +28,6 @@ const CreateCourse = () => {
   const [formData, setFormData] = useState(defaultFormData);
   const [objectiveMarks, setObjectiveMarks] = useState({});
   const [createError, setCreateError] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
 
   const resolvedTopics = useMemo(() => {
     if (!Array.isArray(selectedTopics) || !Array.isArray(curriculumData)) return [];
@@ -138,6 +138,12 @@ const CreateCourse = () => {
       return;
     }
 
+    const totalQuestionsNum = parseInt(formData.totalQuestions, 10);
+    if (Number.isNaN(totalQuestionsNum) || totalQuestionsNum < 1) {
+      setCreateError('Please enter a valid total questions (number greater than 0).');
+      return;
+    }
+
     const topics = resolvedTopics.map(t => ({
       courseCode: t.courseCode,
       topicName: t.topicName,
@@ -157,29 +163,17 @@ const CreateCourse = () => {
       })),
       startingDate: formData.startDate,
       totalMarks: totalMarksNum,
+      totalQuestions: totalQuestionsNum,
       topics,
     };
 
-    try {
-      setSubmitting(true);
-      const response = await axios.post(`${API_URL}/api/courses`, coursePayload, {
-        headers: { 'Content-Type': 'application/json' },
-      });
-      if (response.data.success) {
-        navigate('/', { replace: true });
-      } else {
-        setCreateError(response.data.message || response.data.error || 'Failed to create course.');
-      }
-    } catch (err) {
-      setCreateError(
-        err.response?.data?.message ||
-        err.response?.data?.error ||
-        err.message ||
-        'Failed to create course.'
-      );
-    } finally {
-      setSubmitting(false);
-    }
+    navigate('/create-course/map-questions', {
+      state: {
+        coursePayload,
+        totalQuestions: totalQuestionsNum,
+        resolvedTopics,
+      },
+    });
   };
 
   const handleCancel = () => {
@@ -305,6 +299,21 @@ const CreateCourse = () => {
               />
               <span className="form-hint">Sum of all objective marks below must equal this value.</span>
             </div>
+
+            <div className="form-field">
+              <label htmlFor="total-questions" className="form-label">Total Questions</label>
+              <input
+                type="number"
+                id="total-questions"
+                min="1"
+                step="1"
+                className="total-questions-input"
+                placeholder="e.g. 5"
+                value={formData.totalQuestions}
+                onChange={(e) => handleFormChange('totalQuestions', e.target.value)}
+              />
+              <span className="form-hint">Number of questions in the course. You will map objectives to each question on the next step.</span>
+            </div>
           </div>
 
           <div className="objectives-marks-section">
@@ -362,11 +371,11 @@ const CreateCourse = () => {
           )}
 
           <div className="create-course-actions">
-            <button type="button" className="create-course-cancel-btn" onClick={handleCancel} disabled={submitting}>
+            <button type="button" className="create-course-cancel-btn" onClick={handleCancel}>
               Cancel
             </button>
-            <button type="submit" className="create-course-submit-btn" disabled={submitting}>
-              {submitting ? 'Creating...' : 'Create'}
+            <button type="submit" className="create-course-submit-btn">
+              Next: Map questions to objectives
             </button>
           </div>
         </form>

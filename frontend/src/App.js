@@ -3,6 +3,7 @@ import axios from 'axios';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Curriculum from './Curriculum';
 import CreateCourse from './CreateCourse';
+import MapCourseQuestions from './MapCourseQuestions';
 import StudentData from './StudentData';
 import StudentsRecord from './StudentsRecord';
 import StudentRecordDetail from './StudentRecordDetail';
@@ -98,6 +99,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Curriculum />} />
           <Route path="/create-course" element={<CreateCourse />} />
+          <Route path="/create-course/map-questions" element={<MapCourseQuestions />} />
           <Route path="/students-data" element={<StudentData />} />
           <Route path="/record" element={<StudentsRecord />} />
           <Route path="/studentRecord/:courseCode" element={<StudentRecordDetail />} />

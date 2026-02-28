@@ -44,7 +44,8 @@
 .create-course-fields .course-name-input,
 .create-course-fields .duration-input,
 .create-course-fields .date-input,
-.create-course-fields .total-marks-input {
+.create-course-fields .total-marks-input,
+.create-course-fields .total-questions-input {
   width: 100%;
   padding: 0.5rem 0.75rem;
   border: 1px solid #ccc;

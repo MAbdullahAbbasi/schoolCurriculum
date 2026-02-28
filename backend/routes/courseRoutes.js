@@ -52,7 +52,7 @@ router.post('/', async (req, res) => {
       });
     }
 
-    const { courseName, courseDuration, weightage, startingDate, topics, totalMarks: bodyTotalMarks } = req.body;
+    const { courseName, courseDuration, weightage, startingDate, topics, totalMarks: bodyTotalMarks, totalQuestions: bodyTotalQuestions, questions: bodyQuestions } = req.body;
 
     // Validate required fields
     if (!courseName || !courseName.trim()) {
@@ -135,6 +135,36 @@ router.post('/', async (req, res) => {
       });
     }
 
+    let questionsToSave = [];
+    const totalQuestionsNum = bodyTotalQuestions != null && Number.isFinite(Number(bodyTotalQuestions)) && Number(bodyTotalQuestions) >= 1
+      ? Number(bodyTotalQuestions)
+      : null;
+
+    if (totalQuestionsNum != null) {
+      if (!bodyQuestions || !Array.isArray(bodyQuestions) || bodyQuestions.length !== totalQuestionsNum) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid questions',
+          message: `Please provide exactly ${totalQuestionsNum} question(s), each with at least one objective.`,
+        });
+      }
+      const topicCount = topicsWithMarks.length;
+      for (let i = 0; i < bodyQuestions.length; i++) {
+        const q = bodyQuestions[i];
+        const qIndex = q.questionIndex != null ? Number(q.questionIndex) : i + 1;
+        let indices = Array.isArray(q.topicIndices) ? q.topicIndices.map(n => Number(n)).filter(n => Number.isFinite(n) && n >= 0 && n < topicCount) : [];
+        indices = [...new Set(indices)];
+        if (indices.length === 0) {
+          return res.status(400).json({
+            success: false,
+            error: 'Invalid questions',
+            message: `Question Q${qIndex} must have at least one objective selected.`,
+          });
+        }
+        questionsToSave.push({ questionIndex: qIndex, topicIndices: indices });
+      }
+    }
+
     // Generate unique course code
     const code = await generateCourseCode();
 
@@ -152,6 +182,8 @@ router.post('/', async (req, res) => {
       })),
       startingDate: new Date(startingDate),
       topics: topicsWithMarks,
+      ...(totalQuestionsNum != null && { totalQuestions: totalQuestionsNum }),
+      ...(questionsToSave.length > 0 && { questions: questionsToSave }),
     };
 
     // Save to database
