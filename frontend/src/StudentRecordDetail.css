@@ -217,6 +217,8 @@
 /* Matrix table: objectives (rows) x students (columns) */
 .matrix-table-wrapper {
   margin-bottom: 1.5rem;
+  overflow: auto;
+  max-height: 70vh;
 }
 
 .matrix-table {
@@ -224,6 +226,15 @@
   min-width: 600px;
 }
 
+/* Sticky header row: stays visible when scrolling vertically */
+.matrix-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Sticky first column: stays visible when scrolling horizontally */
 .matrix-table .matrix-th-objective {
   width: 200px;
   min-width: 160px;
@@ -236,6 +247,10 @@
   vertical-align: middle;
   white-space: normal;
   word-break: break-word;
+  position: sticky;
+  left: 0;
+  z-index: 4;
+  box-shadow: 2px 0 4px -1px rgba(0, 0, 0, 0.1);
 }
 
 .matrix-table .matrix-th-student {
@@ -265,6 +280,10 @@
   vertical-align: middle;
   white-space: normal;
   word-break: break-word;
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  box-shadow: 2px 0 4px -1px rgba(0, 0, 0, 0.08);
 }
 
 .objective-max-marks {
@@ -311,6 +330,10 @@
   background: #bbdefb;
   border: 1px solid #90caf9;
   padding: 0.75rem 1rem;
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  box-shadow: 2px 0 4px -1px rgba(0, 0, 0, 0.08);
 }
 
 .matrix-table .matrix-td-total {

@@ -84,6 +84,21 @@ const Reports = () => {
     triggerDownload(filename, '\uFEFF' + csvRows.join('\r\n'));
   };
 
+  const handleDownloadAllReports = () => {
+    if (!selectedGrade || studentsInGrade.length === 0) return;
+    const headers = ['Student Name', 'Registration Number', 'Grade'];
+    const dataRows = studentsInGrade.map((student) =>
+      [
+        student.studentName || '',
+        student.registrationNumber || '',
+        student.grade != null ? String(student.grade) : selectedGrade,
+      ].map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')
+    );
+    const csvContent = '\uFEFF' + [headers.join(','), ...dataRows].join('\r\n');
+    const filename = `Grade_${selectedGrade}_All_Reports.csv`;
+    triggerDownload(filename, csvContent);
+  };
+
   if (loading) {
     return (
       <div className="reports-container">
@@ -133,7 +148,21 @@ const Reports = () => {
         )}
 
         {selectedGrade && (
-          <div className="reports-table-wrapper">
+          <>
+            <div className="reports-download-all-wrapper">
+              <button
+                type="button"
+                className="reports-download-all-btn"
+                onClick={handleDownloadAllReports}
+                disabled={studentsInGrade.length === 0}
+                title="Download all reports for this grade"
+                aria-label="Download all reports for this grade"
+              >
+                {downloadIcon}
+                <span>Download All Reports</span>
+              </button>
+            </div>
+            <div className="reports-table-wrapper">
             <table className="reports-table">
               <thead>
                 <tr>
@@ -183,6 +212,7 @@ const Reports = () => {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
     </div>
