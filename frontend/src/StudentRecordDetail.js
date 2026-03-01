@@ -8,6 +8,7 @@ import './StudentRecordDetail.css';
 const StudentRecordDetail = () => {
   const { courseCode } = useParams();
   const navigate = useNavigate();
+  const matrixTableRef = React.useRef(null);
   const [course, setCourse] = useState(null);
   const [students, setStudents] = useState([]);
   const [objectiveMarks, setObjectiveMarks] = useState({});
@@ -117,6 +118,17 @@ const StudentRecordDetail = () => {
       next[registrationNumber][String(topicIndex)] = num;
       return next;
     });
+  };
+
+  const handleMarkKeyDown = (e, topicIndex, studentIndex) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const nextRow = topicIndex + 1;
+    if (nextRow >= topics.length) return;
+    const nextInput = matrixTableRef.current?.querySelector(
+      `input[data-topic-index="${nextRow}"][data-student-index="${studentIndex}"]`
+    );
+    if (nextInput) nextInput.focus();
   };
 
   const getTotalForStudent = (registrationNumber) => {
@@ -256,7 +268,7 @@ const StudentRecordDetail = () => {
 
           {enrolledStudents.length > 0 && topics.length > 0 ? (
             <>
-              <div className="table-wrapper matrix-table-wrapper">
+              <div className="table-wrapper matrix-table-wrapper" ref={matrixTableRef}>
                 <table className={`students-record-table matrix-table ${!isEditMode ? 'read-only' : ''}`}>
                   <thead>
                     <tr>
@@ -277,7 +289,7 @@ const StudentRecordDetail = () => {
                             <span className="objective-max-marks"> (max {topic.marks})</span>
                           )}
                         </td>
-                        {enrolledStudents.map((student) => {
+                        {enrolledStudents.map((student, studentIndex) => {
                           const maxForObjective = topic.marks != null ? topic.marks : 100;
                           return (
                           <td key={student.registrationNumber} className="matrix-td-mark">
@@ -291,6 +303,9 @@ const StudentRecordDetail = () => {
                                   className="score-input matrix-score-input"
                                   value={getMark(student.registrationNumber, topicIndex)}
                                   onChange={(e) => setMark(student.registrationNumber, topicIndex, e.target.value, maxForObjective)}
+                                  onKeyDown={(e) => handleMarkKeyDown(e, topicIndex, studentIndex)}
+                                  data-topic-index={topicIndex}
+                                  data-student-index={studentIndex}
                                   placeholder="0"
                                   aria-describedby={`hint-${topicIndex}-${student.registrationNumber}`}
                                 />
