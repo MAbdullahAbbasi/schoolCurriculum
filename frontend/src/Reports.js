@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
@@ -15,10 +16,15 @@ const downloadIcon = (
 );
 
 const Reports = () => {
+  const navigate = useNavigate();
   const [students, setStudents] = useState([]);
   const [selectedGrade, setSelectedGrade] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const handleViewReport = (student) => {
+    navigate(`/reports/student/${encodeURIComponent(student.registrationNumber)}`, { state: { student } });
+  };
 
   const studentsInGrade = useMemo(() => {
     if (!selectedGrade) return [];
@@ -133,13 +139,14 @@ const Reports = () => {
                 <tr>
                   <th className="reports-th">Registration Number</th>
                   <th className="reports-th">Name</th>
+                  <th className="reports-th reports-th-action">Action</th>
                   <th className="reports-th reports-th-report">Report.</th>
                 </tr>
               </thead>
               <tbody>
                 {studentsInGrade.length === 0 ? (
                   <tr>
-                    <td colSpan={3} className="reports-empty-cell">
+                    <td colSpan={4} className="reports-empty-cell">
                       No students in Grade {selectedGrade}.
                     </td>
                   </tr>
@@ -148,6 +155,17 @@ const Reports = () => {
                     <tr key={student.registrationNumber}>
                       <td className="reports-td">{student.registrationNumber}</td>
                       <td className="reports-td">{student.studentName}</td>
+                      <td className="reports-td reports-td-action">
+                        <button
+                          type="button"
+                          className="reports-view-btn"
+                          onClick={() => handleViewReport(student)}
+                          title={`View report for ${student.studentName}`}
+                          aria-label={`View report for ${student.studentName}`}
+                        >
+                          View
+                        </button>
+                      </td>
                       <td className="reports-td reports-td-report">
                         <button
                           type="button"

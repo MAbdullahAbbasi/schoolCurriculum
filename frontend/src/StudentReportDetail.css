@@ -1,0 +1,121 @@
+.student-report-detail-container {
+  min-height: 100vh;
+  background: #fff;
+  padding: 2rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+}
+
+.student-report-detail-content {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.student-report-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.student-report-detail-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0;
+}
+
+.student-report-detail-back-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background: #f5f5f5;
+  color: #333;
+  cursor: pointer;
+}
+
+.student-report-detail-back-btn:hover {
+  background: #e8e8e8;
+}
+
+.student-report-detail-loading,
+.student-report-detail-error {
+  padding: 2rem;
+  text-align: center;
+  color: #6c757d;
+}
+
+.student-report-detail-error {
+  color: #c62828;
+  background: #ffebee;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.student-report-detail-empty {
+  font-size: 1rem;
+  color: #6c757d;
+  margin: 0;
+}
+
+.student-report-detail-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.student-report-course-section {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.student-report-course-heading {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0;
+  padding: 1rem 1.25rem;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.student-report-table-wrapper {
+  overflow-x: auto;
+}
+
+.student-report-objectives-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.student-report-objectives-table thead {
+  background: #f1f3f5;
+}
+
+.student-report-th {
+  padding: 0.65rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #2c3e50;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.student-report-td {
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid #eee;
+  color: #333;
+}
+
+.student-report-td-objective {
+  font-weight: 500;
+}
+
+.student-report-td-marks {
+  white-space: nowrap;
+}

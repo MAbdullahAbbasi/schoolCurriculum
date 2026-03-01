@@ -100,9 +100,36 @@
   border-bottom: 2px solid #e0e0e0;
 }
 
+.reports-th-action {
+  text-align: center;
+  width: 100px;
+}
+
 .reports-th-report {
   text-align: center;
   width: 100px;
+}
+
+.reports-td-action {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.reports-view-btn {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid #3498db;
+  background: #fff;
+  color: #3498db;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.reports-view-btn:hover {
+  background: #3498db;
+  color: #fff;
 }
 
 .reports-td {
