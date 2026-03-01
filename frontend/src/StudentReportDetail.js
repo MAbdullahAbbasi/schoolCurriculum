@@ -7,51 +7,86 @@ import './StudentReportDetail.css';
 
 const StudentReportDetail = () => {
   const { registrationNumber } = useParams();
+  const decodedRegNo = decodeURIComponent(registrationNumber || '');
   const navigate = useNavigate();
   const location = useLocation();
   const studentFromState = location.state?.student;
 
   const [student, setStudent] = useState(studentFromState || null);
-  const [students, setStudents] = useState([]);
   const [courses, setCourses] = useState([]);
-  const [records, setRecords] = useState([]);
+  const [recordsByCourse, setRecordsByCourse] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   // Resolve student: from state or find in fetched students by registration number
   useEffect(() => {
-    if (studentFromState && studentFromState.registrationNumber === registrationNumber) {
+    if (studentFromState && String(studentFromState.registrationNumber) === decodedRegNo) {
       setStudent(studentFromState);
     }
-  }, [studentFromState, registrationNumber]);
+  }, [studentFromState, decodedRegNo]);
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!registrationNumber) return;
+      if (!decodedRegNo) return;
       try {
         setLoading(true);
         setError(null);
 
-        const [coursesRes, recordsRes, studentsRes] = await Promise.all([
+        const [coursesRes, studentsRes] = await Promise.all([
           axios.get(`${API_URL}/api/courses`),
-          axios.get(`${API_URL}/api/records`),
           axios.get(`${API_URL}/api/students-data`),
         ]);
 
         const coursesList = coursesRes.data?.success ? coursesRes.data.data || [] : [];
-        const recordsList = recordsRes.data?.success ? recordsRes.data.data || [] : [];
         const studentsList = Array.isArray(studentsRes.data) ? studentsRes.data : [];
 
         setCourses(coursesList);
-        setRecords(recordsList);
-        setStudents(studentsList);
 
-        if (!student && studentsList.length > 0) {
-          const found = studentsList.find(
-            (s) => String(s.registrationNumber) === String(registrationNumber)
-          );
-          setStudent(found || null);
+        let currentStudent = studentFromState && String(studentFromState.registrationNumber) === decodedRegNo
+          ? studentFromState
+          : studentsList.find((s) => String(s.registrationNumber) === decodedRegNo) || null;
+        setStudent(currentStudent);
+
+        if (!currentStudent) {
+          setLoading(false);
+          return;
         }
+
+        const studentGrade = currentStudent.grade != null ? String(currentStudent.grade) : null;
+        if (!studentGrade) {
+          setLoading(false);
+          return;
+        }
+
+        const enrolledCodes = coursesList
+          .filter((course) => {
+            const topics = course.topics || [];
+            const courseGrades = new Set();
+            topics.forEach((t) => {
+              if (t.grade != null && t.grade !== '') courseGrades.add(String(t.grade));
+            });
+            if (courseGrades.size === 0) return true;
+            return courseGrades.has(studentGrade);
+          })
+          .map((c) => c.code)
+          .filter(Boolean);
+
+        const byCourse = {};
+        await Promise.all(
+          enrolledCodes.map(async (code) => {
+            try {
+              const res = await axios.get(
+                `${API_URL}/api/records/course/${encodeURIComponent(code)}`
+              );
+              if (res.data?.success && res.data.data) {
+                byCourse[code] = res.data.data;
+              }
+            } catch (e) {
+              // no record for this course is ok
+            }
+          })
+        );
+        setRecordsByCourse(byCourse);
       } catch (err) {
         console.error('Error fetching report data:', err);
         setError('Failed to load report data.');
@@ -60,17 +95,12 @@ const StudentReportDetail = () => {
       }
     };
     fetchData();
-  }, [registrationNumber]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [decodedRegNo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Enrolled courses: course has topics with grades that include this student's grade
   const enrolledCoursesWithMarks = useMemo(() => {
     const studentGrade = student?.grade != null ? String(student.grade) : null;
     if (!studentGrade || !Array.isArray(courses)) return [];
-
-    const recordByCode = {};
-    (records || []).forEach((r) => {
-      recordByCode[r.courseCode] = r;
-    });
 
     return courses
       .filter((course) => {
@@ -79,18 +109,18 @@ const StudentReportDetail = () => {
         topics.forEach((t) => {
           if (t.grade != null && t.grade !== '') courseGrades.add(String(t.grade));
         });
-        if (courseGrades.size === 0) return true; // no grade info → treat as enrolled
+        if (courseGrades.size === 0) return true;
         return courseGrades.has(studentGrade);
       })
       .map((course) => {
-        const record = recordByCode[course.code] || null;
+        const record = recordsByCourse[course.code] || null;
         const studentEntry = record?.students?.find(
-          (s) => String(s.registrationNumber) === String(registrationNumber)
+          (s) => String(s.registrationNumber) === decodedRegNo
         );
         const objectiveMarks = studentEntry?.objectiveMarks || {};
         return { course, record, objectiveMarks };
       });
-  }, [courses, records, student, registrationNumber]);
+  }, [courses, recordsByCourse, student, decodedRegNo]);
 
   const handleBack = () => {
     navigate('/reports');
@@ -118,7 +148,7 @@ const StudentReportDetail = () => {
   }
 
   const displayName = student?.studentName || 'Student';
-  const displayRegNo = registrationNumber || '—';
+  const displayRegNo = decodedRegNo || '—';
 
   return (
     <div className="student-report-detail-container">
