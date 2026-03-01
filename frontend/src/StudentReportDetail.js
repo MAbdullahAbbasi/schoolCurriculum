@@ -178,6 +178,7 @@ const StudentReportDetail = () => {
                       <tr>
                         <th className="student-report-th">Objective</th>
                         <th className="student-report-th">Marks</th>
+                        <th className="student-report-th">Total marks</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -187,6 +188,7 @@ const StudentReportDetail = () => {
                           marks !== undefined && marks !== null
                             ? Number(marks).toFixed(2)
                             : '—';
+                        const totalMarks = topic.marks != null && topic.marks !== '' ? Number(topic.marks) : null;
                         return (
                           <tr key={topicIndex}>
                             <td className="student-report-td student-report-td-objective">
@@ -194,6 +196,9 @@ const StudentReportDetail = () => {
                             </td>
                             <td className="student-report-td student-report-td-marks">
                               {displayMarks}
+                            </td>
+                            <td className="student-report-td student-report-td-total-marks">
+                              {totalMarks != null ? totalMarks : '—'}
                             </td>
                           </tr>
                         );
