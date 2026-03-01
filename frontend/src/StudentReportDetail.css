@@ -119,3 +119,43 @@
 .student-report-td-marks {
   white-space: nowrap;
 }
+
+.student-report-grading-scheme-section {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.student-report-grading-scheme-heading {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0 0 1rem 0;
+}
+
+.student-report-grading-scheme-empty {
+  font-size: 0.95rem;
+  color: #6c757d;
+  margin: 0;
+}
+
+.student-report-grading-scheme-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+}
+
+.student-report-grading-scheme-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.student-report-grading-scheme-table thead {
+  background: #f8f9fa;
+}
+
+.student-report-grading-scheme-table .student-report-th,
+.student-report-grading-scheme-table .student-report-td {
+  padding: 0.6rem 1rem;
+}

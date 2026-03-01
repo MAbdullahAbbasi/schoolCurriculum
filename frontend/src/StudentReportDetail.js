@@ -5,6 +5,19 @@ import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
 import './StudentReportDetail.css';
 
+const GRADING_SCHEME_STORAGE_KEY = 'curriculum_grading_scheme';
+
+const getGradingSchemeFromStorage = () => {
+  try {
+    const raw = localStorage.getItem(GRADING_SCHEME_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
 const StudentReportDetail = () => {
   const { registrationNumber } = useParams();
   const decodedRegNo = decodeURIComponent(registrationNumber || '');
@@ -149,6 +162,7 @@ const StudentReportDetail = () => {
 
   const displayName = student?.studentName || 'Student';
   const displayRegNo = decodedRegNo || '—';
+  const gradingSchemeRows = getGradingSchemeFromStorage();
 
   return (
     <div className="student-report-detail-container">
@@ -210,6 +224,34 @@ const StudentReportDetail = () => {
             ))}
           </div>
         )}
+
+        <section className="student-report-grading-scheme-section">
+          <h3 className="student-report-grading-scheme-heading">Grading Scheme</h3>
+          {gradingSchemeRows.length === 0 ? (
+            <p className="student-report-grading-scheme-empty">
+              No grading scheme defined. You can define one from the Grading Scheme page in the menu.
+            </p>
+          ) : (
+            <div className="student-report-grading-scheme-table-wrapper">
+              <table className="student-report-grading-scheme-table">
+                <thead>
+                  <tr>
+                    <th className="student-report-th">Marks</th>
+                    <th className="student-report-th">Grade</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {gradingSchemeRows.map((row, idx) => (
+                    <tr key={idx}>
+                      <td className="student-report-td">{row.marks !== undefined && row.marks !== null ? String(row.marks) : '—'}</td>
+                      <td className="student-report-td">{row.grade !== undefined && row.grade !== null ? String(row.grade) : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
       </div>
     </div>
   );

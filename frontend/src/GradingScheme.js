@@ -1,12 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import CurriculumHeader from './CurriculumHeader';
 import './GradingScheme.css';
 
+const STORAGE_KEY = 'curriculum_grading_scheme';
+
+const loadFromStorage = () => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
+const saveToStorage = (rows) => {
+  try {
+    const toSave = rows.map((r) => ({ marks: r.marks, grade: r.grade }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+  } catch (_) {}
+};
+
 let nextId = 1;
 const newRow = () => ({ id: nextId++, marks: '', grade: '' });
+const rowFromData = (data, index) => ({ id: nextId++, marks: data.marks ?? '', grade: data.grade ?? '' });
 
 const GradingScheme = () => {
-  const [rows, setRows] = useState([newRow()]);
+  const [rows, setRows] = useState(() => {
+    const stored = loadFromStorage();
+    if (stored && stored.length > 0) {
+      return stored.map((item, i) => rowFromData(item, i));
+    }
+    return [newRow()];
+  });
+
+  useEffect(() => {
+    saveToStorage(rows);
+  }, [rows]);
 
   const addRow = () => {
     setRows((prev) => [...prev, newRow()]);
