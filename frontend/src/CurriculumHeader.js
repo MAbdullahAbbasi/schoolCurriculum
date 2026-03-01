@@ -11,6 +11,7 @@ const CurriculumHeader = () => {
   const handleRecordClick = () => navigate('/record');
   const handleObjectivesClick = () => navigate('/');
   const handleReportsClick = () => navigate('/reports');
+  const handleGradingSchemeClick = () => navigate('/grading-scheme');
   const handleLogout = () => {
     localStorage.removeItem('curriculum_auth');
     window.location.reload();
@@ -51,6 +52,13 @@ const CurriculumHeader = () => {
             onClick={handleReportsClick}
           >
             Reports
+          </button>
+          <button
+            type="button"
+            className={`nav-btn ${path === '/grading-scheme' ? 'active' : ''}`}
+            onClick={handleGradingSchemeClick}
+          >
+            Grading Scheme
           </button>
           <button type="button" className="logout-button" onClick={handleLogout}>
             Log out

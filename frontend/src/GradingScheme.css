@@ -1,0 +1,78 @@
+.grading-scheme-container {
+  min-height: 100vh;
+  background: #fff;
+  padding: 2rem;
+}
+
+.grading-scheme-content {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.grading-scheme-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0 0 0.5rem 0;
+}
+
+.grading-scheme-subtitle {
+  font-size: 0.95rem;
+  color: #555;
+  margin: 0 0 1.5rem 0;
+}
+
+.grading-scheme-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.grading-scheme-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.grading-scheme-table th,
+.grading-scheme-table td {
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.grading-scheme-table th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.grading-scheme-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.grading-scheme-input:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.grading-scheme-add-btn {
+  padding: 0.6rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: none;
+  background: #3498db;
+  color: white;
+  cursor: pointer;
+}
+
+.grading-scheme-add-btn:hover {
+  background: #2980b9;
+}
