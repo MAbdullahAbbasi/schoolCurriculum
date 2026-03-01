@@ -1,8 +1,22 @@
 .curriculum-header {
+  position: relative;
   text-align: center;
   margin-bottom: 4rem;
   padding-bottom: 2rem;
   border-bottom: 2px solid #e0e0e0;
+}
+
+.curriculum-header-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.curriculum-header-brand {
+  flex: 0 1 auto;
 }
 
 .curriculum-title {
@@ -22,7 +36,28 @@
   margin: 0 0 2rem 0;
 }
 
-/* Header Buttons Group */
+/* Hamburger: hidden on desktop */
+.header-hamburger-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: #f5f5f5;
+  color: #2c3e50;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.header-hamburger-btn:hover {
+  background: #e8e8e8;
+  color: #1a252f;
+}
+
+/* Header Buttons Group – hidden on mobile via media query */
 .header-buttons-group {
   display: flex;
   gap: 1rem;
@@ -87,28 +122,147 @@
   color: #333;
 }
 
-/* Responsive Design */
+/* Overlay: light gray, blocks clicks when menu open */
+.header-nav-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(160, 160, 160, 0.5);
+  z-index: 9998;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.header-nav-overlay-open {
+  pointer-events: auto;
+  opacity: 1;
+}
+
+/* Slide-out drawer */
+.header-nav-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 280px;
+  max-width: 85vw;
+  background: #fff;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.header-nav-drawer-open {
+  transform: translateX(0);
+}
+
+.header-nav-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #e0e0e0;
+  background: #f8f9fa;
+  flex-shrink: 0;
+}
+
+.header-nav-drawer-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.header-nav-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #2c3e50;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.header-nav-close-btn:hover {
+  background: #e8e8e8;
+  color: #1a252f;
+}
+
+.header-nav-drawer-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.nav-drawer-btn {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  font-weight: 500;
+  text-align: left;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #f5f5f5;
+  color: #2c3e50;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.nav-drawer-btn:hover {
+  background: #e8e8e8;
+  border-color: #ccc;
+}
+
+.nav-drawer-btn.active {
+  background: #fff;
+  border-color: #3498db;
+  color: #3498db;
+  font-weight: 600;
+}
+
+.nav-drawer-logout {
+  margin-top: 0.5rem;
+  background: #fff5f5;
+  border-color: #fcc;
+}
+
+.nav-drawer-logout:hover {
+  background: #ffe8e8;
+}
+
+/* Responsive: mobile – hide nav buttons, show hamburger */
 @media (max-width: 768px) {
-  .curriculum-header > div {
-    flex-direction: column;
-    align-items: flex-start !important;
-    gap: 1rem;
+  .curriculum-header-inner {
+    flex-direction: row;
+    align-items: center;
   }
 
   .header-buttons-group {
-    width: 100%;
-    flex-direction: column;
-    gap: 0.75rem;
+    display: none;
   }
 
-  .header-buttons-group .nav-btn,
-  .logout-button {
-    width: 100%;
-    margin-top: 0;
+  .header-hamburger-btn {
+    display: flex;
   }
 
   .curriculum-title {
     font-size: 2rem;
+  }
+}
+
+@media (min-width: 769px) {
+  .header-nav-overlay,
+  .header-nav-drawer {
+    display: none;
   }
 }
 
