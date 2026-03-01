@@ -315,8 +315,8 @@ const Curriculum = () => {
     return { grade: parseInt(key.slice(0, i), 10), index: parseInt(key.slice(i + 2), 10) };
   };
 
-  const handleDeleteObjective = async (grade, topic) => {
-    const key = objKey(grade.grade, topic.code);
+  const handleDeleteObjective = async (grade, topicIndex, topic) => {
+    const key = rowKey(grade.grade, topicIndex);
     const label = topic.title || topic.code || 'this objective';
     if (!window.confirm(`Delete "${label}"? This cannot be undone.`)) return;
     try {
@@ -382,8 +382,8 @@ const Curriculum = () => {
     }
   };
 
-  const handleEditObjectiveClick = (gradeNum, obj) => {
-    setEditingObjectiveKey(objKey(gradeNum, obj.code));
+  const handleEditObjectiveClick = (gradeNum, topicIndex, obj) => {
+    setEditingObjectiveKey(rowKey(gradeNum, topicIndex));
     setEditObjectiveForm({
       subject: (obj.subject != null ? String(obj.subject) : '').trim(),
       title: (obj.title != null ? String(obj.title) : '').trim(),
@@ -400,8 +400,8 @@ const Curriculum = () => {
     setEditObjectiveForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSaveObjective = async (gradeNum, code) => {
-    const key = objKey(gradeNum, code);
+  const handleSaveObjective = async (gradeNum, topicIndex, code) => {
+    const key = rowKey(gradeNum, topicIndex);
     try {
       setSavingObjectiveKey(key);
       await axios.put(`${API_URL}/api/curriculum/objective`, {
@@ -944,12 +944,12 @@ const Curriculum = () => {
                     </thead>
                     <tbody>
                       {grade.objectives.map((topic, topicIndex) => {
-                        const key = objKey(grade.grade, topic.code);
+                        const rowId = rowKey(grade.grade, topicIndex);
                         const topicKey = `${grade._id}-${topicIndex}`;
                         const isSelectedForCourse = selectedTopics.includes(topicKey);
-                        const isEditing = editingObjectiveKey === key;
-                        const isSaving = savingObjectiveKey === key;
-                        const isDeleting = deletingObjectiveKey === key;
+                        const isEditing = editingObjectiveKey === rowId;
+                        const isSaving = savingObjectiveKey === rowId;
+                        const isDeleting = deletingObjectiveKey === rowId;
                         return (
                           <tr key={topic.code || topicIndex} className={isEditing ? 'objectives-row-editing' : ''}>
                             {objectivesSelectMode && (
@@ -1030,7 +1030,7 @@ const Curriculum = () => {
                                   <button
                                     type="button"
                                     className="objectives-action-btn objectives-edit-btn"
-                                    onClick={() => handleEditObjectiveClick(grade.grade, topic)}
+                                    onClick={() => handleEditObjectiveClick(grade.grade, topicIndex, topic)}
                                     title="Edit"
                                     aria-label="Edit"
                                   >
@@ -1042,7 +1042,7 @@ const Curriculum = () => {
                                   <button
                                     type="button"
                                     className="objectives-action-btn objectives-delete-btn"
-                                    onClick={() => handleDeleteObjective(grade, topic)}
+                                    onClick={() => handleDeleteObjective(grade, topicIndex, topic)}
                                     disabled={isDeleting}
                                     title="Delete"
                                     aria-label="Delete"
