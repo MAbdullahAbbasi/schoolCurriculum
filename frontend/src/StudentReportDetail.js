@@ -135,6 +135,42 @@ const StudentReportDetail = () => {
       });
   }, [courses, recordsByCourse, student, decodedRegNo]);
 
+  // Subject-wise marks for marksheet: aggregate by course subject (total of course marks = 100% per course)
+  const subjectMarksheetRows = useMemo(() => {
+    if (!enrolledCoursesWithMarks.length) return [];
+    const bySubject = {};
+    enrolledCoursesWithMarks.forEach(({ course, record }) => {
+      const subjectName = (course.subject && String(course.subject).trim()) || 'Other';
+      const studentEntry = record?.students?.find((s) => String(s.registrationNumber) === decodedRegNo);
+      const overallPercentage = studentEntry?.overallPercentage;
+      const percentage = overallPercentage != null && Number.isFinite(Number(overallPercentage)) ? Number(overallPercentage) : null;
+      if (!bySubject[subjectName]) {
+        bySubject[subjectName] = { subject: subjectName, maxTotal: 0, obtainedTotal: 0, courseCount: 0 };
+      }
+      bySubject[subjectName].maxTotal += 100;
+      bySubject[subjectName].obtainedTotal += percentage != null ? percentage : 0;
+      bySubject[subjectName].courseCount += 1;
+    });
+    return Object.values(bySubject).map((row) => {
+      const percentage = row.maxTotal > 0 ? (row.obtainedTotal / row.maxTotal) * 100 : 0;
+      return { ...row, percentage };
+    }).sort((a, b) => a.subject.localeCompare(b.subject, undefined, { sensitivity: 'base' }));
+  }, [enrolledCoursesWithMarks, decodedRegNo]);
+
+  const getGradeFromPercentage = (percentage) => {
+    const scheme = getGradingSchemeFromStorage();
+    if (!scheme || scheme.length === 0) return '—';
+    const num = Number(percentage);
+    if (!Number.isFinite(num)) return '—';
+    const sorted = [...scheme]
+      .filter((r) => r.marks !== undefined && r.marks !== null && String(r.marks).trim() !== '')
+      .map((r) => ({ ...r, marksNum: Number(r.marks) }))
+      .filter((r) => Number.isFinite(r.marksNum))
+      .sort((a, b) => b.marksNum - a.marksNum);
+    const row = sorted.find((r) => r.marksNum <= num);
+    return row && row.grade != null ? String(row.grade) : '—';
+  };
+
   const handleBack = () => {
     navigate('/reports');
   };
@@ -182,7 +218,66 @@ const StudentReportDetail = () => {
             No courses found in which this student is enrolled, or no data to display.
           </p>
         ) : (
-          <div className="student-report-detail-sections">
+          <>
+            {/* Marksheet by subject (Annual Examination style) */}
+            {subjectMarksheetRows.length > 0 && (
+              <section className="student-report-marksheet-section">
+                <h3 className="student-report-marksheet-heading">Annual Examination – Marks by Subject</h3>
+                <div className="student-report-marksheet-table-wrapper">
+                  <table className="student-report-marksheet-table">
+                    <thead>
+                      <tr>
+                        <th className="student-report-marksheet-th">Subject</th>
+                        <th className="student-report-marksheet-th">Max. Marks</th>
+                        <th className="student-report-marksheet-th">Marks Obtained</th>
+                        <th className="student-report-marksheet-th">Grade</th>
+                        <th className="student-report-marksheet-th">Highest Marks in Class</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {subjectMarksheetRows.map((row) => (
+                        <tr key={row.subject}>
+                          <td className="student-report-marksheet-td">{row.subject}</td>
+                          <td className="student-report-marksheet-td student-report-marksheet-td-num">{row.maxTotal}</td>
+                          <td className="student-report-marksheet-td student-report-marksheet-td-num">
+                            {Number(row.obtainedTotal).toFixed(2)}
+                          </td>
+                          <td className="student-report-marksheet-td">{getGradeFromPercentage(row.percentage)}</td>
+                          <td className="student-report-marksheet-td">—</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="student-report-marksheet-total-row">
+                        <td className="student-report-marksheet-td" colSpan={2}>
+                          <strong>Total</strong>
+                        </td>
+                        <td className="student-report-marksheet-td student-report-marksheet-td-num">
+                          {subjectMarksheetRows.reduce((s, r) => s + r.obtainedTotal, 0).toFixed(2)}
+                        </td>
+                        <td className="student-report-marksheet-td" colSpan={2} />
+                      </tr>
+                      <tr>
+                        <td className="student-report-marksheet-td" colSpan={2}>
+                          <strong>Percentage</strong>
+                        </td>
+                        <td className="student-report-marksheet-td student-report-marksheet-td-num">
+                          {(() => {
+                            const totalMax = subjectMarksheetRows.reduce((s, r) => s + r.maxTotal, 0);
+                            const totalObtained = subjectMarksheetRows.reduce((s, r) => s + r.obtainedTotal, 0);
+                            return totalMax > 0 ? ((totalObtained / totalMax) * 100).toFixed(2) : '—';
+                          })()}
+                          %
+                        </td>
+                        <td className="student-report-marksheet-td" colSpan={2} />
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </section>
+            )}
+
+            <div className="student-report-detail-sections">
             {enrolledCoursesWithMarks.map(({ course, objectiveMarks }) => (
               <section key={course.code || course._id} className="student-report-course-section">
                 <h3 className="student-report-course-heading">{course.courseName || course.code}</h3>
@@ -222,7 +317,8 @@ const StudentReportDetail = () => {
                 </div>
               </section>
             ))}
-          </div>
+            </div>
+          </>
         )}
 
         <section className="student-report-grading-scheme-section">

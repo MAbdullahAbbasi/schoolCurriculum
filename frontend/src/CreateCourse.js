@@ -43,6 +43,7 @@ const CreateCourse = () => {
         courseCode: topic.code || '',
         topicName: topic.title || '',
         description: topic.description || '',
+        subject: (topic.subject != null ? String(topic.subject).trim() : '') || '',
       };
     }).filter(Boolean);
   }, [selectedTopics, curriculumData]);
@@ -151,6 +152,7 @@ const CreateCourse = () => {
 
     const coursePayload = {
       courseName: formData.courseName.trim(),
+      subject: resolvedTopics[0]?.subject ?? '',
       courseDuration: {
         type: formData.durationType,
         value: Number(formData.durationValue),

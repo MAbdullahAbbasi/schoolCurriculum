@@ -12,6 +12,11 @@ const courseSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    subject: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     courseDuration: {
       type: {
         type: String,

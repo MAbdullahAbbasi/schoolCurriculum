@@ -120,6 +120,72 @@
   white-space: nowrap;
 }
 
+/* Marksheet by subject (Annual Examination style) */
+.student-report-marksheet-section {
+  margin-bottom: 2rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.student-report-marksheet-heading {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0;
+  padding: 1rem 1.25rem;
+  background: #f0f4f8;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.student-report-marksheet-table-wrapper {
+  overflow-x: auto;
+}
+
+.student-report-marksheet-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.student-report-marksheet-table thead {
+  background: #f1f3f5;
+}
+
+.student-report-marksheet-th {
+  padding: 0.65rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #2c3e50;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.student-report-marksheet-table tbody tr {
+  border-bottom: 1px solid #eee;
+}
+
+.student-report-marksheet-td {
+  padding: 0.65rem 1rem;
+  color: #333;
+}
+
+.student-report-marksheet-td-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.student-report-marksheet-total-row {
+  background: #f8f9fa;
+  font-weight: 600;
+}
+
+.student-report-marksheet-table tfoot td {
+  padding: 0.65rem 1rem;
+  border-top: 2px solid #dee2e6;
+  background: #f8f9fa;
+}
+
 .student-report-grading-scheme-section {
   margin-top: 2.5rem;
   padding-top: 1.5rem;

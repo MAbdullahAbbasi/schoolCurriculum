@@ -52,7 +52,7 @@ router.post('/', async (req, res) => {
       });
     }
 
-    const { courseName, courseDuration, weightage, startingDate, topics, totalMarks: bodyTotalMarks, totalQuestions: bodyTotalQuestions, questions: bodyQuestions } = req.body;
+    const { courseName, courseDuration, weightage, startingDate, topics, totalMarks: bodyTotalMarks, totalQuestions: bodyTotalQuestions, questions: bodyQuestions, subject: bodySubject } = req.body;
 
     // Validate required fields
     if (!courseName || !courseName.trim()) {
@@ -169,9 +169,11 @@ router.post('/', async (req, res) => {
     const code = await generateCourseCode();
 
     // Create course object
+    const subjectStr = bodySubject != null && String(bodySubject).trim() !== '' ? String(bodySubject).trim() : '';
     const courseData = {
       code,
       courseName: courseName.trim(),
+      ...(subjectStr && { subject: subjectStr }),
       courseDuration: {
         type: courseDuration.type,
         value: Number(courseDuration.value),
