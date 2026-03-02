@@ -7,6 +7,45 @@ import './StudentReportDetail.css';
 
 const GRADING_SCHEME_STORAGE_KEY = 'curriculum_grading_scheme';
 
+// Fixed report format matching the school annual examination template (exact order and labels)
+const MARKSHEET_TEMPLATE_ROWS = [
+  { label: 'Islamiat (Oral)', key: 'islamiat_oral' },
+  { label: 'Islamiat (Written)', key: 'islamiat_written' },
+  { label: 'English (Oral)', key: 'english_oral' },
+  { label: 'English (Written)', key: 'english_written' },
+  { label: 'Urdu (Oral)', key: 'urdu_oral' },
+  { label: 'Urdu (Written)', key: 'urdu_written' },
+  { label: "Math's (Oral)", key: 'math_oral' },
+  { label: "Math's (Written)", key: 'math_written' },
+  { label: 'General Knowledge', key: 'general_knowledge' },
+  { label: 'Social Studies', key: 'social_studies' },
+  { label: 'Science', key: 'science' },
+  { label: 'Physics', key: 'physics' },
+  { label: 'Chemistry', key: 'chemistry' },
+  { label: 'Biology', key: 'biology' },
+  { label: 'Computer', key: 'computer' },
+  { label: 'Art', key: 'art' },
+];
+
+// Map course subject (from DB) to template row key – first matching row gets the marks (we don't have Oral/Written split in data)
+const SUBJECT_TO_TEMPLATE_KEY = {
+  islamiat: 'islamiat_oral',
+  english: 'english_oral',
+  urdu: 'urdu_oral',
+  math: 'math_oral',
+  maths: 'math_oral',
+  mathematics: 'math_oral',
+  "math's": 'math_oral',
+  general knowledge: 'general_knowledge',
+  social studies: 'social_studies',
+  science: 'science',
+  physics: 'physics',
+  chemistry: 'chemistry',
+  biology: 'biology',
+  computer: 'computer',
+  art: 'art',
+};
+
 const getGradingSchemeFromStorage = () => {
   try {
     const raw = localStorage.getItem(GRADING_SCHEME_STORAGE_KEY);
@@ -135,26 +174,28 @@ const StudentReportDetail = () => {
       });
   }, [courses, recordsByCourse, student, decodedRegNo]);
 
-  // Subject-wise marks for marksheet: aggregate by course subject (total of course marks = 100% per course)
-  const subjectMarksheetRows = useMemo(() => {
-    if (!enrolledCoursesWithMarks.length) return [];
-    const bySubject = {};
+  // Aggregate marks by template row key (course subject -> first matching template row; 100% per course)
+  const marksByTemplateKey = useMemo(() => {
+    const byKey = {};
     enrolledCoursesWithMarks.forEach(({ course, record }) => {
-      const subjectName = (course.subject && String(course.subject).trim()) || 'Other';
+      const rawSubject = (course.subject && String(course.subject).trim()) || '';
+      const normalized = rawSubject.toLowerCase().trim();
+      const templateKey = SUBJECT_TO_TEMPLATE_KEY[normalized] || null;
+      if (!templateKey) return;
       const studentEntry = record?.students?.find((s) => String(s.registrationNumber) === decodedRegNo);
       const overallPercentage = studentEntry?.overallPercentage;
       const percentage = overallPercentage != null && Number.isFinite(Number(overallPercentage)) ? Number(overallPercentage) : null;
-      if (!bySubject[subjectName]) {
-        bySubject[subjectName] = { subject: subjectName, maxTotal: 0, obtainedTotal: 0, courseCount: 0 };
+      if (!byKey[templateKey]) {
+        byKey[templateKey] = { maxTotal: 0, obtainedTotal: 0 };
       }
-      bySubject[subjectName].maxTotal += 100;
-      bySubject[subjectName].obtainedTotal += percentage != null ? percentage : 0;
-      bySubject[subjectName].courseCount += 1;
+      byKey[templateKey].maxTotal += 100;
+      byKey[templateKey].obtainedTotal += percentage != null ? percentage : 0;
     });
-    return Object.values(bySubject).map((row) => {
-      const percentage = row.maxTotal > 0 ? (row.obtainedTotal / row.maxTotal) * 100 : 0;
-      return { ...row, percentage };
-    }).sort((a, b) => a.subject.localeCompare(b.subject, undefined, { sensitivity: 'base' }));
+    Object.keys(byKey).forEach((k) => {
+      const row = byKey[k];
+      row.percentage = row.maxTotal > 0 ? (row.obtainedTotal / row.maxTotal) * 100 : 0;
+    });
+    return byKey;
   }, [enrolledCoursesWithMarks, decodedRegNo]);
 
   const getGradeFromPercentage = (percentage) => {
@@ -215,68 +256,10 @@ const StudentReportDetail = () => {
 
         {enrolledCoursesWithMarks.length === 0 ? (
           <p className="student-report-detail-empty">
-            No courses found in which this student is enrolled, or no data to display.
+            No courses found in which this student is enrolled.
           </p>
         ) : (
           <>
-            {/* Marksheet by subject (Annual Examination style) */}
-            {subjectMarksheetRows.length > 0 && (
-              <section className="student-report-marksheet-section">
-                <h3 className="student-report-marksheet-heading">Annual Examination – Marks by Subject</h3>
-                <div className="student-report-marksheet-table-wrapper">
-                  <table className="student-report-marksheet-table">
-                    <thead>
-                      <tr>
-                        <th className="student-report-marksheet-th">Subject</th>
-                        <th className="student-report-marksheet-th">Max. Marks</th>
-                        <th className="student-report-marksheet-th">Marks Obtained</th>
-                        <th className="student-report-marksheet-th">Grade</th>
-                        <th className="student-report-marksheet-th">Highest Marks in Class</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {subjectMarksheetRows.map((row) => (
-                        <tr key={row.subject}>
-                          <td className="student-report-marksheet-td">{row.subject}</td>
-                          <td className="student-report-marksheet-td student-report-marksheet-td-num">{row.maxTotal}</td>
-                          <td className="student-report-marksheet-td student-report-marksheet-td-num">
-                            {Number(row.obtainedTotal).toFixed(2)}
-                          </td>
-                          <td className="student-report-marksheet-td">{getGradeFromPercentage(row.percentage)}</td>
-                          <td className="student-report-marksheet-td">—</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      <tr className="student-report-marksheet-total-row">
-                        <td className="student-report-marksheet-td" colSpan={2}>
-                          <strong>Total</strong>
-                        </td>
-                        <td className="student-report-marksheet-td student-report-marksheet-td-num">
-                          {subjectMarksheetRows.reduce((s, r) => s + r.obtainedTotal, 0).toFixed(2)}
-                        </td>
-                        <td className="student-report-marksheet-td" colSpan={2} />
-                      </tr>
-                      <tr>
-                        <td className="student-report-marksheet-td" colSpan={2}>
-                          <strong>Percentage</strong>
-                        </td>
-                        <td className="student-report-marksheet-td student-report-marksheet-td-num">
-                          {(() => {
-                            const totalMax = subjectMarksheetRows.reduce((s, r) => s + r.maxTotal, 0);
-                            const totalObtained = subjectMarksheetRows.reduce((s, r) => s + r.obtainedTotal, 0);
-                            return totalMax > 0 ? ((totalObtained / totalMax) * 100).toFixed(2) : '—';
-                          })()}
-                          %
-                        </td>
-                        <td className="student-report-marksheet-td" colSpan={2} />
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              </section>
-            )}
-
             <div className="student-report-detail-sections">
             {enrolledCoursesWithMarks.map(({ course, objectiveMarks }) => (
               <section key={course.code || course._id} className="student-report-course-section">
@@ -320,6 +303,86 @@ const StudentReportDetail = () => {
             </div>
           </>
         )}
+
+        {/* Marksheet – after objective tables, before grading scheme */}
+        <section className="student-report-marksheet-section">
+          <h2 className="student-report-marksheet-school-name">SAPLING HIGH SCHOOL (Registered)</h2>
+          <h3 className="student-report-marksheet-heading">Annual Examination</h3>
+          <div className="student-report-marksheet-table-wrapper">
+            <table className="student-report-marksheet-table">
+              <thead>
+                <tr>
+                  <th className="student-report-marksheet-th">Subject</th>
+                  <th className="student-report-marksheet-th">Max. Marks</th>
+                  <th className="student-report-marksheet-th">Marks. Obtained</th>
+                  <th className="student-report-marksheet-th">Grade</th>
+                  <th className="student-report-marksheet-th">Highest Marks in Class</th>
+                </tr>
+              </thead>
+              <tbody>
+                {MARKSHEET_TEMPLATE_ROWS.map((row) => {
+                  const data = marksByTemplateKey[row.key];
+                  const hasData = data && data.maxTotal > 0;
+                  return (
+                    <tr key={row.key}>
+                      <td className="student-report-marksheet-td">{row.label}</td>
+                      <td className="student-report-marksheet-td student-report-marksheet-td-num">
+                        {hasData ? data.maxTotal : ''}
+                      </td>
+                      <td className="student-report-marksheet-td student-report-marksheet-td-num">
+                        {hasData ? Number(data.obtainedTotal).toFixed(2) : ''}
+                      </td>
+                      <td className="student-report-marksheet-td">
+                        {hasData ? getGradeFromPercentage(data.percentage) : ''}
+                      </td>
+                      <td className="student-report-marksheet-td">{hasData ? '—' : ''}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr className="student-report-marksheet-total-row">
+                  <td className="student-report-marksheet-td"><strong>Total</strong></td>
+                  <td className="student-report-marksheet-td student-report-marksheet-td-num">
+                    {(() => {
+                      const totalMax = Object.values(marksByTemplateKey).reduce((s, r) => s + r.maxTotal, 0);
+                      return totalMax > 0 ? totalMax : '';
+                    })()}
+                  </td>
+                  <td className="student-report-marksheet-td student-report-marksheet-td-num">
+                    {(() => {
+                      const totalMax = Object.values(marksByTemplateKey).reduce((s, r) => s + r.maxTotal, 0);
+                      const totalObtained = Object.values(marksByTemplateKey).reduce((s, r) => s + r.obtainedTotal, 0);
+                      return totalMax > 0 ? Number(totalObtained).toFixed(2) : '';
+                    })()}
+                  </td>
+                  <td className="student-report-marksheet-td" colSpan={2} />
+                </tr>
+                <tr className="student-report-marksheet-summary-row">
+                  <td className="student-report-marksheet-td"><strong>Attendance</strong></td>
+                  <td className="student-report-marksheet-td" colSpan={2} />
+                  <td className="student-report-marksheet-td"><strong>Percentage</strong></td>
+                  <td className="student-report-marksheet-td student-report-marksheet-td-num" colSpan={2}>
+                    {(() => {
+                      const totalMax = Object.values(marksByTemplateKey).reduce((s, r) => s + r.maxTotal, 0);
+                      const totalObtained = Object.values(marksByTemplateKey).reduce((s, r) => s + r.obtainedTotal, 0);
+                      return totalMax > 0 ? `${((totalObtained / totalMax) * 100).toFixed(2)}%` : '';
+                    })()}
+                  </td>
+                </tr>
+                <tr className="student-report-marksheet-summary-row">
+                  <td className="student-report-marksheet-td" colSpan={3} />
+                  <td className="student-report-marksheet-td"><strong>Position</strong></td>
+                  <td className="student-report-marksheet-td" colSpan={2} />
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          <div className="student-report-marksheet-footer">
+            <span className="student-report-marksheet-date">Date: _____________</span>
+            <span className="student-report-marksheet-sign">Teacher&apos;s Sign _____________</span>
+          </div>
+        </section>
 
         <section className="student-report-grading-scheme-section">
           <h3 className="student-report-grading-scheme-heading">Grading Scheme</h3>

@@ -120,23 +120,33 @@
   white-space: nowrap;
 }
 
-/* Marksheet by subject (Annual Examination style) */
+/* Marksheet – fixed format (Annual Examination style) */
 .student-report-marksheet-section {
   margin-bottom: 2rem;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  padding: 1.25rem 1.5rem;
+}
+
+.student-report-marksheet-school-name {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 0.25rem 0;
+  text-align: center;
+  letter-spacing: 0.02em;
 }
 
 .student-report-marksheet-heading {
-  font-size: 1.2rem;
-  font-weight: 700;
+  font-size: 1.1rem;
+  font-weight: 600;
   color: #2c3e50;
-  margin: 0;
-  padding: 1rem 1.25rem;
-  background: #f0f4f8;
-  border-bottom: 1px solid #e0e0e0;
+  margin: 0 0 1rem 0;
+  text-align: center;
+  text-decoration: underline;
+  padding-bottom: 0.5rem;
 }
 
 .student-report-marksheet-table-wrapper {
@@ -184,6 +194,25 @@
   padding: 0.65rem 1rem;
   border-top: 2px solid #dee2e6;
   background: #f8f9fa;
+}
+
+.student-report-marksheet-summary-row td {
+  background: #f8f9fa;
+}
+
+.student-report-marksheet-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #dee2e6;
+  font-size: 0.95rem;
+  color: #555;
+}
+
+.student-report-marksheet-date,
+.student-report-marksheet-sign {
+  font-weight: 500;
 }
 
 .student-report-grading-scheme-section {
