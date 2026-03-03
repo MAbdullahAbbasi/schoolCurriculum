@@ -1,0 +1,125 @@
+.create-course-marks-container {
+  min-height: 100vh;
+  background: #fff;
+  padding: 2rem;
+}
+
+.create-course-marks-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.create-course-marks-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0 0 0.5rem 0;
+}
+
+.create-course-marks-hint {
+  font-size: 0.95rem;
+  color: #6c757d;
+  margin: 0 0 1.5rem 0;
+}
+
+.create-course-marks-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.create-course-marks-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.create-course-marks-table th,
+.create-course-marks-table td {
+  padding: 0.65rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.create-course-marks-table th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.marks-q-cell {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.marks-part-cell {
+  color: #555;
+}
+
+.marks-slot-input {
+  width: 5rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.95rem;
+}
+
+.create-course-marks-sum {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  color: #2c3e50;
+}
+
+.create-course-marks-sum-error {
+  color: #c0392b;
+  font-weight: 600;
+}
+
+.create-course-marks-error {
+  padding: 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #b91c1c;
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+}
+
+.create-course-marks-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.create-course-marks-back-btn {
+  padding: 0.6rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background: #f5f5f5;
+  color: #333;
+  cursor: pointer;
+}
+
+.create-course-marks-next-btn {
+  padding: 0.6rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: none;
+  background: #2563eb;
+  color: #fff;
+  cursor: pointer;
+}
+
+.create-course-marks-next-btn:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+.create-course-marks-missing {
+  color: #64748b;
+  margin-bottom: 1rem;
+}

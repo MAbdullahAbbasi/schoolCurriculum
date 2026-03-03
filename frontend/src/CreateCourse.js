@@ -24,8 +24,27 @@ const CreateCourse = () => {
   const { selectedTopics = [], data: curriculumData = [] } = location.state || {};
 
   const [formData, setFormData] = useState(defaultFormData);
-  const [objectiveMarks, setObjectiveMarks] = useState({});
+  const [questionParts, setQuestionParts] = useState([]);
   const [createError, setCreateError] = useState(null);
+
+  const totalQuestionsNum = useMemo(() => {
+    const n = parseInt(formData.totalQuestions, 10);
+    return Number.isNaN(n) || n < 1 ? 0 : n;
+  }, [formData.totalQuestions]);
+
+  React.useEffect(() => {
+    if (totalQuestionsNum <= 0) {
+      setQuestionParts([]);
+      return;
+    }
+    setQuestionParts(prev => {
+      const next = [...prev];
+      while (next.length < totalQuestionsNum) {
+        next.push({ numParts: '', compulsoryParts: '' });
+      }
+      return next.slice(0, totalQuestionsNum);
+    });
+  }, [totalQuestionsNum]);
 
   const resolvedTopics = useMemo(() => {
     if (!Array.isArray(selectedTopics) || !Array.isArray(curriculumData)) return [];
@@ -96,11 +115,6 @@ const CreateCourse = () => {
     setCreateError(null);
   };
 
-  const handleMarksChange = (topicKey, value) => {
-    setObjectiveMarks(prev => ({ ...prev, [topicKey]: value }));
-    setCreateError(null);
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setCreateError(null);
@@ -132,10 +146,6 @@ const CreateCourse = () => {
       setCreateError('Please enter a valid total marks (number greater than 0).');
       return;
     }
-    if (Math.abs(sumObjectiveMarks - totalMarksNum) > 0.01) {
-      setCreateError(`Total marks for all objectives must equal ${totalMarksNum}.`);
-      return;
-    }
 
     const totalQuestionsNum = parseInt(formData.totalQuestions, 10);
     if (Number.isNaN(totalQuestionsNum) || totalQuestionsNum < 1) {
@@ -143,12 +153,19 @@ const CreateCourse = () => {
       return;
     }
 
-    const topics = resolvedTopics.map(t => ({
-      courseCode: t.courseCode,
-      topicName: t.topicName,
-      marks: Number(objectiveMarks[t.topicKey]) || 0,
-      grade: t.grade,
+    const partsConfig = questionParts.slice(0, totalQuestionsNum).map((row, i) => ({
+      questionIndex: i + 1,
+      numParts: row.numParts === '' ? 0 : Math.max(0, parseInt(String(row.numParts).trim(), 10) || 0),
+      compulsoryParts: row.compulsoryParts === '' ? 0 : Math.max(0, parseInt(String(row.compulsoryParts).trim(), 10) || 0),
     }));
+
+    for (let i = 0; i < partsConfig.length; i++) {
+      const p = partsConfig[i];
+      if (p.numParts > 0 && p.compulsoryParts > p.numParts) {
+        setCreateError(`Q${i + 1}: Compulsory parts cannot exceed number of parts.`);
+        return;
+      }
+    }
 
     const coursePayload = {
       courseName: formData.courseName.trim(),
@@ -164,13 +181,13 @@ const CreateCourse = () => {
       startingDate: formData.startDate,
       totalMarks: totalMarksNum,
       totalQuestions: totalQuestionsNum,
-      topics,
     };
 
-    navigate('/create-course/map-questions', {
+    navigate('/create-course/marks', {
       state: {
         coursePayload,
         totalQuestions: totalQuestionsNum,
+        questionParts: partsConfig,
         resolvedTopics,
       },
     });
@@ -297,7 +314,6 @@ const CreateCourse = () => {
                 value={formData.totalMarks}
                 onChange={(e) => handleFormChange('totalMarks', e.target.value)}
               />
-              <span className="form-hint">Sum of all objective marks below must equal this value.</span>
             </div>
 
             <div className="form-field">
@@ -312,57 +328,59 @@ const CreateCourse = () => {
                 value={formData.totalQuestions}
                 onChange={(e) => handleFormChange('totalQuestions', e.target.value)}
               />
-              <span className="form-hint">Number of questions in the course. You will map objectives to each question on the next step.</span>
+              <span className="form-hint">Enter number of questions. Then set parts per question below and press Next.</span>
             </div>
           </div>
 
-          <div className="objectives-marks-section">
-            <h3 className="objectives-marks-heading">
-              Selected objectives – enter marks (total must equal {formData.totalMarks ? formData.totalMarks : '—'})
-            </h3>
-            <div className="objectives-marks-table-wrapper">
-              <table className="objectives-marks-table">
-                <thead>
-                  <tr>
-                    <th>Grade</th>
-                    <th>Code</th>
-                    <th>Title</th>
-                    <th>Marks</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {resolvedTopics.map(t => (
-                    <tr key={t.topicKey}>
-                      <td>{t.grade}</td>
-                      <td>{t.courseCode}</td>
-                      <td>{t.topicName}</td>
-                      <td>
-                        <input
-                          type="number"
-                          min="0"
-                          step="1"
-                          className="marks-input"
-                          value={objectiveMarks[t.topicKey] ?? ''}
-                          onChange={(e) => handleMarksChange(t.topicKey, e.target.value)}
-                          placeholder="0"
-                        />
-                      </td>
+          {totalQuestionsNum > 0 && (
+            <div className="questions-parts-section">
+              <h3 className="questions-parts-heading">Questions and parts</h3>
+              <p className="questions-parts-hint">Enter number of parts per question (leave empty if no parts). If a question has parts, optionally enter compulsory parts to be attempted.</p>
+              <div className="questions-parts-table-wrapper">
+                <table className="questions-parts-table">
+                  <thead>
+                    <tr>
+                      <th>Question</th>
+                      <th>Number of parts</th>
+                      <th>Compulsory parts to be attempted</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {questionParts.map((row, idx) => (
+                      <tr key={idx}>
+                        <td className="question-label-cell">Q{idx + 1}</td>
+                        <td>
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            className="parts-input"
+                            placeholder="None"
+                            value={row.numParts}
+                            onChange={(e) => handleQuestionPartChange(idx, 'numParts', e.target.value)}
+                            aria-label={`Parts for Q${idx + 1}`}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            className="parts-input"
+                            placeholder="—"
+                            value={row.compulsoryParts}
+                            onChange={(e) => handleQuestionPartChange(idx, 'compulsoryParts', e.target.value)}
+                            aria-label={`Compulsory parts for Q${idx + 1}`}
+                            disabled={!(Number(row.numParts) > 0)}
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <p className={`marks-total ${marksError ? 'marks-total-error' : ''}`}>
-              Total marks: <strong>{sumObjectiveMarks}</strong>
-              {formData.totalMarks ? ` / ${formData.totalMarks}` : ''}
-            </p>
-            {marksError && formData.totalMarks && (
-              <p className="marks-error-msg">Sum of objective marks must equal {formData.totalMarks}.</p>
-            )}
-            {resolvedTopics.length > 0 && formData.totalMarks && !totalMarksValid && (
-              <p className="marks-error-msg">Please enter a valid total marks above.</p>
-            )}
-          </div>
+          )}
 
           {createError && (
             <div className="create-course-error" role="alert">
@@ -374,8 +392,8 @@ const CreateCourse = () => {
             <button type="button" className="create-course-cancel-btn" onClick={handleCancel}>
               Cancel
             </button>
-            <button type="submit" className="create-course-submit-btn">
-              Next: Map questions to objectives
+            <button type="submit" className="create-course-submit-btn" disabled={totalQuestionsNum < 1}>
+              Next
             </button>
           </div>
         </form>
