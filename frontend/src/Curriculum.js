@@ -350,6 +350,23 @@ const Curriculum = () => {
     if (objectivesSelectMode) setSelectedObjectives(new Set());
   };
 
+  // Enter delete-selection mode with all objectives selected (triggered from "Delete all objectives" in Add objective individually box)
+  const handleEnterDeleteSelectionMode = () => {
+    const allKeys = new Set();
+    filteredData.forEach((grade) => {
+      (grade.objectives || []).forEach((_, index) => {
+        allKeys.add(rowKey(grade.grade, index));
+      });
+    });
+    setSelectedObjectives(allKeys);
+    setObjectivesSelectMode(true);
+  };
+
+  const handleCancelDeleteSelectionMode = () => {
+    setObjectivesSelectMode(false);
+    setSelectedObjectives(new Set());
+  };
+
   const toggleObjectiveSelection = (gradeNum, topicIndex) => {
     const key = rowKey(gradeNum, topicIndex);
     setSelectedObjectives((prev) => {
@@ -705,14 +722,35 @@ const Curriculum = () => {
             <button type="submit" className="add-objective-submit-btn" disabled={addingObjective}>
               {addingObjective ? 'Adding...' : 'Add'}
             </button>
-            <button
-              type="button"
-              className="delete-all-objectives-btn"
-              onClick={handleDeleteAllObjectives}
-              disabled={deletingAllObjectives || data.length === 0}
-            >
-              {deletingAllObjectives ? 'Deleting...' : 'Delete all objectives'}
-            </button>
+            {objectivesSelectMode ? (
+              <>
+                <button
+                  type="button"
+                  className="objectives-delete-selected-btn"
+                  onClick={handleDeleteSelectedObjectives}
+                  disabled={selectedObjectives.size === 0 || deletingSelectedObjectives}
+                >
+                  {deletingSelectedObjectives ? 'Deleting...' : `Delete selected (${selectedObjectives.size})`}
+                </button>
+                <button
+                  type="button"
+                  className="cancel-delete-selection-btn"
+                  onClick={handleCancelDeleteSelectionMode}
+                  disabled={deletingSelectedObjectives}
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                className="delete-all-objectives-btn"
+                onClick={handleEnterDeleteSelectionMode}
+                disabled={data.length === 0}
+              >
+                Delete all objectives
+              </button>
+            )}
           </form>
         </div>
 
@@ -864,26 +902,6 @@ const Curriculum = () => {
         </div>
       ) : (
         <div className="grades-section">
-          <div className="objectives-table-actions">
-            <button
-              type="button"
-              className={objectivesSelectMode ? 'objectives-select-btn active' : 'objectives-select-btn'}
-              onClick={toggleObjectivesSelectMode}
-              disabled={deletingSelectedObjectives}
-            >
-              {objectivesSelectMode ? 'Cancel' : 'Select'}
-            </button>
-            {objectivesSelectMode && (
-              <button
-                type="button"
-                className="objectives-delete-selected-btn"
-                onClick={handleDeleteSelectedObjectives}
-                disabled={selectedObjectives.size === 0 || deletingSelectedObjectives}
-              >
-                {deletingSelectedObjectives ? 'Deleting...' : `Delete selected (${selectedObjectives.size})`}
-              </button>
-            )}
-          </div>
           {isSelectionMode && (
             <div className="course-select-all-row">
               <button
