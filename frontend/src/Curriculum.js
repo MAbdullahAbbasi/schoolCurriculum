@@ -1008,7 +1008,7 @@ const Curriculum = () => {
                                   <button
                                     type="button"
                                     className="objectives-save-btn"
-                                    onClick={() => handleSaveObjective(grade.grade, topic.code)}
+                                    onClick={() => handleSaveObjective(grade.grade, topicIndex, topic.code)}
                                     disabled={isSaving}
                                   >
                                     {isSaving ? 'Saving...' : 'Save'}
