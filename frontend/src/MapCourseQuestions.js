@@ -94,14 +94,6 @@ const MapCourseQuestions = () => {
   );
   const expectedMarks = activeSlotKey ? (marksBySlot[activeSlotKey] ?? 0) : 0;
 
-  const getSlotState = (key) => {
-    const state = mappingBySlot[key];
-    return {
-      selected: state?.selected ? new Set(state.selected) : new Set(),
-      marks: state?.marks ? { ...state.marks } : {},
-    };
-  };
-
   const slotSumMarks = (key) => {
     const state = mappingBySlot[key];
     if (!state?.marks) return 0;
@@ -167,10 +159,16 @@ const MapCourseQuestions = () => {
     return v === undefined || v === null ? '' : String(v);
   };
 
-  const allSlotsDone = useMemo(
-    () => slots.length > 0 && slots.every((s) => isSlotDone(s.slotKey)),
-    [slots, mappingBySlot, marksBySlot]
-  );
+  const allSlotsDone = useMemo(() => {
+    if (slots.length === 0) return false;
+    return slots.every((s) => {
+      const state = mappingBySlot[s.slotKey];
+      if (!state?.selected?.length) return false;
+      const exp = marksBySlot[s.slotKey] ?? 0;
+      const sum = (state.marks && Object.values(state.marks).reduce((a, m) => a + (Number(m) || 0), 0)) || 0;
+      return Math.abs(sum - exp) < 0.01;
+    });
+  }, [slots, mappingBySlot, marksBySlot]);
 
   const buildPayload = () => {
     const topicMarks = {};
