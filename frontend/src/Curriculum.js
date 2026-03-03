@@ -9,6 +9,7 @@ const Curriculum = () => {
   const navigate = useNavigate();
   const [data, setData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
+  const [allSubjectsList, setAllSubjectsList] = useState([]); // all subject names from DB (for dropdown when filtering by subject)
   const [loading, setLoading] = useState(true);
   
   // Filter states
@@ -41,13 +42,28 @@ const Curriculum = () => {
   const [editObjectiveForm, setEditObjectiveForm] = useState({ subject: '', title: '', description: '' });
   const [savingObjectiveKey, setSavingObjectiveKey] = useState(null);
 
-  const fetchCurriculum = () => {
+  const fetchCurriculum = (subjectFilter) => {
+    const params = {};
+    if (subjectFilter != null && String(subjectFilter).trim() !== '') {
+      params.subject = String(subjectFilter).trim();
+    }
     return axios.get(`${API_URL}/api/curriculum`, {
+      params,
       timeout: 30000,
     })
       .then(res => {
         setData(res.data);
         setFilteredData(res.data);
+        if (params.subject == null) {
+          const subjectsSet = new Set();
+          (res.data || []).forEach(grade => {
+            (grade.objectives || []).forEach(obj => {
+              const sub = String(obj.subject ?? '').trim();
+              if (sub) subjectsSet.add(sub);
+            });
+          });
+          setAllSubjectsList(Array.from(subjectsSet).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })));
+        }
         setLoading(false);
         return res.data;
       })
@@ -58,11 +74,12 @@ const Curriculum = () => {
       });
   };
 
-  // Fetch data from API
+  // Fetch from API on mount and when subject filter changes (query DB by subject)
   useEffect(() => {
     setLoading(true);
-    fetchCurriculum();
-  }, []);
+    fetchCurriculum(filters.subject || undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.subject]);
 
   const ageToGrades = React.useMemo(() => ({
     '4-5': [],
@@ -480,14 +497,19 @@ const Curriculum = () => {
 
   // Filter options: subjects from selected grade(s); code/topic/objective from grade + subject
   const getFilterOptions = () => {
+    let subjects;
     const subjectsSet = new Set();
-    dataByGradeAndAge.forEach(grade => {
-      (grade.objectives || []).forEach(obj => {
-        const sub = String(obj.subject ?? '').trim();
-        if (sub) subjectsSet.add(sub);
+    if (allSubjectsList.length > 0) {
+      subjects = [...allSubjectsList];
+    } else {
+      dataByGradeAndAge.forEach(grade => {
+        (grade.objectives || []).forEach(obj => {
+          const sub = String(obj.subject ?? '').trim();
+          if (sub) subjectsSet.add(sub);
+        });
       });
-    });
-    const subjects = Array.from(subjectsSet).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+      subjects = Array.from(subjectsSet).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    }
 
     // Data for code/topic/objective options: grade-filtered and optionally subject-filtered
     let dataForOptions = dataByGradeAndAge;

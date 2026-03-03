@@ -36,46 +36,52 @@ router.get("/debug/collections", async (req, res) => {
   }
 });
 
-// Get all grades
+// Get all grades; optional ?subject=English returns only objectives with that subject (case-insensitive)
 router.get("/", async (req, res) => {
   try {
-    // Check database connection
     const dbState = mongoose.connection.readyState;
-    console.log(`Database connection state: ${dbState} (0=disconnected, 1=connected, 2=connecting, 3=disconnecting)`);
-    
     if (dbState !== 1) {
-      return res.status(503).json({ 
+      return res.status(503).json({
         error: "Database not connected",
         message: "MongoDB connection is not established. Please check your connection settings and IP whitelist.",
-        connectionState: dbState
+        connectionState: dbState,
       });
     }
-    
-    // Get collection name
-    const collectionName = Curriculum.collection.name;
-    console.log(`Querying collection: ${collectionName}`);
-    
-    // Count total documents
-    const count = await Curriculum.countDocuments({});
-    console.log(`Total documents in collection: ${count}`);
-    
-    const data = await Curriculum.find({});
-    console.log(`Found ${data.length} curriculum records`);
-    
-    if (data.length === 0) {
-      console.warn("WARNING: No data found in the database. Please check:");
-      console.warn("1. Is the collection name correct? (Expected: 'objectives')");
-      console.warn("2. Is the database name correct? (Expected: 'SchoolCurriculum')");
-      console.warn("3. Does the collection exist in MongoDB Atlas?");
-      console.warn("4. Have you inserted any data into the collection?");
+
+    const subjectParam = req.query.subject;
+    const filterBySubject =
+      subjectParam != null && String(subjectParam).trim() !== "";
+    const subjectLower = filterBySubject
+      ? String(subjectParam).trim().toLowerCase()
+      : null;
+
+    const docs = await Curriculum.find({}).lean();
+    let data = docs;
+
+    if (filterBySubject && subjectLower) {
+      data = docs
+        .map((grade) => {
+          const objectives = (grade.objectives || []).filter((obj) => {
+            const objSubject = String(obj.subject ?? "").trim().toLowerCase();
+            return objSubject === subjectLower;
+          });
+          return { ...grade, objectives };
+        })
+        .filter((grade) => grade.objectives && grade.objectives.length > 0);
     }
-    
+
+    if (data.length === 0 && docs.length > 0) {
+      console.warn(
+        "No curriculum records match the requested subject filter."
+      );
+    }
+
     res.json(data);
   } catch (err) {
     console.error("Error fetching curriculum data:", err);
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Database error",
-      message: err.message 
+      message: err.message,
     });
   }
 });
