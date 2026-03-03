@@ -272,6 +272,7 @@ const StudentRecordDetail = () => {
                 <table className={`students-record-table matrix-table ${!isEditMode ? 'read-only' : ''}`}>
                   <thead>
                     <tr>
+                      <th className="matrix-th-srno">Sr. No</th>
                       <th className="matrix-th-objective">Objective</th>
                       {enrolledStudents.map((student) => (
                         <th key={student.registrationNumber} className="matrix-th-student">
@@ -283,6 +284,7 @@ const StudentRecordDetail = () => {
                   <tbody>
                     {topics.map((topic, topicIndex) => (
                       <tr key={topicIndex}>
+                        <td className="matrix-td-srno">{topicIndex + 1}</td>
                         <td className="matrix-td-objective">
                           {topic.topicName || topic.courseCode || `Objective ${topicIndex + 1}`}
                           {topic.marks != null && (
@@ -326,6 +328,7 @@ const StudentRecordDetail = () => {
                       </tr>
                     ))}
                     <tr className="matrix-total-row">
+                      <td className="matrix-td-srno"></td>
                       <td className="matrix-td-objective total-label">Total</td>
                       {enrolledStudents.map((student) => {
                         const total = getTotalForStudent(student.registrationNumber);

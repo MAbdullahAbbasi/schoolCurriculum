@@ -234,6 +234,40 @@
   box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
 }
 
+/* Sr. No column: narrow, centered */
+.matrix-table .matrix-th-srno {
+  width: 56px;
+  min-width: 56px;
+  max-width: 56px;
+  font-weight: 700;
+  color: #2c3e50;
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  padding: 0.75rem 0.5rem;
+  text-align: center;
+  vertical-align: middle;
+  position: sticky;
+  left: 0;
+  z-index: 4;
+  box-shadow: 2px 0 4px -1px rgba(0, 0, 0, 0.1);
+}
+
+.matrix-table .matrix-td-srno {
+  width: 56px;
+  min-width: 56px;
+  max-width: 56px;
+  text-align: center;
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  padding: 0.6rem 0.5rem;
+  font-size: 0.9rem;
+  vertical-align: middle;
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  box-shadow: 2px 0 4px -1px rgba(0, 0, 0, 0.08);
+}
+
 /* Sticky first column: stays visible when scrolling horizontally */
 .matrix-table .matrix-th-objective {
   width: 200px;
@@ -248,7 +282,7 @@
   white-space: normal;
   word-break: break-word;
   position: sticky;
-  left: 0;
+  left: 56px;
   z-index: 4;
   box-shadow: 2px 0 4px -1px rgba(0, 0, 0, 0.1);
 }
@@ -281,7 +315,7 @@
   white-space: normal;
   word-break: break-word;
   position: sticky;
-  left: 0;
+  left: 56px;
   z-index: 1;
   box-shadow: 2px 0 4px -1px rgba(0, 0, 0, 0.08);
 }

@@ -933,6 +933,7 @@ const Curriculum = () => {
                         {isSelectionMode && (
                           <th className="objectives-th-checkbox">Add to course</th>
                         )}
+                        <th className="objectives-th-srno">Sr. No</th>
                         <th>Grade</th>
                         <th>Subject</th>
                         <th>Code</th>
@@ -971,6 +972,7 @@ const Curriculum = () => {
                                 />
                               </td>
                             )}
+                            <td className="objectives-td-srno">{topicIndex + 1}</td>
                             <td>{grade.grade}</td>
                             <td>{isEditing ? (
                               <input
