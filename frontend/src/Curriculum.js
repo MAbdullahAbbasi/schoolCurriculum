@@ -104,15 +104,17 @@ const Curriculum = () => {
       }
     }
 
-    // Filter by subject (objectives of the selected subject for the grade)
-    if (filters.subject) {
+    // Filter by subject: show only objectives whose subject matches the selected one
+    if (filters.subject && String(filters.subject).trim() !== '') {
       const subjectLower = String(filters.subject).trim().toLowerCase();
       filtered = filtered.map(grade => {
-        const filteredObjectives = grade.objectives?.filter(obj =>
-          String(obj.subject || '').trim().toLowerCase() === subjectLower
-        ) || [];
+        const objectives = grade.objectives || [];
+        const filteredObjectives = objectives.filter(obj => {
+          const objSubject = String(obj.subject ?? '').trim().toLowerCase();
+          return objSubject === subjectLower;
+        });
         return { ...grade, objectives: filteredObjectives };
-      }).filter(grade => grade.objectives && grade.objectives.length > 0);
+      }).filter(grade => Array.isArray(grade.objectives) && grade.objectives.length > 0);
     }
 
     // Filter by code (exact match)
@@ -481,7 +483,7 @@ const Curriculum = () => {
     const subjectsSet = new Set();
     dataByGradeAndAge.forEach(grade => {
       (grade.objectives || []).forEach(obj => {
-        const sub = String(obj.subject || '').trim();
+        const sub = String(obj.subject ?? '').trim();
         if (sub) subjectsSet.add(sub);
       });
     });
