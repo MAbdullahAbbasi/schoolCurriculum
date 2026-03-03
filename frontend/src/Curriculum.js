@@ -321,7 +321,7 @@ const Curriculum = () => {
     try {
       setDeletingObjectiveKey(key);
       await axios.delete(`${API_URL}/api/curriculum/objective`, {
-        data: { grade: grade.grade, code: topic.code || '' },
+        data: { grade: grade.grade, index: topicIndex },
       });
       await fetchCurriculum();
     } catch (err) {
@@ -357,14 +357,10 @@ const Curriculum = () => {
   };
 
   const handleDeleteSelectedObjectives = async () => {
-    const items = Array.from(selectedObjectives)
-      .map((key) => {
+      const items = Array.from(selectedObjectives).map((key) => {
         const { grade, index } = parseRowKey(key);
-        const gradeDoc = filteredData.find((g) => g.grade === grade);
-        const obj = gradeDoc?.objectives?.[index];
-        return obj != null ? { grade, code: (obj.code != null ? String(obj.code) : '').trim() } : null;
-      })
-      .filter(Boolean);
+        return { grade, index };
+      }).filter((item) => !isNaN(parseInt(item.grade, 10)) && !isNaN(parseInt(item.index, 10)));
     if (items.length === 0) return;
     if (!window.confirm(`Delete ${items.length} selected objective(s)? This cannot be undone.`)) return;
     try {
@@ -399,13 +395,13 @@ const Curriculum = () => {
     setEditObjectiveForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSaveObjective = async (gradeNum, topicIndex, code) => {
+  const handleSaveObjective = async (gradeNum, topicIndex) => {
     const key = rowKey(gradeNum, topicIndex);
     try {
       setSavingObjectiveKey(key);
       await axios.put(`${API_URL}/api/curriculum/objective`, {
         grade: gradeNum,
-        code: (code != null ? String(code) : '').trim(),
+        index: topicIndex,
         subject: editObjectiveForm.subject.trim(),
         title: editObjectiveForm.title.trim(),
         description: editObjectiveForm.description.trim(),
@@ -1008,7 +1004,7 @@ const Curriculum = () => {
                                   <button
                                     type="button"
                                     className="objectives-save-btn"
-                                    onClick={() => handleSaveObjective(grade.grade, topicIndex, topic.code)}
+                                    onClick={() => handleSaveObjective(grade.grade, topicIndex)}
                                     disabled={isSaving}
                                   >
                                     {isSaving ? 'Saving...' : 'Save'}

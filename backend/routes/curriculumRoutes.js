@@ -251,7 +251,7 @@ router.delete("/all", async (req, res) => {
   }
 });
 
-// DELETE a single objective by grade and code
+// DELETE a single objective by grade and serial number (index, 0-based)
 router.delete("/objective", async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
@@ -260,7 +260,7 @@ router.delete("/objective", async (req, res) => {
         error: "Database not connected",
       });
     }
-    const { grade, code } = req.body;
+    const { grade, index } = req.body;
     const gradeNum = parseInt(grade, 10);
     if (isNaN(gradeNum) || gradeNum < 1) {
       return res.status(400).json({
@@ -268,7 +268,13 @@ router.delete("/objective", async (req, res) => {
         error: "Valid grade is required",
       });
     }
-    const codeStr = code != null ? String(code).trim() : "";
+    const idx = parseInt(index, 10);
+    if (isNaN(idx) || idx < 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Valid index (serial number) is required",
+      });
+    }
     const doc = await Curriculum.findOne({ grade: gradeNum });
     if (!doc) {
       return res.status(404).json({
@@ -278,15 +284,14 @@ router.delete("/objective", async (req, res) => {
       });
     }
     const objectives = doc.objectives || [];
-    const initialLen = objectives.length;
-    doc.objectives = objectives.filter((obj) => String(obj.code || "").trim() !== codeStr);
-    if (doc.objectives.length === initialLen) {
+    if (idx >= objectives.length) {
       return res.status(404).json({
         success: false,
         error: "Objective not found",
-        message: "No objective with this code found in this grade.",
+        message: "No objective at this serial number in this grade.",
       });
     }
+    doc.objectives.splice(idx, 1);
     await doc.save();
     res.json({
       success: true,
@@ -302,7 +307,7 @@ router.delete("/objective", async (req, res) => {
   }
 });
 
-// PUT update a single objective (by grade and code)
+// PUT update a single objective by grade and serial number (index, 0-based)
 router.put("/objective", async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
@@ -311,7 +316,7 @@ router.put("/objective", async (req, res) => {
         error: "Database not connected",
       });
     }
-    const { grade, code, title, description, subject } = req.body;
+    const { grade, index, title, description, subject, code } = req.body;
     const gradeNum = parseInt(grade, 10);
     if (isNaN(gradeNum) || gradeNum < 1) {
       return res.status(400).json({
@@ -319,7 +324,13 @@ router.put("/objective", async (req, res) => {
         error: "Valid grade is required",
       });
     }
-    const codeStr = code != null ? String(code).trim() : "";
+    const idx = parseInt(index, 10);
+    if (isNaN(idx) || idx < 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Valid index (serial number) is required",
+      });
+    }
     const doc = await Curriculum.findOne({ grade: gradeNum });
     if (!doc) {
       return res.status(404).json({
@@ -329,17 +340,17 @@ router.put("/objective", async (req, res) => {
       });
     }
     const objectives = doc.objectives || [];
-    const idx = objectives.findIndex((obj) => String(obj.code || "").trim() === codeStr);
-    if (idx === -1) {
+    if (idx >= objectives.length) {
       return res.status(404).json({
         success: false,
         error: "Objective not found",
-        message: "No objective with this code in this grade.",
+        message: "No objective at this serial number in this grade.",
       });
     }
     if (subject !== undefined) doc.objectives[idx].subject = String(subject).trim();
     if (title !== undefined) doc.objectives[idx].title = String(title).trim();
     if (description !== undefined) doc.objectives[idx].description = String(description).trim();
+    if (code !== undefined) doc.objectives[idx].code = String(code).trim();
     await doc.save();
     res.json({
       success: true,
@@ -355,7 +366,7 @@ router.put("/objective", async (req, res) => {
   }
 });
 
-// DELETE multiple objectives (body: { items: [{ grade, code }, ...] })
+// DELETE multiple objectives (body: { items: [{ grade, index }, ...] } – index = 0-based serial number)
 router.delete("/objectives/selected", async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
@@ -369,25 +380,25 @@ router.delete("/objectives/selected", async (req, res) => {
       return res.status(400).json({
         success: false,
         error: "Items required",
-        message: "Provide an array of { grade, code } to delete.",
+        message: "Provide an array of { grade, index } to delete.",
       });
     }
     let deletedCount = 0;
     const byGrade = {};
     for (const it of items) {
       const g = parseInt(it.grade, 10);
-      if (isNaN(g)) continue;
+      const idx = parseInt(it.index, 10);
+      if (isNaN(g) || isNaN(idx) || idx < 0) continue;
       if (!byGrade[g]) byGrade[g] = new Set();
-      byGrade[g].add(String(it.code || "").trim());
+      byGrade[g].add(idx);
     }
-    for (const [gradeStr, codes] of Object.entries(byGrade)) {
+    for (const [gradeStr, indices] of Object.entries(byGrade)) {
       const gradeNum = parseInt(gradeStr, 10);
       const doc = await Curriculum.findOne({ grade: gradeNum });
       if (!doc || !doc.objectives || !doc.objectives.length) continue;
+      const toRemove = new Set(indices);
       const before = doc.objectives.length;
-      doc.objectives = doc.objectives.filter(
-        (obj) => !codes.has(String(obj.code || "").trim())
-      );
+      doc.objectives = doc.objectives.filter((_, i) => !toRemove.has(i));
       deletedCount += before - doc.objectives.length;
       await doc.save();
     }
