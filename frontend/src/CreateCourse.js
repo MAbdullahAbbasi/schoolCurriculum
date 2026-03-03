@@ -67,13 +67,15 @@ const CreateCourse = () => {
     }).filter(Boolean);
   }, [selectedTopics, curriculumData]);
 
-  const sumObjectiveMarks = useMemo(() => {
-    return resolvedTopics.reduce((sum, t) => sum + (Number(objectiveMarks[t.topicKey]) || 0), 0);
-  }, [resolvedTopics, objectiveMarks]);
-
-  const enteredTotalMarks = Number(formData.totalMarks);
-  const totalMarksValid = !Number.isNaN(enteredTotalMarks) && enteredTotalMarks > 0;
-  const marksError = resolvedTopics.length > 0 && totalMarksValid && Math.abs(sumObjectiveMarks - enteredTotalMarks) > 0.01;
+  const handleQuestionPartChange = (questionIndex, field, value) => {
+    setQuestionParts(prev => {
+      const next = [...prev];
+      if (!next[questionIndex]) next[questionIndex] = { numParts: '', compulsoryParts: '' };
+      next[questionIndex] = { ...next[questionIndex], [field]: value };
+      return next;
+    });
+    setCreateError(null);
+  };
 
   React.useEffect(() => {
     if (resolvedTopics.length === 0) {
