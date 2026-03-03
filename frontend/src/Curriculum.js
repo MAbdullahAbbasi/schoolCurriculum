@@ -16,7 +16,6 @@ const Curriculum = () => {
   const [filters, setFilters] = useState({
     ageGroup: '',
     grade: '',
-    code: '',
     subject: '',
     topic: '',
     learningObjective: ''
@@ -134,16 +133,6 @@ const Curriculum = () => {
       }).filter(grade => Array.isArray(grade.objectives) && grade.objectives.length > 0);
     }
 
-    // Filter by code (exact match)
-    if (filters.code) {
-      filtered = filtered.map(grade => {
-        const filteredObjectives = grade.objectives?.filter(obj =>
-          obj.code && obj.code === filters.code
-        ) || [];
-        return { ...grade, objectives: filteredObjectives };
-      }).filter(grade => grade.objectives && grade.objectives.length > 0);
-    }
-
     // Filter by topic (matches objective title exactly)
     if (filters.topic) {
       filtered = filtered.map(grade => {
@@ -173,7 +162,14 @@ const Curriculum = () => {
       }).filter(grade => grade.objectives && grade.objectives.length > 0);
     }
 
-    setFilteredData(filtered);
+    // Deduplicate by grade: one section per grade (keep first occurrence to avoid duplicate/repeating rows)
+    const byGrade = new Map();
+    filtered.forEach((doc) => {
+      const g = doc.grade;
+      if (!byGrade.has(g)) byGrade.set(g, doc);
+    });
+    const deduped = Array.from(byGrade.values()).sort((a, b) => (a.grade || 0) - (b.grade || 0));
+    setFilteredData(deduped);
   }, [filters, data, ageToGrades]);
 
   // Handle filter changes; clear dependent filters when parent changes
@@ -182,11 +178,9 @@ const Curriculum = () => {
       const next = { ...prev, [filterName]: value };
       if (filterName === 'grade' || filterName === 'ageGroup') {
         next.subject = '';
-        next.code = '';
         next.topic = '';
         next.learningObjective = '';
       } else if (filterName === 'subject') {
-        next.code = '';
         next.topic = '';
         next.learningObjective = '';
       }
@@ -523,12 +517,10 @@ const Curriculum = () => {
       }).filter(grade => (grade.objectives || []).length > 0);
     }
 
-    const codes = new Set();
     const topics = new Set();
     const learningObjectives = new Set();
     dataForOptions.forEach(grade => {
       (grade.objectives || []).forEach(obj => {
-        if (obj.code) codes.add(obj.code);
         if (obj.title) topics.add(obj.title);
         if (obj.description) {
           const descWords = obj.description.toLowerCase().split(/\s+/);
@@ -540,7 +532,6 @@ const Curriculum = () => {
     });
 
     return {
-      codes: Array.from(codes).sort(),
       subjects,
       topics: Array.from(topics).sort(),
       learningObjectives: Array.from(learningObjectives).slice(0, 50).sort(),
@@ -627,21 +618,6 @@ const Curriculum = () => {
               <option value="">All Subjects</option>
               {filterOptions.subjects.map(subject => (
                 <option key={subject} value={subject}>{subject.charAt(0).toUpperCase() + subject.slice(1)}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="filter-group">
-            <label htmlFor="code-filter" className="filter-label">Code</label>
-            <select 
-              id="code-filter" 
-              className="filter-select"
-              value={filters.code}
-              onChange={(e) => handleFilterChange('code', e.target.value)}
-            >
-              <option value="">All Codes</option>
-              {filterOptions.codes.map(code => (
-                <option key={code} value={code}>{code}</option>
               ))}
             </select>
           </div>
@@ -817,7 +793,7 @@ const Curriculum = () => {
         }}>
           <p style={{ margin: 0, color: '#5a6c7d', fontSize: '0.95rem' }}>
             Showing <strong style={{ color: '#2c3e50' }}>{filteredData.length}</strong> of <strong style={{ color: '#2c3e50' }}>{data.length}</strong> grade{data.length !== 1 ? 's' : ''}
-            {(filters.grade || filters.ageGroup || filters.code || filters.subject || filters.topic || filters.learningObjective) && (
+            {(filters.grade || filters.ageGroup || filters.subject || filters.topic || filters.learningObjective) && (
               <span style={{ marginLeft: '0.5rem', color: '#3498db' }}>
                 (filtered)
               </span>
@@ -856,7 +832,6 @@ const Curriculum = () => {
                 onClick={() => setFilters({
                   ageGroup: '',
                   grade: '',
-                  code: '',
                   subject: '',
                   topic: '',
                   learningObjective: ''
@@ -941,7 +916,8 @@ const Curriculum = () => {
                     <thead>
                       <tr>
                         {objectivesSelectMode && (
-                          <th className="objectives-th-checkbox">
+                          <th className="objectives-th-checkbox" title="Select objectives to delete">
+                            <span className="objectives-select-col-label">Select</span>
                             <input
                               type="checkbox"
                               aria-label="Select all in grade"

@@ -448,10 +448,17 @@
   border-bottom: 1px solid #eee;
 }
 
+.objectives-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
 .objectives-table th {
   background: #f8f9fa;
   font-weight: 600;
   color: #2c3e50;
+  box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.08);
 }
 
 .objectives-table tbody tr:hover {
@@ -460,14 +467,34 @@
 
 .objectives-th-checkbox,
 .objectives-td-checkbox {
-  width: 2.5rem;
+  min-width: 3.5rem;
+  width: 3.5rem;
   text-align: center;
   vertical-align: middle;
+  background: #f8f9fa;
+}
+
+.objectives-th-checkbox {
+  white-space: nowrap;
+}
+
+.objectives-select-col-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 0.25rem;
 }
 
 .objectives-th-checkbox input,
 .objectives-td-checkbox input {
   cursor: pointer;
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.objectives-td-checkbox {
+  background: #fff;
 }
 
 .objectives-th-srno,
