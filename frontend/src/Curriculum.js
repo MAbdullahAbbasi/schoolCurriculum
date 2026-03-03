@@ -32,7 +32,6 @@ const Curriculum = () => {
   const [singleObjectiveForm, setSingleObjectiveForm] = useState({ grade: '', subject: '', code: '', title: '', description: '' });
   const [objectivesUploadError, setObjectivesUploadError] = useState(null);
   const [addingObjective, setAddingObjective] = useState(false);
-  const [deletingAllObjectives, setDeletingAllObjectives] = useState(false);
   const [deletingObjectiveKey, setDeletingObjectiveKey] = useState(null);
   const [objectivesSelectMode, setObjectivesSelectMode] = useState(false);
   const [selectedObjectives, setSelectedObjectives] = useState(new Set());
@@ -297,28 +296,6 @@ const Curriculum = () => {
     }
   };
 
-  const handleDeleteAllObjectives = async () => {
-    if (!window.confirm('Are you sure you want to delete ALL objectives? This cannot be undone.')) {
-      return;
-    }
-    try {
-      setDeletingAllObjectives(true);
-      const res = await axios.delete(`${API_URL}/api/curriculum/all`);
-      if (res.data.success) {
-        alert(res.data.message || 'All objectives have been deleted.');
-        setLoading(true);
-        await fetchCurriculum();
-      } else {
-        alert(res.data.error || res.data.message || 'Failed to delete.');
-      }
-    } catch (err) {
-      const msg = err.response?.data?.message || err.response?.data?.error || err.message || 'Failed to delete objectives.';
-      alert(msg);
-    } finally {
-      setDeletingAllObjectives(false);
-    }
-  };
-
   // Row-unique key for edit/save/delete and delete-selection (grade + index)
   const rowKey = (gradeNum, topicIndex) => `${gradeNum}::${topicIndex}`;
   const parseRowKey = (key) => {
@@ -343,11 +320,6 @@ const Curriculum = () => {
     } finally {
       setDeletingObjectiveKey(null);
     }
-  };
-
-  const toggleObjectivesSelectMode = () => {
-    setObjectivesSelectMode((prev) => !prev);
-    if (objectivesSelectMode) setSelectedObjectives(new Set());
   };
 
   // Enter delete-selection mode with all objectives selected (triggered from "Delete all objectives" in Add objective individually box)
