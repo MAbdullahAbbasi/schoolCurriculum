@@ -456,14 +456,15 @@ const Curriculum = () => {
     setSelectedTopics([]);
   };
 
-  // Select all objectives from a single grade (for course creation)
-  const handleSelectAllFromGrade = (grade) => {
+  // Select or deselect all objectives from a single grade (for course creation); checkbox in "Add to course" header
+  const handleSelectAllFromGrade = (grade, checked) => {
     if (!grade.objectives || grade.objectives.length === 0) return;
-    const keysToAdd = grade.objectives.map((_, topicIndex) => `${grade._id}-${topicIndex}`);
+    const keysForGrade = grade.objectives.map((_, topicIndex) => `${grade._id}-${topicIndex}`);
     setSelectedTopics(prev => {
-      const next = new Set(prev);
-      keysToAdd.forEach(k => next.add(k));
-      return Array.from(next);
+      const set = new Set(prev);
+      if (checked) keysForGrade.forEach(k => set.add(k));
+      else keysForGrade.forEach(k => set.delete(k));
+      return Array.from(set);
     });
   };
 
@@ -889,15 +890,6 @@ const Curriculum = () => {
             <div key={grade._id || grade.grade} className="grade-section">
               <div className="grade-heading-wrapper">
                 <h2 className="grade-main-heading">Grade {grade.grade}</h2>
-                {isSelectionMode && grade.objectives && grade.objectives.length > 0 && (
-                  <button
-                    type="button"
-                    className="course-select-grade-btn"
-                    onClick={() => handleSelectAllFromGrade(grade)}
-                  >
-                    Select all from Grade {grade.grade}
-                  </button>
-                )}
                 <div className="grade-divider-line"></div>
               </div>
               {grade.objectives && grade.objectives.length > 0 ? (
@@ -917,7 +909,15 @@ const Curriculum = () => {
                           </th>
                         )}
                         {isSelectionMode && (
-                          <th className="objectives-th-checkbox">Add to course</th>
+                          <th className="objectives-th-checkbox" title="Select all in this grade">
+                            <span className="objectives-select-col-label">Add to course</span>
+                            <input
+                              type="checkbox"
+                              aria-label="Select all in grade for course"
+                              checked={grade.objectives.length > 0 && grade.objectives.every((_, i) => selectedTopics.includes(`${grade._id}-${i}`))}
+                              onChange={(e) => handleSelectAllFromGrade(grade, e.target.checked)}
+                            />
+                          </th>
                         )}
                         <th className="objectives-th-srno">Sr. No</th>
                         <th>Grade</th>
