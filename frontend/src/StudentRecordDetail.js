@@ -31,23 +31,36 @@ const StudentRecordDetail = () => {
   }, [topics, questionPartMarks]);
 
   const slots = useMemo(() => {
+    if (questionPartMarks.length > 0) {
+      const sorted = [...questionPartMarks].sort(
+        (a, b) => Number(a.questionIndex) - Number(b.questionIndex) || Number(a.partIndex) - Number(b.partIndex)
+      );
+      return sorted.map((m) => {
+        const q = Number(m.questionIndex);
+        const part = Number(m.partIndex);
+        const slotKey = part === 0 ? `q${q}` : `q${q}-p${part}`;
+        const label = part === 0 ? `Q${q}` : `Q${q} Part ${part}`;
+        const maxMarks = Number(m.marks) || 0;
+        return {
+          slotKey,
+          label,
+          maxMarks,
+          questionIndex: q,
+          partIndex: part,
+          topicIndices: [],
+        };
+      });
+    }
     if (!courseQuestions.length) return [];
     return courseQuestions.map((q) => {
       const indices = (q.topicIndices || []).map((i) => Number(i));
-      let maxMarks = 0;
-      if (questionPartMarks.length > 0) {
-        maxMarks = questionPartMarks
-          .filter((m) => Number(m.questionIndex) === Number(q.questionIndex))
-          .reduce((s, m) => s + (Number(m.marks) || 0), 0);
-      }
-      if (maxMarks <= 0) {
-        maxMarks = indices.reduce((s, i) => s + (topics[i]?.marks || 0), 0);
-      }
+      const maxMarks = indices.reduce((s, i) => s + (topics[i]?.marks || 0), 0);
       return {
         slotKey: `q${q.questionIndex}`,
         label: `Q${q.questionIndex}`,
         maxMarks,
         questionIndex: q.questionIndex,
+        partIndex: 0,
         topicIndices: indices,
       };
     });

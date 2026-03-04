@@ -112,7 +112,13 @@ router.post('/', async (req, res) => {
     const course = await Course.findOne({ code: courseCode.trim() }).lean();
     const topics = (course?.topics || []);
     const courseQuestions = (course?.questions || []);
-    const totalMarksCourse = topics.reduce((s, t) => s + (Number(t.marks) || 0), 0);
+    const questionPartMarks = (course?.questionPartMarks || []).sort(
+      (a, b) => Number(a.questionIndex) - Number(b.questionIndex) || Number(a.partIndex) - Number(b.partIndex)
+    );
+    const totalMarksCourse =
+      questionPartMarks.length > 0
+        ? questionPartMarks.reduce((s, m) => s + (Number(m.marks) || 0), 0)
+        : topics.reduce((s, t) => s + (Number(t.marks) || 0), 0);
 
     function computeObjectiveMarksFromSlots(student) {
       const questionMarks = student.questionMarks || {};
@@ -121,28 +127,58 @@ router.post('/', async (req, res) => {
       const objMarks = {};
       topics.forEach((_, idx) => { objMarks[String(idx)] = 0; });
 
-      for (let q = 1; q <= (courseQuestions.length || 0); q++) {
-        const slotKey = `q${q}`;
-        const qObj = courseQuestions.find(qu => Number(qu.questionIndex) === q);
-        if (!qObj || !(qObj.topicIndices && qObj.topicIndices.length)) continue;
-        const indices = qObj.topicIndices.map(i => Number(i));
-        const slotMax = indices.reduce((s, i) => s + (Number(topics[i]?.marks) || 0), 0);
-        if (notAttemptedSlots.includes(slotKey)) {
-          indices.forEach(i => { objMarks[String(i)] = 0; });
-          continue;
+      if (questionPartMarks.length > 0) {
+        for (const m of questionPartMarks) {
+          const q = Number(m.questionIndex);
+          const part = Number(m.partIndex);
+          const slotKey = part === 0 ? `q${q}` : `q${q}-p${part}`;
+          const slotMax = Number(m.marks) || 0;
+          const qObj = courseQuestions.find((qu) => Number(qu.questionIndex) === q);
+          const indices = (qObj?.topicIndices || []).map((i) => Number(i));
+          const partIdx = part === 0 ? 0 : part - 1;
+          const slotIndices = indices.length > partIdx ? [indices[partIdx]] : indices;
+          if (slotIndices.length === 0) continue;
+          if (notAttemptedSlots.includes(slotKey)) {
+            slotIndices.forEach((i) => { objMarks[String(i)] = 0; });
+            continue;
+          }
+          if (leftOnChoiceSlots.includes(slotKey)) {
+            slotIndices.forEach((i) => { objMarks[String(i)] = 0; });
+            continue;
+          }
+          const obtained = Number(questionMarks[slotKey]);
+          if (Number.isNaN(obtained) || obtained < 0) continue;
+          if (slotMax <= 0) continue;
+          const ratio = Math.min(1, obtained / slotMax);
+          slotIndices.forEach((i) => {
+            const maxI = Number(topics[i]?.marks) || 0;
+            objMarks[String(i)] = (objMarks[String(i)] || 0) + Math.round(ratio * maxI * 100) / 100;
+          });
         }
-        if (leftOnChoiceSlots.includes(slotKey)) {
-          indices.forEach(i => { objMarks[String(i)] = 0; });
-          continue;
+      } else {
+        for (let q = 1; q <= (courseQuestions.length || 0); q++) {
+          const slotKey = `q${q}`;
+          const qObj = courseQuestions.find((qu) => Number(qu.questionIndex) === q);
+          if (!qObj || !(qObj.topicIndices && qObj.topicIndices.length)) continue;
+          const indices = qObj.topicIndices.map((i) => Number(i));
+          const slotMax = indices.reduce((s, i) => s + (Number(topics[i]?.marks) || 0), 0);
+          if (notAttemptedSlots.includes(slotKey)) {
+            indices.forEach((i) => { objMarks[String(i)] = 0; });
+            continue;
+          }
+          if (leftOnChoiceSlots.includes(slotKey)) {
+            indices.forEach((i) => { objMarks[String(i)] = 0; });
+            continue;
+          }
+          const obtained = Number(questionMarks[slotKey]);
+          if (Number.isNaN(obtained) || obtained < 0) continue;
+          if (slotMax <= 0) continue;
+          const ratio = Math.min(1, obtained / slotMax);
+          indices.forEach((i) => {
+            const maxI = Number(topics[i]?.marks) || 0;
+            objMarks[String(i)] = Math.round(ratio * maxI * 100) / 100;
+          });
         }
-        const obtained = Number(questionMarks[slotKey]);
-        if (Number.isNaN(obtained) || obtained < 0) continue;
-        if (slotMax <= 0) continue;
-        const ratio = Math.min(1, obtained / slotMax);
-        indices.forEach(i => {
-          const maxI = Number(topics[i]?.marks) || 0;
-          objMarks[String(i)] = Math.round(ratio * maxI * 100) / 100;
-        });
       }
 
       const totalObtained = Object.values(objMarks).reduce((s, v) => s + Number(v), 0);
@@ -170,7 +206,7 @@ router.post('/', async (req, res) => {
       let overallPercentage = student.overallPercentage;
       let overallGrade = student.overallGrade || '';
 
-      if (course && courseQuestions.length > 0 && (student.questionMarks != null || student.notAttemptedSlots != null || student.leftOnChoiceSlots != null)) {
+      if (course && (courseQuestions.length > 0 || questionPartMarks.length > 0) && (student.questionMarks != null || student.notAttemptedSlots != null || student.leftOnChoiceSlots != null)) {
         const computed = computeObjectiveMarksFromSlots(student);
         objectiveMarks = computed.objectiveMarks;
         overallPercentage = computed.overallPercentage;
