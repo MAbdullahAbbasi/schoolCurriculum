@@ -65,6 +65,38 @@
   font-size: 0.95rem;
 }
 
+.create-course-marks-th-objectives {
+  min-width: 200px;
+  font-weight: 600;
+}
+
+.create-course-marks-td-objectives {
+  min-width: 200px;
+}
+
+.create-course-marks-objective-select {
+  width: 100%;
+  min-width: 180px;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: #fff;
+  cursor: pointer;
+}
+
+.create-course-marks-objective-select:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.create-course-marks-objectives-hint {
+  font-size: 0.9rem;
+  color: #6c757d;
+  margin: 0.25rem 0 0 0;
+}
+
 .create-course-marks-sum {
   margin: 0 0 1rem 0;
   font-size: 1rem;

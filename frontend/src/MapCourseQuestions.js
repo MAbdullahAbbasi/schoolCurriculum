@@ -200,7 +200,15 @@ const MapCourseQuestions = () => {
       topicIndices: Array.from(questionTopicIndices[q]),
     }));
 
-    return { ...coursePayload, topics, totalQuestions, questions };
+    return {
+      ...coursePayload,
+      topics,
+      totalQuestions,
+      questions,
+      ...(coursePayload.compulsoryQuestions != null && { compulsoryQuestions: coursePayload.compulsoryQuestions }),
+      ...(questionPartsFromState?.length > 0 && { questionParts: questionPartsFromState }),
+      ...(questionPartMarksFromState?.length > 0 && { questionPartMarks: questionPartMarksFromState }),
+    };
   };
 
   const handleCreate = async (e) => {

@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import axios from 'axios';
 import CurriculumHeader from './CurriculumHeader';
+import { API_URL } from './config/api';
 import './CreateCourseMarks.css';
 
 const slotKey = (q, part) => (part === 0 ? `q${q}` : `q${q}-p${part}`);
@@ -16,7 +18,9 @@ const CreateCourseMarks = () => {
   } = location.state || {};
 
   const [marksBySlot, setMarksBySlot] = useState({});
+  const [objectiveSelection, setObjectiveSelection] = useState({});
   const [createError, setCreateError] = useState(null);
+  const [creating, setCreating] = useState(false);
 
   const totalMarks = useMemo(() => Number(coursePayload?.totalMarks) || 0, [coursePayload]);
   const questionParts = useMemo(
@@ -36,7 +40,7 @@ const CreateCourseMarks = () => {
       const q = p.questionIndex;
       const n = Number(p.numParts) || 0;
       if (n <= 0) {
-        list.push({ questionIndex: q, partIndex: 0, label: `Q${q}`, partLabel: null });
+        list.push({ questionIndex: q, partIndex: 0, label: `Q${q}`, partLabel: null, key: slotKey(q, 0) });
       } else {
         for (let part = 1; part <= n; part++) {
           list.push({
@@ -44,6 +48,7 @@ const CreateCourseMarks = () => {
             partIndex: part,
             label: `Q${q}`,
             partLabel: `Part ${part}`,
+            key: slotKey(q, part),
           });
         }
       }
@@ -52,13 +57,22 @@ const CreateCourseMarks = () => {
   }, [questionParts]);
 
   const sumMarks = useMemo(
-    () => slots.reduce((s, sl) => s + (Number(marksBySlot[slotKey(sl.questionIndex, sl.partIndex)]) || 0), 0),
+    () => slots.reduce((s, sl) => s + (Number(marksBySlot[sl.key]) || 0), 0),
     [slots, marksBySlot]
   );
   const totalValid = totalMarks > 0 && Math.abs(sumMarks - totalMarks) < 0.01;
+  const allObjectivesSelected = useMemo(
+    () => resolvedTopics.length > 0 && slots.every((sl) => objectiveSelection[sl.key]),
+    [slots, objectiveSelection, resolvedTopics.length]
+  );
 
   const handleMarksChange = (q, part, value) => {
     setMarksBySlot((prev) => ({ ...prev, [slotKey(q, part)]: value }));
+    setCreateError(null);
+  };
+
+  const handleObjectiveSelect = (slotKeyVal, topicKey) => {
+    setObjectiveSelection((prev) => ({ ...prev, [slotKeyVal]: topicKey || '' }));
     setCreateError(null);
   };
 
@@ -66,7 +80,7 @@ const CreateCourseMarks = () => {
     navigate(-1);
   };
 
-  const handleNext = () => {
+  const handleCreateCourse = async () => {
     if (!coursePayload) {
       setCreateError('Missing course data. Please go back and complete the course form.');
       return;
@@ -75,22 +89,79 @@ const CreateCourseMarks = () => {
       setCreateError(`Total marks must equal ${totalMarks}. Current sum: ${sumMarks}.`);
       return;
     }
+    if (resolvedTopics.length === 0) {
+      setCreateError('No objectives available. Please start from the curriculum and select objectives for this course.');
+      return;
+    }
+    if (!allObjectivesSelected) {
+      setCreateError('Please select an objective for every question/part in the Objectives column.');
+      return;
+    }
+
+    const topicMarks = {};
+    resolvedTopics.forEach((t) => { topicMarks[t.topicKey] = 0; });
+    slots.forEach((sl) => {
+      const selectedKey = objectiveSelection[sl.key];
+      const m = Number(marksBySlot[sl.key]) || 0;
+      if (selectedKey) topicMarks[selectedKey] = (topicMarks[selectedKey] || 0) + m;
+    });
+
+    const topics = resolvedTopics.map((t) => ({
+      courseCode: t.courseCode,
+      topicName: t.topicName,
+      marks: topicMarks[t.topicKey] ?? 0,
+      grade: t.grade,
+    }));
+
+    const questionTopicIndices = {};
+    slots.forEach((sl) => {
+      const selectedKey = objectiveSelection[sl.key];
+      const idx = resolvedTopics.findIndex((t) => t.topicKey === selectedKey);
+      if (idx >= 0) {
+        const q = sl.questionIndex;
+        if (!questionTopicIndices[q]) questionTopicIndices[q] = new Set();
+        questionTopicIndices[q].add(idx);
+      }
+    });
+    const questions = Object.keys(questionTopicIndices).map((q) => ({
+      questionIndex: Number(q),
+      topicIndices: Array.from(questionTopicIndices[q]),
+    }));
 
     const questionPartMarks = slots.map((sl) => ({
       questionIndex: sl.questionIndex,
       partIndex: sl.partIndex,
-      marks: Number(marksBySlot[slotKey(sl.questionIndex, sl.partIndex)]) || 0,
+      marks: Number(marksBySlot[sl.key]) || 0,
     }));
 
-    navigate('/create-course/map-questions', {
-      state: {
-        coursePayload,
-        totalQuestions: totalQuestionsFromState,
-        questionParts,
-        questionPartMarks,
-        resolvedTopics,
-      },
-    });
+    const payload = {
+      ...coursePayload,
+      topics,
+      totalQuestions: totalQuestionsFromState,
+      questions,
+      ...(coursePayload.compulsoryQuestions != null && { compulsoryQuestions: coursePayload.compulsoryQuestions }),
+      ...(questionPartsFromState?.length > 0 && { questionParts: questionPartsFromState }),
+      ...(questionPartMarks.length > 0 && { questionPartMarks }),
+    };
+
+    try {
+      setCreating(true);
+      setCreateError(null);
+      const response = await axios.post(`${API_URL}/api/courses`, payload, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (response.data.success) {
+        navigate('/', { replace: true });
+      } else {
+        setCreateError(response.data.message || response.data.error || 'Failed to create course.');
+      }
+    } catch (err) {
+      setCreateError(
+        err.response?.data?.message || err.response?.data?.error || err.message || 'Failed to create course.'
+      );
+    } finally {
+      setCreating(false);
+    }
   };
 
   if (!coursePayload || !totalQuestionsFromState) {
@@ -113,7 +184,7 @@ const CreateCourseMarks = () => {
       <div className="create-course-marks-content">
         <h2 className="create-course-marks-title">Enter marks per question</h2>
         <p className="create-course-marks-hint">
-          Enter marks for each question (and each part if applicable). Total must equal <strong>{totalMarks}</strong>.
+          Enter marks for each question/part and select one objective per row. The objective will get the same marks as that row. Total must equal <strong>{totalMarks}</strong>.
         </p>
 
         <div className="create-course-marks-table-wrapper">
@@ -123,11 +194,12 @@ const CreateCourseMarks = () => {
                 <th>Question</th>
                 <th>Part</th>
                 <th>Marks</th>
+                <th className="create-course-marks-th-objectives">Objective</th>
               </tr>
             </thead>
             <tbody>
               {slots.map((sl) => (
-                <tr key={slotKey(sl.questionIndex, sl.partIndex)}>
+                <tr key={sl.key}>
                   <td className="marks-q-cell">{sl.label}</td>
                   <td className="marks-part-cell">{sl.partLabel != null ? sl.partLabel : '—'}</td>
                   <td>
@@ -136,11 +208,26 @@ const CreateCourseMarks = () => {
                       min="0"
                       step="1"
                       className="marks-slot-input"
-                      value={marksBySlot[slotKey(sl.questionIndex, sl.partIndex)] ?? ''}
+                      value={marksBySlot[sl.key] ?? ''}
                       onChange={(e) => handleMarksChange(sl.questionIndex, sl.partIndex, e.target.value)}
                       placeholder="0"
                       aria-label={`Marks for ${sl.label}${sl.partLabel ? ` ${sl.partLabel}` : ''}`}
                     />
+                  </td>
+                  <td className="create-course-marks-td-objectives">
+                    <select
+                      className="create-course-marks-objective-select"
+                      value={objectiveSelection[sl.key] ?? ''}
+                      onChange={(e) => handleObjectiveSelect(sl.key, e.target.value || null)}
+                      aria-label={`Objective for ${sl.label}${sl.partLabel ? ` ${sl.partLabel}` : ''}`}
+                    >
+                      <option value="">Select objective</option>
+                      {resolvedTopics.map((t) => (
+                        <option key={t.topicKey} value={t.topicKey}>
+                          {t.topicName || t.courseCode || t.topicKey}
+                        </option>
+                      ))}
+                    </select>
                   </td>
                 </tr>
               ))}
@@ -151,22 +238,25 @@ const CreateCourseMarks = () => {
         <p className={`create-course-marks-sum ${!totalValid && sumMarks > 0 ? 'create-course-marks-sum-error' : ''}`}>
           Total: <strong>{sumMarks}</strong> / {totalMarks}
         </p>
+        {!allObjectivesSelected && resolvedTopics.length > 0 && slots.length > 0 && (
+          <p className="create-course-marks-objectives-hint">Select an objective for every row to create the course.</p>
+        )}
         {createError && (
           <div className="create-course-marks-error" role="alert">
             {createError}
           </div>
         )}
         <div className="create-course-marks-actions">
-          <button type="button" className="create-course-marks-back-btn" onClick={handleBack}>
+          <button type="button" className="create-course-marks-back-btn" onClick={handleBack} disabled={creating}>
             Back
           </button>
           <button
             type="button"
             className="create-course-marks-next-btn"
-            onClick={handleNext}
-            disabled={!totalValid}
+            onClick={handleCreateCourse}
+            disabled={!totalValid || !allObjectivesSelected || creating}
           >
-            Map questions to objectives
+            {creating ? 'Creating...' : 'Create course'}
           </button>
         </div>
       </div>

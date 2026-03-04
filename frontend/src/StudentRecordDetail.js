@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import CurriculumHeader from './CurriculumHeader';
@@ -11,18 +11,39 @@ const StudentRecordDetail = () => {
   const matrixTableRef = React.useRef(null);
   const [course, setCourse] = useState(null);
   const [students, setStudents] = useState([]);
-  const [objectiveMarks, setObjectiveMarks] = useState({});
+  const [questionMarks, setQuestionMarks] = useState({});
+  const [notAttempted, setNotAttempted] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
 
-  const topics = React.useMemo(() => course?.topics || [], [course]);
-  const totalMarksForCourse = topics.reduce((sum, t) => sum + (t.marks || 0), 0);
+  const topics = useMemo(() => course?.topics || [], [course]);
+  const courseQuestions = useMemo(() => (course?.questions || []).sort((a, b) => a.questionIndex - b.questionIndex), [course]);
+  const totalMarksForCourse = useMemo(() => topics.reduce((sum, t) => sum + (t.marks || 0), 0), [topics]);
 
-  // Grades that this course's objectives belong to (from curriculum selection)
-  const courseGrades = React.useMemo(() => {
+  const slots = useMemo(() => {
+    if (!courseQuestions.length) return [];
+    return courseQuestions.map((q) => {
+      const indices = (q.topicIndices || []).map((i) => Number(i));
+      const maxMarks = indices.reduce((s, i) => s + (topics[i]?.marks || 0), 0);
+      return {
+        slotKey: `q${q.questionIndex}`,
+        label: `Q${q.questionIndex}`,
+        maxMarks,
+        questionIndex: q.questionIndex,
+        topicIndices: indices,
+      };
+    });
+  }, [courseQuestions, topics]);
+
+  const compulsoryQuestions = useMemo(() => {
+    const n = course?.compulsoryQuestions;
+    return n != null && Number(n) >= 0 ? Number(n) : null;
+  }, [course]);
+
+  const courseGrades = useMemo(() => {
     const grades = new Set();
     topics.forEach((t) => {
       if (t.grade != null && t.grade !== '') grades.add(String(t.grade));
@@ -30,15 +51,13 @@ const StudentRecordDetail = () => {
     return grades;
   }, [topics]);
 
-  // Only students in those grades are "enrolled" (shown in the matrix)
-  const enrolledStudents = React.useMemo(() => {
+  const enrolledStudents = useMemo(() => {
     if (courseGrades.size === 0) return students;
     return students.filter((s) => courseGrades.has(String(s.grade)));
   }, [students, courseGrades]);
 
   useEffect(() => {
     fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseCode]);
 
   const fetchData = async () => {
@@ -48,10 +67,9 @@ const StudentRecordDetail = () => {
 
       const courseResponse = await axios.get(`${API_URL}/api/courses`);
       if (courseResponse.data.success) {
-        const foundCourse = courseResponse.data.data.find(c => c.code === courseCode);
-        if (foundCourse) {
-          setCourse(foundCourse);
-        } else {
+        const foundCourse = courseResponse.data.data.find((c) => c.code === courseCode);
+        if (foundCourse) setCourse(foundCourse);
+        else {
           setError('Course not found');
           setLoading(false);
           return;
@@ -66,20 +84,20 @@ const StudentRecordDetail = () => {
         const recordResponse = await axios.get(`${API_URL}/api/records/course/${courseCode}`);
         if (recordResponse.data.success && recordResponse.data.data) {
           const record = recordResponse.data.data;
-          const marks = {};
-          (record.students || []).forEach(student => {
-            const om = student.objectiveMarks || {};
-            marks[student.registrationNumber] = Object.keys(om).reduce((acc, k) => {
-              acc[k] = typeof om[k] === 'number' ? om[k] : parseFloat(om[k]) || 0;
-              return acc;
-            }, {});
+          const qMarks = {};
+          const nAttempted = {};
+          (record.students || []).forEach((stu) => {
+            const reg = stu.registrationNumber;
+            qMarks[reg] = { ...(stu.questionMarks || {}) };
+            nAttempted[reg] = new Set(stu.notAttemptedSlots || []);
           });
-          setObjectiveMarks(marks);
+          setQuestionMarks(qMarks);
+          setNotAttempted(nAttempted);
           setIsEditMode(false);
         } else {
           setIsEditMode(true);
         }
-      } catch (recordError) {
+      } catch {
         setIsEditMode(true);
       }
     } catch (err) {
@@ -90,51 +108,80 @@ const StudentRecordDetail = () => {
     }
   };
 
-  const getMark = (registrationNumber, topicIndex) => {
-    const byStudent = objectiveMarks[registrationNumber];
-    if (!byStudent) return '';
-    const v = byStudent[String(topicIndex)];
+  const getQuestionMark = (registrationNumber, slotKey) => {
+    const byStu = questionMarks[registrationNumber];
+    if (!byStu) return '';
+    const v = byStu[slotKey];
     return v === undefined || v === null ? '' : String(v);
   };
 
-  const setMark = (registrationNumber, topicIndex, value, maxMarks) => {
-    if (value === '') {
-      setObjectiveMarks(prev => {
-        const next = { ...prev };
-        if (next[registrationNumber]) {
-          delete next[registrationNumber][String(topicIndex)];
-        }
-        return next;
-      });
-      return;
-    }
-    let num = parseFloat(value);
-    if (Number.isNaN(num)) return;
-    if (num < 0) num = 0;
-    if (maxMarks != null && Number(maxMarks) >= 0 && num > Number(maxMarks)) num = Number(maxMarks);
-    setObjectiveMarks(prev => {
+  const setQuestionMark = (registrationNumber, slotKey, value, maxMarks) => {
+    setQuestionMarks((prev) => {
       const next = { ...prev };
       if (!next[registrationNumber]) next[registrationNumber] = {};
-      next[registrationNumber][String(topicIndex)] = num;
+      if (value === '' || value == null) {
+        delete next[registrationNumber][slotKey];
+        return next;
+      }
+      let num = parseFloat(value);
+      if (Number.isNaN(num)) return prev;
+      if (num < 0) num = 0;
+      if (maxMarks != null && Number(maxMarks) >= 0 && num > Number(maxMarks)) num = Number(maxMarks);
+      next[registrationNumber][slotKey] = num;
       return next;
     });
   };
 
-  const handleMarkKeyDown = (e, topicIndex, studentIndex) => {
-    if (e.key !== 'Enter') return;
-    e.preventDefault();
-    const nextRow = topicIndex + 1;
-    if (nextRow >= topics.length) return;
-    const nextInput = matrixTableRef.current?.querySelector(
-      `input[data-topic-index="${nextRow}"][data-student-index="${studentIndex}"]`
-    );
-    if (nextInput) nextInput.focus();
+  const isNotAttempted = (registrationNumber, slotKey) => {
+    return (notAttempted[registrationNumber] || new Set()).has(slotKey);
+  };
+
+  const toggleNotAttempted = (registrationNumber, slotKey) => {
+    setNotAttempted((prev) => {
+      const next = { ...prev };
+      if (!next[registrationNumber]) next[registrationNumber] = new Set();
+      const set = new Set(next[registrationNumber]);
+      if (set.has(slotKey)) {
+        set.delete(slotKey);
+      } else {
+        set.add(slotKey);
+        setQuestionMarks((p) => {
+          const n = { ...p };
+          if (n[registrationNumber]) {
+            const o = { ...n[registrationNumber] };
+            delete o[slotKey];
+            n[registrationNumber] = o;
+          }
+          return n;
+        });
+      }
+      next[registrationNumber] = set;
+      return next;
+    });
+  };
+
+  const computeLeftOnChoiceForStudent = (registrationNumber) => {
+    if (compulsoryQuestions == null || compulsoryQuestions < 1) return [];
+    const qM = questionMarks[registrationNumber] || {};
+    const na = notAttempted[registrationNumber] || new Set();
+    const withMarks = slots.filter((s) => {
+      if (na.has(s.slotKey)) return false;
+      const v = qM[s.slotKey];
+      return v != null && Number(v) > 0;
+    });
+    if (withMarks.length < compulsoryQuestions) return [];
+    const noMarksNotNA = slots.filter((s) => !na.has(s.slotKey) && !(Number(qM[s.slotKey]) > 0));
+    return noMarksNotNA.map((s) => s.slotKey);
   };
 
   const getTotalForStudent = (registrationNumber) => {
-    const byStudent = objectiveMarks[registrationNumber];
-    if (!byStudent) return 0;
-    return topics.reduce((sum, _, idx) => sum + (byStudent[String(idx)] || 0), 0);
+    const leftOnChoice = computeLeftOnChoiceForStudent(registrationNumber);
+    const qM = questionMarks[registrationNumber] || {};
+    const na = notAttempted[registrationNumber] || new Set();
+    return slots.reduce((sum, s) => {
+      if (na.has(s.slotKey) || leftOnChoice.includes(s.slotKey)) return sum;
+      return sum + (Number(qM[s.slotKey]) || 0);
+    }, 0);
   };
 
   const calculateGrade = (totalOutOfHundred) => {
@@ -156,29 +203,35 @@ const StudentRecordDetail = () => {
     setTimeout(() => setToast({ show: false, message: '', type: '' }), 3000);
   };
 
-  const handleCancel = () => {
-    navigate('/record');
-  };
+  const handleCancel = () => navigate('/record');
 
   const handleSaveRecord = async () => {
     if (!course) return;
 
-    const studentsData = enrolledStudents.map(student => {
-      const byStudent = objectiveMarks[student.registrationNumber] || {};
-      const total = topics.reduce((sum, _, idx) => sum + (byStudent[String(idx)] || 0), 0);
-      const objectiveMarksPayload = {};
-      topics.forEach((_, idx) => {
-        const v = byStudent[String(idx)];
-        if (v !== undefined && v !== null) objectiveMarksPayload[String(idx)] = Number(v);
+    const studentsData = enrolledStudents.map((student) => {
+      const reg = student.registrationNumber;
+      const qM = questionMarks[reg] || {};
+      const na = Array.from(notAttempted[reg] || []);
+      const leftOnChoice = computeLeftOnChoiceForStudent(reg);
+      const total = getTotalForStudent(reg);
+      const percentage = totalMarksForCourse > 0 ? Math.round((total / totalMarksForCourse) * 10000) / 100 : 0;
+      const grade = calculateGrade(percentage);
+
+      const questionMarksPayload = {};
+      slots.forEach((s) => {
+        const v = qM[s.slotKey];
+        if (v != null && !na.includes(s.slotKey)) questionMarksPayload[s.slotKey] = Number(v);
       });
 
       return {
-        registrationNumber: student.registrationNumber,
+        registrationNumber: reg,
         studentName: student.studentName,
         weightageScores: {},
-        objectiveMarks: objectiveMarksPayload,
-        overallPercentage: Math.round(total * 100) / 100,
-        overallGrade: calculateGrade(total),
+        questionMarks: questionMarksPayload,
+        notAttemptedSlots: na,
+        leftOnChoiceSlots: leftOnChoice,
+        overallPercentage: percentage,
+        overallGrade: grade,
       };
     });
 
@@ -207,16 +260,14 @@ const StudentRecordDetail = () => {
     }
   };
 
-  const handleEditClick = () => {
-    setIsEditMode(true);
-  };
+  const handleEditClick = () => setIsEditMode(true);
 
   if (loading) {
     return (
       <div className="student-record-detail-container">
         <CurriculumHeader />
         <div className="loading-spinner">
-          <div className="spinner"></div>
+          <div className="spinner" />
           <p>Loading course and student data...</p>
         </div>
       </div>
@@ -231,6 +282,8 @@ const StudentRecordDetail = () => {
       </div>
     );
   }
+
+  const hasSlots = slots.length > 0;
 
   return (
     <div className="student-record-detail-container">
@@ -251,94 +304,120 @@ const StudentRecordDetail = () => {
               </span>
             </div>
             <div className="info-item">
-              <span className="info-label">Objectives:</span>
-              <span className="info-value">{topics.length}</span>
+              <span className="info-label">Questions:</span>
+              <span className="info-value">{slots.length}</span>
             </div>
             <div className="info-item">
               <span className="info-label">Total Marks:</span>
               <span className="info-value">{totalMarksForCourse}</span>
             </div>
+            {compulsoryQuestions != null && (
+              <div className="info-item">
+                <span className="info-label">Compulsory questions:</span>
+                <span className="info-value">{compulsoryQuestions} of {slots.length}</span>
+              </div>
+            )}
           </div>
         </div>
 
         <div className="students-table-section">
           <div className="table-header-section">
-            <h3>Marks by objective and student</h3>
+            <h3>Marks by question and student</h3>
           </div>
+          {compulsoryQuestions != null && (
+            <p className="compulsory-hint">
+              Enter marks for at least {compulsoryQuestions} question(s). Remaining questions can be left on choice (stored as &quot;Left on choice&quot;) if compulsory are attempted.
+            </p>
+          )}
 
-          {enrolledStudents.length > 0 && topics.length > 0 ? (
+          {enrolledStudents.length > 0 && hasSlots ? (
             <>
               <div className="table-wrapper matrix-table-wrapper" ref={matrixTableRef}>
                 <table className={`students-record-table matrix-table ${!isEditMode ? 'read-only' : ''}`}>
                   <thead>
                     <tr>
                       <th className="matrix-th-srno">Sr. No</th>
-                      <th className="matrix-th-objective">Objective</th>
+                      <th className="matrix-th-objective">Question</th>
+                      <th className="matrix-th-max">Max</th>
                       {enrolledStudents.map((student) => (
-                        <th key={student.registrationNumber} className="matrix-th-student">
-                          {student.studentName} ({student.registrationNumber})
-                        </th>
+                        <React.Fragment key={student.registrationNumber}>
+                          <th className="matrix-th-student">{student.studentName} ({student.registrationNumber})</th>
+                          <th className="matrix-th-not-attempted">Not attempted</th>
+                        </React.Fragment>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {topics.map((topic, topicIndex) => (
-                      <tr key={topicIndex}>
-                        <td className="matrix-td-srno">{topicIndex + 1}</td>
-                        <td className="matrix-td-objective">
-                          {topic.topicName || topic.courseCode || `Objective ${topicIndex + 1}`}
-                          {topic.marks != null && (
-                            <span className="objective-max-marks"> (max {topic.marks})</span>
-                          )}
-                        </td>
-                        {enrolledStudents.map((student, studentIndex) => {
-                          const maxForObjective = topic.marks != null ? topic.marks : 100;
+                    {slots.map((slot, idx) => (
+                      <tr key={slot.slotKey}>
+                        <td className="matrix-td-srno">{idx + 1}</td>
+                        <td className="matrix-td-objective">{slot.label}</td>
+                        <td className="matrix-td-max">{slot.maxMarks}</td>
+                        {enrolledStudents.map((student) => {
+                          const reg = student.registrationNumber;
+                          const na = isNotAttempted(reg, slot.slotKey);
                           return (
-                          <td key={student.registrationNumber} className="matrix-td-mark">
-                            {isEditMode ? (
-                              <div className="matrix-mark-cell-with-hint">
-                                <input
-                                  type="number"
-                                  min={0}
-                                  max={maxForObjective}
-                                  step="0.01"
-                                  className="score-input matrix-score-input"
-                                  value={getMark(student.registrationNumber, topicIndex)}
-                                  onChange={(e) => setMark(student.registrationNumber, topicIndex, e.target.value, maxForObjective)}
-                                  onKeyDown={(e) => handleMarkKeyDown(e, topicIndex, studentIndex)}
-                                  data-topic-index={topicIndex}
-                                  data-student-index={studentIndex}
-                                  placeholder="0"
-                                  aria-describedby={`hint-${topicIndex}-${student.registrationNumber}`}
-                                />
-                                <span id={`hint-${topicIndex}-${student.registrationNumber}`} className="matrix-mark-max-hint">
-                                  Max: {maxForObjective}
-                                </span>
-                              </div>
-                            ) : (
-                              <span className="score-display">
-                                {getMark(student.registrationNumber, topicIndex) !== ''
-                                  ? parseFloat(getMark(student.registrationNumber, topicIndex)).toFixed(2)
-                                  : '-'}
-                              </span>
-                            )}
-                          </td>
+                            <React.Fragment key={reg}>
+                              <td className="matrix-td-mark">
+                                {isEditMode ? (
+                                  na ? (
+                                    <span className="not-attempted-label">Not attempted</span>
+                                  ) : (
+                                    <div className="matrix-mark-cell-with-hint">
+                                      <input
+                                        type="number"
+                                        min={0}
+                                        max={slot.maxMarks}
+                                        step="0.01"
+                                        className="score-input matrix-score-input"
+                                        value={getQuestionMark(reg, slot.slotKey)}
+                                        onChange={(e) => setQuestionMark(reg, slot.slotKey, e.target.value, slot.maxMarks)}
+                                        placeholder="0"
+                                        aria-label={`Marks for ${slot.label} - ${student.studentName}`}
+                                      />
+                                      <span className="matrix-mark-max-hint">Max: {slot.maxMarks}</span>
+                                    </div>
+                                  )
+                                ) : (
+                                  <span className="score-display">
+                                    {na ? 'Not attempted' : (getQuestionMark(reg, slot.slotKey) !== '' ? parseFloat(getQuestionMark(reg, slot.slotKey)).toFixed(2) : '—')}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="matrix-td-not-attempted-btn">
+                                {isEditMode && (
+                                  <button
+                                    type="button"
+                                    className={`not-attempted-btn ${na ? 'not-attempted-btn-active' : ''}`}
+                                    onClick={() => toggleNotAttempted(reg, slot.slotKey)}
+                                    aria-pressed={na}
+                                  >
+                                    {na ? 'Undo' : 'Not attempted'}
+                                  </button>
+                                )}
+                              </td>
+                            </React.Fragment>
                           );
                         })}
                       </tr>
                     ))}
                     <tr className="matrix-total-row">
-                      <td className="matrix-td-srno"></td>
-                      <td className="matrix-td-objective total-label">Total</td>
+                      <td className="matrix-td-srno" />
+                      <td className="matrix-td-objective total-label">Total (obtained)</td>
+                      <td className="matrix-td-max">{totalMarksForCourse}</td>
                       {enrolledStudents.map((student) => {
                         const total = getTotalForStudent(student.registrationNumber);
+                        const leftOnChoice = computeLeftOnChoiceForStudent(student.registrationNumber);
                         return (
-                          <td key={student.registrationNumber} className="matrix-td-total">
-                            <span className="total-value">{total.toFixed(2)}</span>
-                            {totalMarksForCourse > 0 && (
+                          <React.Fragment key={student.registrationNumber}>
+                            <td colSpan="2" className="matrix-td-total">
+                              <span className="total-value">{total.toFixed(2)}</span>
                               <span className="total-out-of"> / {totalMarksForCourse}</span>
-                            )}
-                          </td>
+                              {leftOnChoice.length > 0 && (
+                                <span className="left-on-choice-badge"> ({leftOnChoice.length} left on choice)</span>
+                              )}
+                            </td>
+                          </React.Fragment>
                         );
                       })}
                     </tr>
@@ -355,12 +434,7 @@ const StudentRecordDetail = () => {
                     Edit
                   </button>
                 ) : (
-                  <button
-                    type="button"
-                    className="save-record-button"
-                    onClick={handleSaveRecord}
-                    disabled={saving}
-                  >
+                  <button type="button" className="save-record-button" onClick={handleSaveRecord} disabled={saving}>
                     {saving ? 'Saving...' : 'Submit'}
                   </button>
                 )}
@@ -371,11 +445,11 @@ const StudentRecordDetail = () => {
               <div className="empty-icon">👥</div>
               <h2>No data to show</h2>
               <p>
-                {enrolledStudents.length === 0 && topics.length === 0
-                  ? 'Add students in the course grade(s) and ensure the course has objectives.'
+                {enrolledStudents.length === 0 && !hasSlots
+                  ? 'Add students in the course grade(s) and ensure the course has questions mapped to objectives.'
                   : enrolledStudents.length === 0
-                    ? 'No students in this course\'s grade(s). Upload student data for the relevant grade(s).'
-                    : 'This course has no objectives.'}
+                    ? "No students in this course's grade(s). Upload student data for the relevant grade(s)."
+                    : 'This course has no questions defined. Create the course with the question mapping first.'}
               </p>
             </div>
           )}

@@ -90,12 +90,16 @@ const Curriculum = () => {
   const dataByGradeAndAge = React.useMemo(() => {
     let out = [...data];
     if (filters.grade) {
-      out = out.filter(item => item.grade === Number(filters.grade));
+      out = out.filter(item => String(item.grade) === String(filters.grade));
     }
     if (filters.ageGroup && ageToGrades[filters.ageGroup]) {
       const gradesForAge = ageToGrades[filters.ageGroup];
       if (gradesForAge.length > 0) {
-        out = out.filter(item => gradesForAge.includes(item.grade));
+        out = out.filter(item => {
+          const g = item.grade;
+          if (typeof g === 'string' && g.startsWith('KG')) return false;
+          return gradesForAge.includes(Number(g));
+        });
       } else {
         out = [];
       }
@@ -108,12 +112,16 @@ const Curriculum = () => {
     let filtered = [...data];
 
     if (filters.grade) {
-      filtered = filtered.filter(item => item.grade === Number(filters.grade));
+      filtered = filtered.filter(item => String(item.grade) === String(filters.grade));
     }
     if (filters.ageGroup && ageToGrades[filters.ageGroup]) {
       const gradesForAge = ageToGrades[filters.ageGroup];
       if (gradesForAge.length > 0) {
-        filtered = filtered.filter(item => gradesForAge.includes(item.grade));
+        filtered = filtered.filter(item => {
+          const g = item.grade;
+          if (typeof g === 'string' && g.startsWith('KG')) return false;
+          return gradesForAge.includes(Number(g));
+        });
       } else {
         filtered = [];
       }
@@ -167,7 +175,18 @@ const Curriculum = () => {
       const g = doc.grade;
       if (!byGrade.has(g)) byGrade.set(g, doc);
     });
-    const deduped = Array.from(byGrade.values()).sort((a, b) => (a.grade || 0) - (b.grade || 0));
+    const gradeOrder = (g) => {
+      if (g === 'KG-1') return 0;
+      if (g === 'KG-2') return 1;
+      if (g === 'KG-3') return 2;
+      const n = Number(g);
+      return Number.isNaN(n) ? 999 : 10 + n;
+    };
+    const deduped = Array.from(byGrade.values()).sort((a, b) => {
+      const oa = gradeOrder(a.grade);
+      const ob = gradeOrder(b.grade);
+      return oa - ob;
+    });
     setFilteredData(deduped);
   }, [filters, data, ageToGrades]);
 
@@ -271,21 +290,24 @@ const Curriculum = () => {
   const handleAddSingleObjective = async (e) => {
     e.preventDefault();
     const { grade, subject, code, title, description } = singleObjectiveForm;
-    if (!grade || parseInt(grade, 10) < 1) {
-      alert('Please enter a valid grade (1 or higher).');
+    const gradeTrim = String(grade || '').trim();
+    const validGrade = gradeTrim === 'KG-1' || gradeTrim === 'KG-2' || gradeTrim === 'KG-3' || (parseInt(gradeTrim, 10) >= 1);
+    if (!gradeTrim || !validGrade) {
+      alert('Please enter a valid grade (1 or higher, or KG-1, KG-2, KG-3).');
       return;
     }
+    const gradePayload = ['KG-1', 'KG-2', 'KG-3'].includes(gradeTrim) ? gradeTrim : parseInt(gradeTrim, 10);
     try {
       setAddingObjective(true);
       await axios.post(`${API_URL}/api/curriculum/objective`, {
-        grade: parseInt(grade, 10),
+        grade: gradePayload,
         subject: subject != null ? String(subject).trim() : '',
         code: code != null ? String(code).trim() : '',
         title: title != null ? String(title).trim() : '',
         description: description != null ? String(description).trim() : '',
       });
       setSingleObjectiveForm({ grade: '', subject: '', code: '', title: '', description: '' });
-      setFilters({ ageGroup: '', grade: '', code: '', subject: '', topic: '', learningObjective: '' });
+      setFilters({ ageGroup: '', grade: '', subject: '', topic: '', learningObjective: '' });
       setLoading(true);
       await fetchCurriculum();
     } catch (err) {
@@ -297,11 +319,14 @@ const Curriculum = () => {
   };
 
   // Row-unique key for edit/save/delete and delete-selection (grade + index)
-  const rowKey = (gradeNum, topicIndex) => `${gradeNum}::${topicIndex}`;
+  const rowKey = (gradeNumOrStr, topicIndex) => `${gradeNumOrStr}::${topicIndex}`;
   const parseRowKey = (key) => {
     const i = key.indexOf('::');
-    if (i === -1) return { grade: parseInt(key, 10), index: 0 };
-    return { grade: parseInt(key.slice(0, i), 10), index: parseInt(key.slice(i + 2), 10) };
+    if (i === -1) return { grade: key, index: 0 };
+    const gradeStr = key.slice(0, i);
+    const index = parseInt(key.slice(i + 2), 10);
+    const grade = /^\d+$/.test(gradeStr) ? parseInt(gradeStr, 10) : gradeStr;
+    return { grade, index: Number.isNaN(index) ? 0 : index };
   };
 
   const handleDeleteObjective = async (grade, topicIndex, topic) => {
@@ -362,7 +387,7 @@ const Curriculum = () => {
       const items = Array.from(selectedObjectives).map((key) => {
         const { grade, index } = parseRowKey(key);
         return { grade, index };
-      }).filter((item) => !isNaN(parseInt(item.grade, 10)) && !isNaN(parseInt(item.index, 10)));
+      }).filter((item) => item != null && (typeof item.grade === 'number' || ['KG-1', 'KG-2', 'KG-3'].includes(String(item.grade))) && !Number.isNaN(Number(item.index)) && item.index >= 0);
     if (items.length === 0) return;
     if (!window.confirm(`Delete ${items.length} selected objective(s)? This cannot be undone.`)) return;
     try {
@@ -581,6 +606,9 @@ const Curriculum = () => {
               onChange={(e) => handleFilterChange('grade', e.target.value)}
             >
               <option value="">All Grades</option>
+              <option value="KG-1">KG-1</option>
+              <option value="KG-2">KG-2</option>
+              <option value="KG-3">KG-3</option>
               <option value="1">Grade 1 (Year 5-6)</option>
               <option value="2">Grade 2 (Year 6-7)</option>
               <option value="3">Grade 3</option>
@@ -728,7 +756,7 @@ const Curriculum = () => {
         </div>
 
         <p className="objectives-upload-hint">
-          You are strictly required to follow the order of the columns in your Excel file. Use exactly this order: <strong>Grade</strong>, <strong>Subject</strong>, <strong>Code</strong>, <strong>Title</strong>, <strong>Description</strong>. The first row must be these headers; column names can vary slightly (e.g. Class for Grade, Topic for Title), but the column order must match.
+          Use columns in this order: <strong>Grade</strong>, <strong>Subject</strong>, <strong>Code</strong>, <strong>Title</strong>, <strong>Description</strong>. First row must be headers. <strong>Grade</strong> can be a number (1, 2, 3…) or KG in any of these forms: KG-1/KG-I/KG 1/KG I, KG-2/KG-II/KG 2/KG II, KG-3/KG-III/KG 3/KG III.
         </p>
 
         <div className="upload-objectives-bar">

@@ -52,7 +52,7 @@ router.post('/', async (req, res) => {
       });
     }
 
-    const { courseName, courseDuration, weightage, startingDate, topics, totalMarks: bodyTotalMarks, totalQuestions: bodyTotalQuestions, questions: bodyQuestions, subject: bodySubject } = req.body;
+    const { courseName, courseDuration, weightage, startingDate, topics, totalMarks: bodyTotalMarks, totalQuestions: bodyTotalQuestions, questions: bodyQuestions, subject: bodySubject, compulsoryQuestions: bodyCompulsory, questionParts: bodyQuestionParts, questionPartMarks: bodyQuestionPartMarks } = req.body;
 
     // Validate required fields
     if (!courseName || !courseName.trim()) {
@@ -168,6 +168,18 @@ router.post('/', async (req, res) => {
     // Generate unique course code
     const code = await generateCourseCode();
 
+    const compulsoryNum = bodyCompulsory != null && Number.isFinite(Number(bodyCompulsory)) && Number(bodyCompulsory) >= 0 ? Number(bodyCompulsory) : null;
+    const questionPartsToSave = Array.isArray(bodyQuestionParts) ? bodyQuestionParts.map(p => ({
+      questionIndex: Number(p.questionIndex),
+      numParts: Number(p.numParts) || 0,
+      compulsoryParts: Number(p.compulsoryParts) || 0,
+    })) : [];
+    const questionPartMarksToSave = Array.isArray(bodyQuestionPartMarks) ? bodyQuestionPartMarks.map(m => ({
+      questionIndex: Number(m.questionIndex),
+      partIndex: Number(m.partIndex),
+      marks: Number(m.marks) || 0,
+    })) : [];
+
     // Create course object
     const subjectStr = bodySubject != null && String(bodySubject).trim() !== '' ? String(bodySubject).trim() : '';
     const courseData = {
@@ -185,6 +197,9 @@ router.post('/', async (req, res) => {
       startingDate: new Date(startingDate),
       topics: topicsWithMarks,
       ...(totalQuestionsNum != null && { totalQuestions: totalQuestionsNum }),
+      ...(compulsoryNum != null && { compulsoryQuestions: compulsoryNum }),
+      ...(questionPartsToSave.length > 0 && { questionParts: questionPartsToSave }),
+      ...(questionPartMarksToSave.length > 0 && { questionPartMarks: questionPartMarksToSave }),
       ...(questionsToSave.length > 0 && { questions: questionsToSave }),
     };
 

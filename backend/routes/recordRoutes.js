@@ -108,30 +108,94 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // Validate students data
-    for (const student of students) {
-      if (!student.registrationNumber || !student.studentName) {
-        return res.status(400).json({
-          success: false,
-          error: 'Student data invalid',
-          message: 'Student registration number and name required',
+    // Load course to compute objective marks from question marks if needed
+    const course = await Course.findOne({ code: courseCode.trim() }).lean();
+    const topics = (course?.topics || []);
+    const courseQuestions = (course?.questions || []);
+    const totalMarksCourse = topics.reduce((s, t) => s + (Number(t.marks) || 0), 0);
+
+    function computeObjectiveMarksFromSlots(student) {
+      const questionMarks = student.questionMarks || {};
+      const notAttemptedSlots = student.notAttemptedSlots || [];
+      const leftOnChoiceSlots = student.leftOnChoiceSlots || [];
+      const objMarks = {};
+      topics.forEach((_, idx) => { objMarks[String(idx)] = 0; });
+
+      for (let q = 1; q <= (courseQuestions.length || 0); q++) {
+        const slotKey = `q${q}`;
+        const qObj = courseQuestions.find(qu => Number(qu.questionIndex) === q);
+        if (!qObj || !(qObj.topicIndices && qObj.topicIndices.length)) continue;
+        const indices = qObj.topicIndices.map(i => Number(i));
+        const slotMax = indices.reduce((s, i) => s + (Number(topics[i]?.marks) || 0), 0);
+        if (notAttemptedSlots.includes(slotKey)) {
+          indices.forEach(i => { objMarks[String(i)] = 0; });
+          continue;
+        }
+        if (leftOnChoiceSlots.includes(slotKey)) {
+          indices.forEach(i => { objMarks[String(i)] = 0; });
+          continue;
+        }
+        const obtained = Number(questionMarks[slotKey]);
+        if (Number.isNaN(obtained) || obtained < 0) continue;
+        if (slotMax <= 0) continue;
+        const ratio = Math.min(1, obtained / slotMax);
+        indices.forEach(i => {
+          const maxI = Number(topics[i]?.marks) || 0;
+          objMarks[String(i)] = Math.round(ratio * maxI * 100) / 100;
         });
       }
-      if (typeof student.overallPercentage !== 'number' || student.overallPercentage < 0 || student.overallPercentage > 100) {
-        return res.status(400).json({
-          success: false,
-          error: 'Invalid percentage',
-          message: 'Overall percentage must be between 0 and 100',
-        });
-      }
-      if (!student.overallGrade || !student.overallGrade.trim()) {
-        return res.status(400).json({
-          success: false,
-          error: 'Grade required',
-          message: 'Overall grade is required',
-        });
-      }
+
+      const totalObtained = Object.values(objMarks).reduce((s, v) => s + Number(v), 0);
+      const percentage = totalMarksCourse > 0 ? Math.round((totalObtained / totalMarksCourse) * 10000) / 100 : 0;
+      let grade = 'F';
+      if (percentage >= 90) grade = 'A+';
+      else if (percentage >= 85) grade = 'A';
+      else if (percentage >= 80) grade = 'B+';
+      else if (percentage >= 75) grade = 'B';
+      else if (percentage >= 70) grade = 'C+';
+      else if (percentage >= 65) grade = 'C';
+      else if (percentage >= 60) grade = 'D+';
+      else if (percentage >= 55) grade = 'D';
+      else if (percentage >= 50) grade = 'E';
+
+      return { objectiveMarks: objMarks, overallPercentage: percentage, overallGrade: grade };
     }
+
+    // Validate students data and compute objectiveMarks if questionMarks provided
+    const studentsPayload = students.map(student => {
+      if (!student.registrationNumber || !student.studentName) {
+        throw new Error('Student registration number and name required');
+      }
+      let objectiveMarks = student.objectiveMarks || {};
+      let overallPercentage = student.overallPercentage;
+      let overallGrade = student.overallGrade || '';
+
+      if (course && courseQuestions.length > 0 && (student.questionMarks != null || student.notAttemptedSlots != null || student.leftOnChoiceSlots != null)) {
+        const computed = computeObjectiveMarksFromSlots(student);
+        objectiveMarks = computed.objectiveMarks;
+        overallPercentage = computed.overallPercentage;
+        overallGrade = computed.overallGrade;
+      } else {
+        if (typeof overallPercentage !== 'number' || overallPercentage < 0 || overallPercentage > 100) {
+          throw new Error('Overall percentage must be between 0 and 100');
+        }
+        if (!overallGrade || !overallGrade.trim()) {
+          throw new Error('Overall grade is required');
+        }
+      }
+
+      return {
+        registrationNumber: student.registrationNumber.trim(),
+        studentName: student.studentName.trim(),
+        weightageScores: student.weightageScores || {},
+        objectiveMarks,
+        questionMarks: student.questionMarks || {},
+        notAttemptedSlots: Array.isArray(student.notAttemptedSlots) ? student.notAttemptedSlots : [],
+        leftOnChoiceSlots: Array.isArray(student.leftOnChoiceSlots) ? student.leftOnChoiceSlots : [],
+        overallPercentage,
+        overallGrade: String(overallGrade).trim(),
+      };
+    });
 
     // Check if record exists for this course
     const existingRecord = await Record.findOne({ courseCode });
@@ -139,14 +203,7 @@ router.post('/', async (req, res) => {
     const recordData = {
       courseCode: courseCode.trim(),
       courseName: courseName.trim(),
-      students: students.map(student => ({
-        registrationNumber: student.registrationNumber.trim(),
-        studentName: student.studentName.trim(),
-        weightageScores: student.weightageScores || {},
-        objectiveMarks: student.objectiveMarks || {},
-        overallPercentage: student.overallPercentage,
-        overallGrade: student.overallGrade.trim(),
-      })),
+      students: studentsPayload,
     };
 
     let record;

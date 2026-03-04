@@ -16,6 +16,7 @@ const defaultFormData = {
   startDate: '',
   totalMarks: '',
   totalQuestions: '',
+  compulsoryQuestions: '',
 };
 
 const CreateCourse = () => {
@@ -169,6 +170,7 @@ const CreateCourse = () => {
       }
     }
 
+    const compulsoryNum = formData.compulsoryQuestions !== '' ? (parseInt(String(formData.compulsoryQuestions).trim(), 10) || null) : null;
     const coursePayload = {
       courseName: formData.courseName.trim(),
       subject: resolvedTopics[0]?.subject ?? '',
@@ -183,6 +185,7 @@ const CreateCourse = () => {
       startingDate: formData.startDate,
       totalMarks: totalMarksNum,
       totalQuestions: totalQuestionsNum,
+      ...(compulsoryNum != null && compulsoryNum >= 0 && { compulsoryQuestions: compulsoryNum }),
     };
 
     navigate('/create-course/marks', {
@@ -331,6 +334,21 @@ const CreateCourse = () => {
                 onChange={(e) => handleFormChange('totalQuestions', e.target.value)}
               />
               <span className="form-hint">Enter number of questions. Then set parts per question below and press Next.</span>
+            </div>
+
+            <div className="form-field">
+              <label htmlFor="compulsory-questions" className="form-label">Compulsory questions (optional)</label>
+              <input
+                type="number"
+                id="compulsory-questions"
+                min="0"
+                step="1"
+                className="total-questions-input"
+                placeholder="e.g. 5 (out of 7)"
+                value={formData.compulsoryQuestions}
+                onChange={(e) => handleFormChange('compulsoryQuestions', e.target.value)}
+              />
+              <span className="form-hint">How many questions must be attempted? Leave empty if all are compulsory.</span>
             </div>
           </div>
 

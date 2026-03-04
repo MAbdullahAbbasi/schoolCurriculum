@@ -33,6 +33,21 @@ const recordSchema = new mongoose.Schema(
           type: Object,
           default: {},
         },
+        // Question/part slot -> obtained marks: { "q1": 8, "q2-p1": 3 }
+        questionMarks: {
+          type: Object,
+          default: {},
+        },
+        // Slot keys (e.g. "q1", "q2-p1") that student did not attempt -> those objectives get 0
+        notAttemptedSlots: {
+          type: [String],
+          default: [],
+        },
+        // Slot keys left on choice (optional questions) when compulsory were fully attempted
+        leftOnChoiceSlots: {
+          type: [String],
+          default: [],
+        },
         overallPercentage: {
           type: Number,
           required: true,

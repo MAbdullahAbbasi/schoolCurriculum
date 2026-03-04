@@ -97,6 +97,24 @@ const findCol = (row, variations) => {
   return null;
 };
 
+// Normalize grade from Excel: accept numeric (1,2,3...) or KG variants -> "KG-1", "KG-2", "KG-3"
+const KG_PATTERNS = [
+  { regex: /^kg[- ]?1$|^kg[- ]?i$/i, value: "KG-1" },
+  { regex: /^kg[- ]?2$|^kg[- ]?ii$/i, value: "KG-2" },
+  { regex: /^kg[- ]?3$|^kg[- ]?iii$/i, value: "KG-3" },
+];
+function normalizeGrade(raw) {
+  if (raw == null || raw === "") return null;
+  const s = String(raw).trim();
+  const num = parseInt(s, 10);
+  if (!Number.isNaN(num) && num >= 1) return num;
+  const normalized = s.replace(/\s+/g, " ").trim();
+  for (const { regex, value } of KG_PATTERNS) {
+    if (regex.test(normalized)) return value;
+  }
+  return null;
+}
+
 // POST upload objectives Excel: expects Grade, Code, Title, Description (flexible column names)
 router.post("/upload", upload.single("file"), async (req, res) => {
   try {
@@ -167,34 +185,36 @@ router.post("/upload", upload.single("file"), async (req, res) => {
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       const gradeRaw = row[gradeCol];
-      const gradeNum = parseInt(gradeRaw, 10);
-      if (isNaN(gradeNum) || gradeNum < 1) continue;
+      const gradeValue = normalizeGrade(gradeRaw);
+      if (gradeValue == null) continue;
 
       const subject = subjectCol && row[subjectCol] != null ? String(row[subjectCol]).trim() : "";
       const code = codeCol && row[codeCol] != null ? String(row[codeCol]).trim() : "";
       const title = titleCol && row[titleCol] != null ? String(row[titleCol]).trim() : "";
       const description = descCol && row[descCol] != null ? String(row[descCol]).trim() : "";
 
-      if (!byGrade[gradeNum]) byGrade[gradeNum] = [];
-      byGrade[gradeNum].push({ subject, code, title, description });
+      const key = String(gradeValue);
+      if (!byGrade[key]) byGrade[key] = [];
+      byGrade[key].push({ subject, code, title, description });
     }
 
-    const grades = Object.keys(byGrade).map(Number);
+    const grades = Object.keys(byGrade);
     if (grades.length === 0) {
       return res.status(400).json({
         success: false,
         error: "No valid data",
-        message: "No valid grade and objective rows found. Ensure Grade is a number (1 or higher).",
-        solution: "Check that your data rows have numeric grades in the Grade column and that columns follow the order: Grade, Subject, Code, Title, Description.",
+        message: "No valid grade and objective rows found. Use numeric grades (1, 2, 3...) or KG variants (KG-1, KG-I, KG 1, KG I, KG-2, KG-II, KG 3, KG III, etc.).",
+        solution: "Grade column must be a number (1 or higher) or one of: KG-1/KG-I/KG 1/KG I, KG-2/KG-II/KG 2/KG II, KG-3/KG-III/KG 3/KG III.",
       });
     }
 
     let added = 0;
     let updated = 0;
 
-    for (const grade of grades) {
-      const objectives = byGrade[grade];
-      const existing = await Curriculum.findOne({ grade });
+    for (const gradeKey of grades) {
+      const objectives = byGrade[gradeKey];
+      const gradeValue = /^\d+$/.test(gradeKey) ? parseInt(gradeKey, 10) : gradeKey;
+      const existing = await Curriculum.findOne({ grade: gradeValue });
 
       if (existing) {
         const current = existing.objectives || [];
@@ -204,8 +224,8 @@ router.post("/upload", upload.single("file"), async (req, res) => {
         updated++;
       } else {
         await Curriculum.create({
-          id: grade,
-          grade,
+          id: gradeValue,
+          grade: gradeValue,
           objectives,
         });
         added++;
@@ -257,6 +277,16 @@ router.delete("/all", async (req, res) => {
   }
 });
 
+// Parse grade from request: number (1,2,3...) or string ("KG-1","KG-2","KG-3")
+const parseGrade = (grade) => {
+  if (grade == null) return null;
+  const s = String(grade).trim();
+  const num = parseInt(s, 10);
+  if (!Number.isNaN(num) && num >= 1) return num;
+  if (["KG-1", "KG-2", "KG-3"].includes(s)) return s;
+  return null;
+};
+
 // DELETE a single objective by grade and serial number (index, 0-based)
 router.delete("/objective", async (req, res) => {
   try {
@@ -267,11 +297,11 @@ router.delete("/objective", async (req, res) => {
       });
     }
     const { grade, index } = req.body;
-    const gradeNum = parseInt(grade, 10);
-    if (isNaN(gradeNum) || gradeNum < 1) {
+    const gradeValue = parseGrade(grade);
+    if (gradeValue == null) {
       return res.status(400).json({
         success: false,
-        error: "Valid grade is required",
+        error: "Valid grade is required (number 1+ or KG-1, KG-2, KG-3)",
       });
     }
     const idx = parseInt(index, 10);
@@ -281,7 +311,7 @@ router.delete("/objective", async (req, res) => {
         error: "Valid index (serial number) is required",
       });
     }
-    const doc = await Curriculum.findOne({ grade: gradeNum });
+    const doc = await Curriculum.findOne({ grade: gradeValue });
     if (!doc) {
       return res.status(404).json({
         success: false,
@@ -323,11 +353,11 @@ router.put("/objective", async (req, res) => {
       });
     }
     const { grade, index, title, description, subject, code } = req.body;
-    const gradeNum = parseInt(grade, 10);
-    if (isNaN(gradeNum) || gradeNum < 1) {
+    const gradeValue = parseGrade(grade);
+    if (gradeValue == null) {
       return res.status(400).json({
         success: false,
-        error: "Valid grade is required",
+        error: "Valid grade is required (number 1+ or KG-1, KG-2, KG-3)",
       });
     }
     const idx = parseInt(index, 10);
@@ -337,7 +367,7 @@ router.put("/objective", async (req, res) => {
         error: "Valid index (serial number) is required",
       });
     }
-    const doc = await Curriculum.findOne({ grade: gradeNum });
+    const doc = await Curriculum.findOne({ grade: gradeValue });
     if (!doc) {
       return res.status(404).json({
         success: false,
@@ -392,15 +422,16 @@ router.delete("/objectives/selected", async (req, res) => {
     let deletedCount = 0;
     const byGrade = {};
     for (const it of items) {
-      const g = parseInt(it.grade, 10);
+      const g = parseGrade(it.grade);
       const idx = parseInt(it.index, 10);
-      if (isNaN(g) || isNaN(idx) || idx < 0) continue;
-      if (!byGrade[g]) byGrade[g] = new Set();
-      byGrade[g].add(idx);
+      if (g == null || isNaN(idx) || idx < 0) continue;
+      const key = String(g);
+      if (!byGrade[key]) byGrade[key] = new Set();
+      byGrade[key].add(idx);
     }
-    for (const [gradeStr, indices] of Object.entries(byGrade)) {
-      const gradeNum = parseInt(gradeStr, 10);
-      const doc = await Curriculum.findOne({ grade: gradeNum });
+    for (const [gradeKey, indices] of Object.entries(byGrade)) {
+      const gradeValue = /^\d+$/.test(gradeKey) ? parseInt(gradeKey, 10) : gradeKey;
+      const doc = await Curriculum.findOne({ grade: gradeValue });
       if (!doc || !doc.objectives || !doc.objectives.length) continue;
       const toRemove = new Set(indices);
       const before = doc.objectives.length;
@@ -433,11 +464,11 @@ router.post("/objective", async (req, res) => {
       });
     }
     const { grade, subject, code, title, description } = req.body;
-    const gradeNum = parseInt(grade, 10);
-    if (isNaN(gradeNum) || gradeNum < 1) {
+    const gradeValue = parseGrade(grade);
+    if (gradeValue == null) {
       return res.status(400).json({
         success: false,
-        error: "Valid grade is required (number, 1 or higher)",
+        error: "Valid grade is required (number 1+ or KG-1, KG-2, KG-3)",
       });
     }
     const objective = {
@@ -446,15 +477,15 @@ router.post("/objective", async (req, res) => {
       title: title != null ? String(title).trim() : "",
       description: description != null ? String(description).trim() : "",
     };
-    const existing = await Curriculum.findOne({ grade: gradeNum });
+    const existing = await Curriculum.findOne({ grade: gradeValue });
     if (existing) {
       existing.objectives = existing.objectives || [];
       existing.objectives.push(objective);
       await existing.save();
     } else {
       await Curriculum.create({
-        id: gradeNum,
-        grade: gradeNum,
+        id: gradeValue,
+        grade: gradeValue,
         objectives: [objective],
       });
     }

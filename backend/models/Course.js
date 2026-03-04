@@ -76,6 +76,25 @@ const courseSchema = new mongoose.Schema(
       default: null,
       min: 1,
     },
+    compulsoryQuestions: {
+      type: Number,
+      default: null,
+      min: 0,
+    },
+    questionParts: [
+      {
+        questionIndex: { type: Number, required: true },
+        numParts: { type: Number, default: 0 },
+        compulsoryParts: { type: Number, default: 0 },
+      },
+    ],
+    questionPartMarks: [
+      {
+        questionIndex: { type: Number, required: true },
+        partIndex: { type: Number, required: true },
+        marks: { type: Number, required: true, min: 0 },
+      },
+    ],
     questions: [
       {
         questionIndex: {
