@@ -39,8 +39,9 @@ const CreateCourseMarks = () => {
     questionParts.forEach((p) => {
       const q = p.questionIndex;
       const n = Number(p.numParts) || 0;
+      const compulsory = Number(p.compulsoryParts) || 0;
       if (n <= 0) {
-        list.push({ questionIndex: q, partIndex: 0, label: `Q${q}`, partLabel: null, key: slotKey(q, 0) });
+        list.push({ questionIndex: q, partIndex: 0, label: `Q${q}`, partLabel: null, key: slotKey(q, 0), isCompulsory: true });
       } else {
         for (let part = 1; part <= n; part++) {
           list.push({
@@ -49,6 +50,7 @@ const CreateCourseMarks = () => {
             label: `Q${q}`,
             partLabel: `Part ${part}`,
             key: slotKey(q, part),
+            isCompulsory: part <= compulsory,
           });
         }
       }
@@ -56,11 +58,15 @@ const CreateCourseMarks = () => {
     return list;
   }, [questionParts]);
 
-  const sumMarks = useMemo(
+  const sumAllMarks = useMemo(
     () => slots.reduce((s, sl) => s + (Number(marksBySlot[sl.key]) || 0), 0),
     [slots, marksBySlot]
   );
-  const totalValid = totalMarks > 0 && Math.abs(sumMarks - totalMarks) < 0.01;
+  const sumCompulsoryMarks = useMemo(
+    () => slots.filter((sl) => sl.isCompulsory).reduce((s, sl) => s + (Number(marksBySlot[sl.key]) || 0), 0),
+    [slots, marksBySlot]
+  );
+  const totalValid = totalMarks > 0 && Math.abs(sumCompulsoryMarks - totalMarks) < 0.01;
   const allObjectivesSelected = useMemo(
     () => resolvedTopics.length > 0 && slots.every((sl) => objectiveSelection[sl.key]),
     [slots, objectiveSelection, resolvedTopics.length]
@@ -86,7 +92,7 @@ const CreateCourseMarks = () => {
       return;
     }
     if (!totalValid) {
-      setCreateError(`Total marks must equal ${totalMarks}. Current sum: ${sumMarks}.`);
+      setCreateError(`Total (compulsory parts only) must equal ${totalMarks}. Current compulsory sum: ${sumCompulsoryMarks}.`);
       return;
     }
     if (resolvedTopics.length === 0) {
@@ -184,7 +190,7 @@ const CreateCourseMarks = () => {
       <div className="create-course-marks-content">
         <h2 className="create-course-marks-title">Enter marks per question</h2>
         <p className="create-course-marks-hint">
-          Enter marks for each question/part and select one objective per row. The objective will get the same marks as that row. Total must equal <strong>{totalMarks}</strong>.
+          Enter marks for each question/part and select one objective per row. Only <strong>compulsory</strong> parts count toward the total; optional parts are still saved and assigned to their objectives. Total (compulsory only) must equal <strong>{totalMarks}</strong>.
         </p>
 
         <div className="create-course-marks-table-wrapper">
@@ -235,8 +241,11 @@ const CreateCourseMarks = () => {
           </table>
         </div>
 
-        <p className={`create-course-marks-sum ${!totalValid && sumMarks > 0 ? 'create-course-marks-sum-error' : ''}`}>
-          Total: <strong>{sumMarks}</strong> / {totalMarks}
+        <p className={`create-course-marks-sum ${!totalValid && sumCompulsoryMarks > 0 ? 'create-course-marks-sum-error' : ''}`}>
+          Total (compulsory only): <strong>{sumCompulsoryMarks}</strong> / {totalMarks}
+          {sumAllMarks !== sumCompulsoryMarks && (
+            <span className="create-course-marks-sum-optional"> (all parts: {sumAllMarks})</span>
+          )}
         </p>
         {!allObjectivesSelected && resolvedTopics.length > 0 && slots.length > 0 && (
           <p className="create-course-marks-objectives-hint">Select an objective for every row to create the course.</p>

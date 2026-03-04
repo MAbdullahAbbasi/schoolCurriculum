@@ -97,6 +97,13 @@
   margin: 0.25rem 0 0 0;
 }
 
+.create-course-marks-sum-optional {
+  font-size: 0.9rem;
+  color: #6c757d;
+  font-weight: normal;
+  margin-left: 0.25rem;
+}
+
 .create-course-marks-sum {
   margin: 0 0 1rem 0;
   font-size: 1rem;
