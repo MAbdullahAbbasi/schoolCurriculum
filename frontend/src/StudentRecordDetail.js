@@ -21,13 +21,28 @@ const StudentRecordDetail = () => {
 
   const topics = useMemo(() => course?.topics || [], [course]);
   const courseQuestions = useMemo(() => (course?.questions || []).sort((a, b) => a.questionIndex - b.questionIndex), [course]);
-  const totalMarksForCourse = useMemo(() => topics.reduce((sum, t) => sum + (t.marks || 0), 0), [topics]);
+  const questionPartMarks = useMemo(() => course?.questionPartMarks || [], [course]);
+
+  const totalMarksForCourse = useMemo(() => {
+    if (questionPartMarks.length > 0) {
+      return questionPartMarks.reduce((sum, m) => sum + (Number(m.marks) || 0), 0);
+    }
+    return topics.reduce((sum, t) => sum + (t.marks || 0), 0);
+  }, [topics, questionPartMarks]);
 
   const slots = useMemo(() => {
     if (!courseQuestions.length) return [];
     return courseQuestions.map((q) => {
       const indices = (q.topicIndices || []).map((i) => Number(i));
-      const maxMarks = indices.reduce((s, i) => s + (topics[i]?.marks || 0), 0);
+      let maxMarks = 0;
+      if (questionPartMarks.length > 0) {
+        maxMarks = questionPartMarks
+          .filter((m) => Number(m.questionIndex) === Number(q.questionIndex))
+          .reduce((s, m) => s + (Number(m.marks) || 0), 0);
+      }
+      if (maxMarks <= 0) {
+        maxMarks = indices.reduce((s, i) => s + (topics[i]?.marks || 0), 0);
+      }
       return {
         slotKey: `q${q.questionIndex}`,
         label: `Q${q.questionIndex}`,
@@ -36,7 +51,7 @@ const StudentRecordDetail = () => {
         topicIndices: indices,
       };
     });
-  }, [courseQuestions, topics]);
+  }, [courseQuestions, topics, questionPartMarks]);
 
   const compulsoryQuestions = useMemo(() => {
     const n = course?.compulsoryQuestions;
