@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import CurriculumHeader from './CurriculumHeader';
@@ -56,11 +56,7 @@ const StudentRecordDetail = () => {
     return students.filter((s) => courseGrades.has(String(s.grade)));
   }, [students, courseGrades]);
 
-  useEffect(() => {
-    fetchData();
-  }, [courseCode]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -106,7 +102,11 @@ const StudentRecordDetail = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [courseCode]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const getQuestionMark = (registrationNumber, slotKey) => {
     const byStu = questionMarks[registrationNumber];
