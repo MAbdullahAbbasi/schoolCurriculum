@@ -65,8 +65,9 @@ const courseSchema = new mongoose.Schema(
           required: true,
           min: 0,
         },
+        // Can be numeric grade (1,2,3...) or string KG-1/KG-2/KG-3
         grade: {
-          type: Number,
+          type: mongoose.Schema.Types.Mixed,
           default: null,
         },
       },

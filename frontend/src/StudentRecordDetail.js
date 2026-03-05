@@ -212,6 +212,30 @@ const StudentRecordDetail = () => {
     }, 0);
   };
 
+  const handleMarkKeyDown = (e, slotIndex, studentIndex) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const totalSlots = slots.length;
+    const totalStudents = enrolledStudents.length;
+    if (!matrixTableRef.current || totalSlots === 0 || totalStudents === 0) return;
+
+    let nextSlot = slotIndex + 1;
+    let nextStudent = studentIndex;
+
+    if (nextSlot >= totalSlots) {
+      nextSlot = 0;
+      nextStudent = studentIndex + 1;
+    }
+
+    if (nextStudent >= totalStudents) return;
+
+    const selector = `input[data-slot-index="${nextSlot}"][data-student-index="${nextStudent}"]`;
+    const nextInput = matrixTableRef.current.querySelector(selector);
+    if (nextInput) {
+      nextInput.focus();
+    }
+  };
+
   const calculateGrade = (totalOutOfHundred) => {
     const p = totalOutOfHundred;
     if (p >= 90) return 'A+';
@@ -381,7 +405,7 @@ const StudentRecordDetail = () => {
                         <td className="matrix-td-srno">{idx + 1}</td>
                         <td className="matrix-td-objective">{slot.label}</td>
                         <td className="matrix-td-max">{slot.maxMarks}</td>
-                        {enrolledStudents.map((student) => {
+                        {enrolledStudents.map((student, studentIndex) => {
                           const reg = student.registrationNumber;
                           const na = isNotAttempted(reg, slot.slotKey);
                           return (
@@ -400,8 +424,11 @@ const StudentRecordDetail = () => {
                                         className="score-input matrix-score-input"
                                         value={getQuestionMark(reg, slot.slotKey)}
                                         onChange={(e) => setQuestionMark(reg, slot.slotKey, e.target.value, slot.maxMarks)}
+                                        onKeyDown={(e) => handleMarkKeyDown(e, idx, studentIndex)}
                                         placeholder="0"
                                         aria-label={`Marks for ${slot.label} - ${student.studentName}`}
+                                        data-slot-index={idx}
+                                        data-student-index={studentIndex}
                                       />
                                       <span className="matrix-mark-max-hint">Max: {slot.maxMarks}</span>
                                     </div>

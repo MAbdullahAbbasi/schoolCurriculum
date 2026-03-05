@@ -113,7 +113,8 @@ router.post('/', async (req, res) => {
       courseCode: (t.courseCode != null ? String(t.courseCode) : '').trim(),
       topicName: (t.topicName != null ? String(t.topicName) : '').trim(),
       marks: Number(t.marks) || 0,
-      grade: t.grade != null ? Number(t.grade) : null,
+      // Allow numeric grades and KG labels (e.g. KG-1)
+      grade: t.grade != null && t.grade !== '' ? (/^\d+$/.test(String(t.grade)) ? Number(t.grade) : String(t.grade)) : null,
     }));
     const sumMarks = topicsWithMarks.reduce((sum, t) => sum + (t.marks || 0), 0);
     const expectedTotal =
@@ -278,6 +279,169 @@ router.get('/', async (req, res) => {
       success: false,
       error: 'Server error',
       message: 'Failed to fetch courses',
+    });
+  }
+});
+
+// PUT update course details (code is immutable)
+router.put('/:code', async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        error: 'Database not connected',
+        message: 'Database connection failed',
+      });
+    }
+
+    const code = req.params.code?.trim();
+    if (!code) {
+      return res.status(400).json({
+        success: false,
+        error: 'Course code required',
+        message: 'Course code is required',
+      });
+    }
+
+    const existing = await Course.findOne({ code });
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        error: 'Not found',
+        message: 'Course not found',
+      });
+    }
+
+    const {
+      courseName,
+      courseDuration,
+      startingDate,
+      topics,
+      weightage,
+      subject,
+      totalQuestions,
+      questions,
+      questionParts,
+      questionPartMarks,
+      compulsoryQuestions,
+    } = req.body || {};
+
+    if (courseName !== undefined) {
+      if (!String(courseName).trim()) {
+        return res.status(400).json({
+          success: false,
+          error: 'Course name required',
+          message: 'Course name is required',
+        });
+      }
+      existing.courseName = String(courseName).trim();
+    }
+
+    if (subject !== undefined) {
+      existing.subject = String(subject).trim();
+    }
+
+    if (courseDuration !== undefined) {
+      if (!courseDuration || !courseDuration.type || !courseDuration.value) {
+        return res.status(400).json({
+          success: false,
+          error: 'Duration invalid',
+          message: 'Course duration is required',
+        });
+      }
+      existing.courseDuration = {
+        type: String(courseDuration.type),
+        value: Number(courseDuration.value),
+      };
+    }
+
+    if (startingDate !== undefined) {
+      if (!startingDate) {
+        return res.status(400).json({
+          success: false,
+          error: 'Start date required',
+          message: 'Starting date is required',
+        });
+      }
+      existing.startingDate = new Date(startingDate);
+    }
+
+    if (Array.isArray(weightage)) {
+      if (weightage.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Weightage required',
+          message: 'At least one weightage item is required',
+        });
+      }
+      const normalizedWeightage = weightage.map((w) => ({
+        label: (w?.label != null ? String(w.label) : '').trim(),
+        percentage: Number(w?.percentage) || 0,
+      }));
+      const totalW = normalizedWeightage.reduce((s, w) => s + (Number(w.percentage) || 0), 0);
+      if (Math.abs(totalW - 100) > 0.01) {
+        return res.status(400).json({
+          success: false,
+          error: 'Weightage invalid',
+          message: 'Weightage must total 100%',
+        });
+      }
+      existing.weightage = normalizedWeightage;
+    }
+
+    if (Array.isArray(topics)) {
+      if (topics.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Topics required',
+          message: 'At least one topic is required',
+        });
+      }
+      existing.topics = topics.map((t) => ({
+        courseCode: (t?.courseCode != null ? String(t.courseCode) : '').trim(),
+        topicName: (t?.topicName != null ? String(t.topicName) : '').trim(),
+        marks: Number(t?.marks) || 0,
+        grade: t?.grade != null ? Number(t.grade) : null,
+      }));
+    }
+
+    if (totalQuestions !== undefined) existing.totalQuestions = totalQuestions == null ? null : Number(totalQuestions);
+    if (compulsoryQuestions !== undefined) existing.compulsoryQuestions = compulsoryQuestions == null ? null : Number(compulsoryQuestions);
+    if (Array.isArray(questions)) existing.questions = questions;
+    if (Array.isArray(questionParts)) existing.questionParts = questionParts;
+    if (Array.isArray(questionPartMarks)) existing.questionPartMarks = questionPartMarks;
+
+    // Prevent code changes explicitly
+    if (req.body && req.body.code && String(req.body.code).trim() !== code) {
+      return res.status(400).json({
+        success: false,
+        error: 'Course code immutable',
+        message: 'Course code cannot be changed',
+      });
+    }
+
+    await existing.save();
+    await Record.updateMany({ courseCode: code }, { $set: { courseName: existing.courseName } });
+
+    res.json({
+      success: true,
+      message: 'Course updated successfully',
+      data: existing.toObject(),
+    });
+  } catch (error) {
+    console.error('Error updating course:', error);
+    if (error.name === 'ValidationError') {
+      const firstError = Object.values(error.errors)[0];
+      return res.status(400).json({
+        success: false,
+        error: 'Validation failed',
+        message: firstError.message || 'Invalid course data',
+      });
+    }
+    res.status(500).json({
+      success: false,
+      error: 'Server error',
+      message: 'Failed to update course',
     });
   }
 });

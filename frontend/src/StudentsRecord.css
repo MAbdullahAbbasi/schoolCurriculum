@@ -113,7 +113,24 @@
 .courses-record-table .courses-table-th-actions,
 .courses-record-table .courses-table-td-actions {
   text-align: center;
-  width: 100px;
+  width: 160px;
+}
+
+.course-row-edit-btn {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+  background: #3498db;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  margin-right: 0.5rem;
+}
+
+.course-row-edit-btn:hover:not(:disabled) {
+  background: #2980b9;
 }
 
 .course-row-delete-btn {
@@ -133,6 +150,191 @@
 }
 
 .course-row-delete-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Edit modal */
+.course-edit-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1000;
+}
+
+.course-edit-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(920px, 92vw);
+  max-height: 86vh;
+  overflow: auto;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  z-index: 1001;
+  padding: 1rem 1.25rem;
+  text-align: left;
+}
+
+.course-edit-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.course-edit-title {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #2c3e50;
+}
+
+.course-edit-close-btn {
+  border: none;
+  background: transparent;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: #555;
+}
+
+.course-edit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.course-edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.course-edit-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.course-edit-input {
+  width: 100%;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.course-edit-input:disabled {
+  background: #f6f6f6;
+  color: #555;
+}
+
+.course-edit-section {
+  border-top: 1px solid #e0e0e0;
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+
+.course-edit-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.course-edit-section-header h4 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #2c3e50;
+}
+
+.course-edit-small-btn {
+  padding: 0.35rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background: #f5f5f5;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.course-edit-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+}
+
+.course-edit-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.course-edit-table th,
+.course-edit-table td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid #eee;
+}
+
+.course-edit-table th {
+  background: #f8f9fa;
+  font-weight: 800;
+  color: #2c3e50;
+  text-align: left;
+}
+
+.course-edit-remove-btn {
+  padding: 0.35rem 0.6rem;
+  border: 1px solid #e74c3c;
+  background: #fff;
+  color: #e74c3c;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.course-edit-remove-btn:hover {
+  background: #fee;
+}
+
+.course-edit-weightage-total {
+  margin: 0.75rem 0 0 0;
+  color: #555;
+}
+
+.course-edit-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  border-top: 1px solid #e0e0e0;
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+
+.course-edit-cancel-btn {
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background: #f5f5f5;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.course-edit-save-btn {
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  border: none;
+  background: #2ecc71;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.course-edit-save-btn:disabled,
+.course-edit-cancel-btn:disabled {
   opacity: 0.7;
   cursor: not-allowed;
 }
@@ -298,6 +500,10 @@
 
   .students-record-content h2 {
     font-size: 1.5rem;
+  }
+
+  .course-edit-grid {
+    grid-template-columns: 1fr;
   }
 }
 
