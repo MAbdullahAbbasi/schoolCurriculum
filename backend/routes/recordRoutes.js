@@ -149,10 +149,13 @@ router.post('/', async (req, res) => {
           const obtained = Number(questionMarks[slotKey]);
           if (Number.isNaN(obtained) || obtained < 0) continue;
           if (slotMax <= 0) continue;
-          const ratio = Math.min(1, obtained / slotMax);
+          // Distribute this part's obtained marks among its objectives so total added = obtained (avoids >100% when one part maps to multiple objectives)
+          const sumMax = slotIndices.reduce((s, i) => s + (Number(topics[i]?.marks) || 0), 0);
+          if (sumMax <= 0) continue;
           slotIndices.forEach((i) => {
             const maxI = Number(topics[i]?.marks) || 0;
-            objMarks[String(i)] = (objMarks[String(i)] || 0) + Math.round(ratio * maxI * 100) / 100;
+            const share = maxI / sumMax;
+            objMarks[String(i)] = (objMarks[String(i)] || 0) + Math.round(obtained * share * 100) / 100;
           });
         }
       } else {
@@ -182,7 +185,8 @@ router.post('/', async (req, res) => {
       }
 
       const totalObtained = Object.values(objMarks).reduce((s, v) => s + Number(v), 0);
-      const percentage = totalMarksCourse > 0 ? Math.round((totalObtained / totalMarksCourse) * 10000) / 100 : 0;
+      let percentage = totalMarksCourse > 0 ? Math.round((totalObtained / totalMarksCourse) * 10000) / 100 : 0;
+      percentage = Math.max(0, Math.min(100, percentage));
       let grade = 'F';
       if (percentage >= 90) grade = 'A+';
       else if (percentage >= 85) grade = 'A';
