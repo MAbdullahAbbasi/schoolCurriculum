@@ -6,7 +6,16 @@ import { API_URL } from './config/api';
 import { IconDownload, IconView } from './ButtonIcons';
 import './Reports.css';
 
-const GRADES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+// Sort order: KG classes first, then numeric grades ascending
+const gradeSortOrder = (g) => {
+  const s = String(g).trim();
+  if (/^KG[- ]?1$/i.test(s) || /^KG[- ]?I$/i.test(s)) return 0;
+  if (/^KG[- ]?2$/i.test(s) || /^KG[- ]?II$/i.test(s)) return 1;
+  if (/^KG[- ]?3$/i.test(s) || /^KG[- ]?III$/i.test(s)) return 2;
+  const n = parseInt(s, 10);
+  if (Number.isNaN(n)) return 100;
+  return 10 + n;
+};
 
 const Reports = () => {
   const navigate = useNavigate();
@@ -14,6 +23,15 @@ const Reports = () => {
   const [selectedGrade, setSelectedGrade] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Grades present in DB (from students), sorted: KG first, then 1–10
+  const gradesFromDb = useMemo(() => {
+    const set = new Set();
+    students.forEach((s) => {
+      if (s.grade != null && String(s.grade).trim() !== '') set.add(String(s.grade).trim());
+    });
+    return Array.from(set).sort((a, b) => gradeSortOrder(a) - gradeSortOrder(b));
+  }, [students]);
 
   const handleViewReport = (student) => {
     navigate(`/reports/student/${encodeURIComponent(student.registrationNumber)}`, { state: { student } });
@@ -128,7 +146,7 @@ const Reports = () => {
             onChange={(e) => setSelectedGrade(e.target.value)}
           >
             <option value="">Select a grade</option>
-            {GRADES.map((g) => (
+            {gradesFromDb.map((g) => (
               <option key={g} value={g}>
                 Grade {g}
               </option>

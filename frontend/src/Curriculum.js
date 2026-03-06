@@ -810,7 +810,7 @@ const Curriculum = () => {
             <div className="selection-mode-actions">
               {selectedTopics.length > 0 && (
                 <button className="next-button" onClick={handleNextClick}>
-                  Next
+                  <span className="btn-icon-wrap"><IconNext />Next</span>
                 </button>
               )}
               <button className="cancel-selection-button" onClick={handleCancelSelection}>

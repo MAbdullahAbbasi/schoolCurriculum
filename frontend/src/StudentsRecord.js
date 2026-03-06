@@ -26,6 +26,7 @@ const StudentsRecord = () => {
   const [editingCourse, setEditingCourse] = useState(null);
   const [editForm, setEditForm] = useState(null);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [courseNameSearch, setCourseNameSearch] = useState('');
 
   useEffect(() => {
     fetchCourses();
@@ -40,6 +41,12 @@ const StudentsRecord = () => {
     });
     return arr;
   }, [courses]);
+
+  const filteredCourses = useMemo(() => {
+    if (!courseNameSearch.trim()) return sortedCourses;
+    const q = courseNameSearch.trim().toLowerCase();
+    return sortedCourses.filter((c) => (c.courseName || '').toLowerCase().includes(q));
+  }, [sortedCourses, courseNameSearch]);
 
   const fetchCourses = async () => {
     try {
@@ -267,6 +274,25 @@ const StudentsRecord = () => {
 
         {sortedCourses.length > 0 ? (
           <>
+            <div className="courses-record-search-row">
+              <label htmlFor="course-name-search" className="courses-record-search-label">
+                Search by course name
+              </label>
+              <input
+                id="course-name-search"
+                type="search"
+                className="courses-record-search-input"
+                placeholder="Type to filter by course name..."
+                value={courseNameSearch}
+                onChange={(e) => setCourseNameSearch(e.target.value)}
+                aria-label="Search courses by name"
+              />
+              {courseNameSearch.trim() && (
+                <span className="courses-record-search-hint">
+                  Showing {filteredCourses.length} of {sortedCourses.length} course{sortedCourses.length !== 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
             <div className="courses-record-actions">
               <button
                 type="button"
@@ -292,7 +318,14 @@ const StudentsRecord = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedCourses.map((course, idx) => (
+                  {filteredCourses.length === 0 && courseNameSearch.trim() ? (
+                    <tr>
+                      <td colSpan={8} className="courses-record-empty-search">
+                        No courses match &quot;{courseNameSearch.trim()}&quot;. Try a different search.
+                      </td>
+                    </tr>
+                  ) : (
+                  filteredCourses.map((course, idx) => (
                     <tr
                       key={course._id || course.code}
                       className="courses-record-row"
@@ -335,7 +368,8 @@ const StudentsRecord = () => {
                         </button>
                       </td>
                     </tr>
-                  ))}
+                  ))
+                  )}
                 </tbody>
               </table>
             </div>
