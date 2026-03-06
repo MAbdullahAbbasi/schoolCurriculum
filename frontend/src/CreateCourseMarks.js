@@ -8,14 +8,16 @@ import './CreateCourseMarks.css';
 
 const slotKey = (q, part) => (part === 0 ? `q${q}` : `q${q}-p${part}`);
 
-// Normalize grade for matching (same as StudentRecordDetail): KG variants -> KG-1/KG-2/KG-3
+// Normalize grade for matching: KG variants -> KG-1/KG-2/KG-3 (handles "Grade KG II", "KG II", "KG-2", etc.)
 const normalizeGradeForMatch = (grade) => {
   if (grade == null || grade === '') return '';
-  const s = String(grade).trim();
+  let s = String(grade).trim();
+  if (s === '') return '';
+  s = s.replace(/^(grade|class)\s+/i, '').trim();
   if (s === '') return '';
   const lower = s.toLowerCase().replace(/\s+/g, ' ');
   if (/^kg[- ]?1$|^kg[- ]?i$/.test(lower)) return 'KG-1';
-  if (/^kg[- ]?2$|^kg[- ]?ii$/.test(lower)) return 'KG-2';
+  if (/^kg[- ]?2$|^kg\s*ii$|^kg[- ]?ii$/.test(lower)) return 'KG-2';
   if (/^kg[- ]?3$|^kg[- ]?iii$/.test(lower)) return 'KG-3';
   return s;
 };
@@ -173,7 +175,8 @@ const CreateCourseMarks = () => {
         let enrolledCount = 0;
         try {
           const studentsRes = await axios.get(`${API_URL}/api/students-data`);
-          const studentsList = Array.isArray(studentsRes.data) ? studentsRes.data : [];
+          const raw = studentsRes.data;
+          const studentsList = Array.isArray(raw) ? raw : (raw?.data && Array.isArray(raw.data) ? raw.data : []);
           const courseGrades = new Set();
           resolvedTopics.forEach((t) => {
             if (t.grade != null && t.grade !== '') {

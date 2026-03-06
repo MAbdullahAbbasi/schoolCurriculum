@@ -6,14 +6,16 @@ import { API_URL } from './config/api';
 import { IconCancel, IconEdit, IconNotAttempted, IconSave } from './ButtonIcons';
 import './StudentRecordDetail.css';
 
-// Normalize grade for matching: KG I/II/III and variants -> KG-1/KG-2/KG-3, numbers stay as string
+// Normalize grade for matching: KG I/II/III and variants -> KG-1/KG-2/KG-3 (handles "Grade KG II", "KG II", etc.)
 const normalizeGradeForMatch = (grade) => {
   if (grade == null || grade === '') return '';
-  const s = String(grade).trim();
+  let s = String(grade).trim();
+  if (s === '') return '';
+  s = s.replace(/^(grade|class)\s+/i, '').trim();
   if (s === '') return '';
   const lower = s.toLowerCase().replace(/\s+/g, ' ');
   if (/^kg[- ]?1$|^kg[- ]?i$/.test(lower)) return 'KG-1';
-  if (/^kg[- ]?2$|^kg[- ]?ii$/.test(lower)) return 'KG-2';
+  if (/^kg[- ]?2$|^kg\s*ii$|^kg[- ]?ii$/.test(lower)) return 'KG-2';
   if (/^kg[- ]?3$|^kg[- ]?iii$/.test(lower)) return 'KG-3';
   return s;
 };
