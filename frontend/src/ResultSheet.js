@@ -215,7 +215,7 @@ const ResultSheet = () => {
                 {studentsInGrade.map((s) => (
                   <th key={s.registrationNumber} className="result-sheet-th result-sheet-th-student">
                     <span className="result-sheet-student-name">{s.studentName || s.registrationNumber || '—'}</span>
-                    <span className="result-sheet-student-serial">Sr. {getSerialFromRegistration(s.registrationNumber)}</span>
+                    <span className="result-sheet-student-serial">{getSerialFromRegistration(s.registrationNumber)}</span>
                   </th>
                 ))}
               </tr>
