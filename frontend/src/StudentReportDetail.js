@@ -64,7 +64,12 @@ const getGradingSchemeFromStorage = () => {
     const raw = localStorage.getItem(GRADING_SCHEME_STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed)
+      ? parsed.map((row) => ({
+          percentage: row?.percentage ?? row?.marks ?? '',
+          grade: row?.grade ?? '',
+        }))
+      : [];
   } catch {
     return [];
   }
@@ -80,6 +85,7 @@ const StudentReportDetail = () => {
   const [student, setStudent] = useState(studentFromState || null);
   const [courses, setCourses] = useState([]);
   const [recordsByCourse, setRecordsByCourse] = useState({});
+  const [latestGradingSchemeRows, setLatestGradingSchemeRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -97,15 +103,25 @@ const StudentReportDetail = () => {
         setLoading(true);
         setError(null);
 
-        const [coursesRes, studentsRes] = await Promise.all([
+        const [coursesRes, studentsRes, gradingSchemesRes] = await Promise.all([
           axios.get(`${API_URL}/api/courses`),
           axios.get(`${API_URL}/api/students-data`),
+          axios.get(`${API_URL}/api/grading-schemes`),
         ]);
 
         const coursesList = coursesRes.data?.success ? coursesRes.data.data || [] : [];
         const studentsList = Array.isArray(studentsRes.data) ? studentsRes.data : [];
+        const gradingSchemesList = gradingSchemesRes.data?.success ? gradingSchemesRes.data.data || [] : [];
+        const latestScheme = gradingSchemesList[0] || null;
+        const normalizedLatestSchemeRows = Array.isArray(latestScheme?.rows)
+          ? latestScheme.rows.map((row) => ({
+              percentage: row?.percentage ?? row?.marks ?? '',
+              grade: row?.grade ?? '',
+            }))
+          : getGradingSchemeFromStorage();
 
         setCourses(coursesList);
+        setLatestGradingSchemeRows(normalizedLatestSchemeRows);
 
         let currentStudent = studentFromState && String(studentFromState.registrationNumber) === decodedRegNo
           ? studentFromState
@@ -212,16 +228,16 @@ const StudentReportDetail = () => {
   }, [enrolledCoursesWithMarks, decodedRegNo]);
 
   const getGradeFromPercentage = (percentage) => {
-    const scheme = getGradingSchemeFromStorage();
+    const scheme = latestGradingSchemeRows;
     if (!scheme || scheme.length === 0) return '—';
     const num = Number(percentage);
     if (!Number.isFinite(num)) return '—';
     const sorted = [...scheme]
-      .filter((r) => r.marks !== undefined && r.marks !== null && String(r.marks).trim() !== '')
-      .map((r) => ({ ...r, marksNum: Number(r.marks) }))
-      .filter((r) => Number.isFinite(r.marksNum))
-      .sort((a, b) => b.marksNum - a.marksNum);
-    const row = sorted.find((r) => r.marksNum <= num);
+      .filter((r) => r.percentage !== undefined && r.percentage !== null && String(r.percentage).trim() !== '')
+      .map((r) => ({ ...r, percentageNum: Number(r.percentage) }))
+      .filter((r) => Number.isFinite(r.percentageNum))
+      .sort((a, b) => b.percentageNum - a.percentageNum);
+    const row = sorted.find((r) => r.percentageNum <= num);
     return row && row.grade != null ? String(row.grade) : '—';
   };
 
@@ -252,7 +268,7 @@ const StudentReportDetail = () => {
 
   const displayName = student?.studentName || 'Student';
   const displayRegNo = decodedRegNo || '—';
-  const gradingSchemeRows = getGradingSchemeFromStorage();
+  const gradingSchemeRows = latestGradingSchemeRows;
 
   return (
     <div className="student-report-detail-container">
@@ -408,14 +424,14 @@ const StudentReportDetail = () => {
               <table className="student-report-grading-scheme-table">
                 <thead>
                   <tr>
-                    <th className="student-report-th">Marks</th>
+                    <th className="student-report-th">Percentage</th>
                     <th className="student-report-th">Grade</th>
                   </tr>
                 </thead>
                 <tbody>
                   {gradingSchemeRows.map((row, idx) => (
                     <tr key={idx}>
-                      <td className="student-report-td">{row.marks !== undefined && row.marks !== null ? String(row.marks) : '—'}</td>
+                      <td className="student-report-td">{row.percentage !== undefined && row.percentage !== null ? String(row.percentage) : '—'}</td>
                       <td className="student-report-td">{row.grade !== undefined && row.grade !== null ? String(row.grade) : '—'}</td>
                     </tr>
                   ))}

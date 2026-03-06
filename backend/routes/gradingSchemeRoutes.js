@@ -69,20 +69,31 @@ router.post('/', async (req, res) => {
       return res.status(400).json({
         success: false,
         error: 'Rows required',
-        message: 'At least one marks/grade row is required',
+        message: 'At least one percentage/grade row is required',
       });
     }
 
     const normalizedRows = rows.map((r) => ({
-      marks: String(r?.marks ?? '').trim(),
+      percentage: String(r?.percentage ?? r?.marks ?? '').trim(),
       grade: String(r?.grade ?? '').trim(),
-    })).filter((r) => r.marks !== '' && r.grade !== '');
+    })).filter((r) => r.percentage !== '' && r.grade !== '');
 
     if (normalizedRows.length === 0) {
       return res.status(400).json({
         success: false,
         error: 'Rows required',
-        message: 'At least one valid marks/grade row is required',
+        message: 'At least one valid percentage/grade row is required',
+      });
+    }
+    const hasInvalidPercentage = normalizedRows.some((r) => {
+      const value = Number(r.percentage);
+      return !Number.isFinite(value) || value < 0 || value > 100;
+    });
+    if (hasInvalidPercentage) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid percentage',
+        message: 'Percentage must be between 0 and 100',
       });
     }
 
@@ -169,18 +180,29 @@ router.put('/:id', async (req, res) => {
         return res.status(400).json({
           success: false,
           error: 'Rows required',
-          message: 'At least one marks/grade row is required',
+          message: 'At least one percentage/grade row is required',
         });
       }
       const normalizedRows = rows.map((r) => ({
-        marks: String(r?.marks ?? '').trim(),
+        percentage: String(r?.percentage ?? r?.marks ?? '').trim(),
         grade: String(r?.grade ?? '').trim(),
-      })).filter((r) => r.marks !== '' && r.grade !== '');
+      })).filter((r) => r.percentage !== '' && r.grade !== '');
       if (normalizedRows.length === 0) {
         return res.status(400).json({
           success: false,
           error: 'Rows required',
-          message: 'At least one valid marks/grade row is required',
+          message: 'At least one valid percentage/grade row is required',
+        });
+      }
+      const hasInvalidPercentage = normalizedRows.some((r) => {
+        const value = Number(r.percentage);
+        return !Number.isFinite(value) || value < 0 || value > 100;
+      });
+      if (hasInvalidPercentage) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid percentage',
+          message: 'Percentage must be between 0 and 100',
         });
       }
       update.rows = normalizedRows;

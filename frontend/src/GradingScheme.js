@@ -9,14 +9,14 @@ const STORAGE_KEY = 'curriculum_grading_scheme';
 
 const saveToStorage = (rows) => {
   try {
-    const toSave = rows.map((r) => ({ marks: r.marks, grade: r.grade }));
+    const toSave = rows.map((r) => ({ percentage: r.percentage, grade: r.grade }));
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
   } catch (_) {}
 };
 
 let nextRowId = 1;
-const newRow = () => ({ id: nextRowId++, marks: '', grade: '' });
-const rowFromData = (data) => ({ id: nextRowId++, marks: data.marks ?? '', grade: data.grade ?? '' });
+const newRow = () => ({ id: nextRowId++, percentage: '', grade: '' });
+const rowFromData = (data) => ({ id: nextRowId++, percentage: data.percentage ?? data.marks ?? '', grade: data.grade ?? '' });
 
 const GradingScheme = () => {
   const [schemes, setSchemes] = useState([]);
@@ -123,10 +123,18 @@ const GradingScheme = () => {
       return;
     }
     const validRows = form.rows
-      .map((r) => ({ marks: (r.marks ?? '').trim(), grade: (r.grade ?? '').trim() }))
-      .filter((r) => r.marks !== '' && r.grade !== '');
+      .map((r) => ({ percentage: (r.percentage ?? '').trim(), grade: (r.grade ?? '').trim() }))
+      .filter((r) => r.percentage !== '' && r.grade !== '');
     if (validRows.length === 0) {
-      setError('At least one marks/grade row is required.');
+      setError('At least one percentage/grade row is required.');
+      return;
+    }
+    const hasInvalidPercentage = validRows.some((r) => {
+      const value = Number(r.percentage);
+      return !Number.isFinite(value) || value < 0 || value > 100;
+    });
+    if (hasInvalidPercentage) {
+      setError('Percentage must be between 0 and 100.');
       return;
     }
 
@@ -219,7 +227,7 @@ const GradingScheme = () => {
       <div className="grading-scheme-content">
         <h2 className="grading-scheme-title">Grading Scheme</h2>
         <p className="grading-scheme-subtitle">
-          Create grading schemes with validity periods. Each scheme defines how marks map to grades.
+          Create grading schemes with validity periods. Each scheme defines how percentage maps to grades.
         </p>
 
         {error && (
@@ -345,14 +353,14 @@ const GradingScheme = () => {
                 </div>
 
                 <p className="grading-scheme-subtitle">
-                  Define how marks map to grades for this scheme.
+                  Define how percentage maps to grades for this scheme.
                 </p>
 
                 <div className="grading-scheme-table-wrapper">
                   <table className="grading-scheme-table">
                     <thead>
                       <tr>
-                        <th className="grading-scheme-th">Marks</th>
+                        <th className="grading-scheme-th">Percentage</th>
                         <th className="grading-scheme-th">Grade</th>
                         <th className="grading-scheme-th" />
                       </tr>
@@ -362,13 +370,16 @@ const GradingScheme = () => {
                         <tr key={row.id}>
                           <td className="grading-scheme-td">
                             <input
-                              type="text"
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="0.01"
                               inputMode="decimal"
                               className="grading-scheme-input"
                               placeholder="e.g. 90"
-                              value={row.marks}
-                              onChange={(e) => updateRow(row.id, 'marks', e.target.value)}
-                              aria-label="Marks"
+                              value={row.percentage}
+                              onChange={(e) => updateRow(row.id, 'percentage', e.target.value)}
+                              aria-label="Percentage"
                             />
                           </td>
                           <td className="grading-scheme-td">

@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const gradingRowSchema = new mongoose.Schema(
   {
-    marks: { type: String, required: true, trim: true },
+    percentage: { type: String, required: true, trim: true },
     grade: { type: String, required: true, trim: true },
   },
   { _id: false }
