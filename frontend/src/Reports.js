@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
-import { IconDownload, IconView } from './ButtonIcons';
+import { IconDownload, IconList, IconView } from './ButtonIcons';
 import './Reports.css';
 
 // Normalize grade for matching (e.g. K.G-II, KG-2 -> same)
@@ -316,6 +316,16 @@ const Reports = () => {
                 aria-label="Download all reports for this grade"
               >
                 <span className="btn-icon-wrap"><IconDownload />Download All Reports</span>
+              </button>
+              <button
+                type="button"
+                className="reports-result-sheet-btn"
+                onClick={() => navigate('/reports/result-sheet', { state: { selectedGrade } })}
+                disabled={studentsInGrade.length === 0}
+                title="View result sheet for this grade"
+                aria-label="View result sheet for this grade"
+              >
+                <span className="btn-icon-wrap"><IconList />Result Sheet</span>
               </button>
             </div>
             <div className="reports-table-wrapper">

@@ -9,6 +9,7 @@ import StudentData from './StudentData';
 import StudentsRecord from './StudentsRecord';
 import StudentRecordDetail from './StudentRecordDetail';
 import Reports from './Reports';
+import ResultSheet from './ResultSheet';
 import StudentReportDetail from './StudentReportDetail';
 import GradingScheme from './GradingScheme';
 import Login from './Login';
@@ -108,6 +109,7 @@ function App() {
           <Route path="/record" element={<StudentsRecord />} />
           <Route path="/studentRecord/:courseCode" element={<StudentRecordDetail />} />
           <Route path="/reports" element={<Reports />} />
+          <Route path="/reports/result-sheet" element={<ResultSheet />} />
           <Route path="/reports/student/:registrationNumber" element={<StudentReportDetail />} />
           <Route path="/grading-scheme" element={<GradingScheme />} />
           <Route path="/login" element={<Navigate to="/" replace />} />
