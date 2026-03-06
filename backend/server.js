@@ -6,6 +6,7 @@ import curriculumRoutes from "./routes/curriculumRoutes.js";
 import studentDataRoutes from "./routes/studentDataRoutes.js";
 import courseRoutes from "./routes/courseRoutes.js";
 import recordRoutes from "./routes/recordRoutes.js";
+import gradingSchemeRoutes from "./routes/gradingSchemeRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import { authMiddleware } from "./middleware/authMiddleware.js";
 
@@ -233,6 +234,9 @@ app.use("/api/courses", courseRoutes);
 
 // Use record routes
 app.use("/api/records", recordRoutes);
+
+// Use grading scheme routes
+app.use("/api/grading-schemes", gradingSchemeRoutes);
 
 // Use auth routes
 app.use("/api/auth", authRoutes);

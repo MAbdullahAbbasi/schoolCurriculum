@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
+import { IconAdd, IconCancel, IconClearFilters, IconCreate, IconDelete, IconEdit, IconNext, IconSave, IconSelectAll, IconUpload, IconUploadFile } from './ButtonIcons';
 import './Curriculum.css';
 
 const Curriculum = () => {
@@ -721,7 +722,7 @@ const Curriculum = () => {
               className="add-objective-input add-objective-desc"
             />
             <button type="submit" className="add-objective-submit-btn" disabled={addingObjective}>
-              {addingObjective ? 'Adding...' : 'Add'}
+              <span className="btn-icon-wrap"><IconAdd />{addingObjective ? 'Adding...' : 'Add'}</span>
             </button>
             {objectivesSelectMode ? (
               <>
@@ -731,7 +732,7 @@ const Curriculum = () => {
                   onClick={handleDeleteSelectedObjectives}
                   disabled={selectedObjectives.size === 0 || deletingSelectedObjectives}
                 >
-                  {deletingSelectedObjectives ? 'Deleting...' : `Delete selected (${selectedObjectives.size})`}
+                  <span className="btn-icon-wrap"><IconDelete />{deletingSelectedObjectives ? 'Deleting...' : `Delete selected (${selectedObjectives.size})`}</span>
                 </button>
                 <button
                   type="button"
@@ -739,7 +740,7 @@ const Curriculum = () => {
                   onClick={handleCancelDeleteSelectionMode}
                   disabled={deletingSelectedObjectives}
                 >
-                  Cancel
+                  <span className="btn-icon-wrap"><IconCancel />Cancel</span>
                 </button>
               </>
             ) : (
@@ -749,7 +750,7 @@ const Curriculum = () => {
                 onClick={handleEnterDeleteSelectionMode}
                 disabled={data.length === 0}
               >
-                Delete all objectives
+                <span className="btn-icon-wrap"><IconDelete />Delete all objectives</span>
               </button>
             )}
           </form>
@@ -772,7 +773,7 @@ const Curriculum = () => {
             className="upload-objectives-btn"
             onClick={() => document.getElementById(objectivesInputId)?.click()}
           >
-            Upload Objectives
+            <span className="btn-icon-wrap"><IconUpload />Upload Objectives</span>
           </button>
           {objectivesFile && (
             <>
@@ -783,7 +784,7 @@ const Curriculum = () => {
                 onClick={handleUploadObjectives}
                 disabled={uploadingObjectives}
               >
-                {uploadingObjectives ? 'Uploading...' : 'Upload file'}
+                <span className="btn-icon-wrap"><IconUploadFile />{uploadingObjectives ? 'Uploading...' : 'Upload file'}</span>
               </button>
             </>
           )}
@@ -795,7 +796,7 @@ const Curriculum = () => {
             className="create-course-page-btn"
             onClick={handleCreateCourseClick}
           >
-            + Create Courses
+            <span className="btn-icon-wrap"><IconCreate />+ Create Courses</span>
           </button>
         </div>
 
@@ -896,7 +897,7 @@ const Curriculum = () => {
                   e.target.style.transform = 'translateY(0)';
                 }}
               >
-                Clear All Filters
+                <span className="btn-icon-wrap"><IconClearFilters />Clear All Filters</span>
               </button>
             </>
           )}
@@ -910,7 +911,7 @@ const Curriculum = () => {
                 className="course-select-all-btn"
                 onClick={handleSelectAllFromAllGrades}
               >
-                Select all
+                <span className="btn-icon-wrap"><IconSelectAll />Select all</span>
               </button>
             </div>
           )}
@@ -1025,7 +1026,7 @@ const Curriculum = () => {
                                     onClick={() => handleSaveObjective(grade.grade, topicIndex)}
                                     disabled={isSaving}
                                   >
-                                    {isSaving ? 'Saving...' : 'Save'}
+                                    <span className="btn-icon-wrap"><IconSave />{isSaving ? 'Saving...' : 'Save'}</span>
                                   </button>
                                   <button
                                     type="button"
@@ -1033,7 +1034,7 @@ const Curriculum = () => {
                                     onClick={handleCancelEditObjective}
                                     disabled={isSaving}
                                   >
-                                    Cancel
+                                    <span className="btn-icon-wrap"><IconCancel />Cancel</span>
                                   </button>
                                 </td>
                               </>
@@ -1049,10 +1050,7 @@ const Curriculum = () => {
                                     title="Edit"
                                     aria-label="Edit"
                                   >
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                    </svg>
+                                    <span className="btn-icon-wrap"><IconEdit />Edit</span>
                                   </button>
                                   <button
                                     type="button"
@@ -1065,12 +1063,7 @@ const Curriculum = () => {
                                     {isDeleting ? (
                                       <span className="objectives-delete-spinner">...</span>
                                     ) : (
-                                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <polyline points="3 6 5 6 21 6" />
-                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                        <line x1="10" y1="11" x2="10" y2="17" />
-                                        <line x1="14" y1="11" x2="14" y2="17" />
-                                      </svg>
+                                      <span className="btn-icon-wrap"><IconDelete />Delete</span>
                                     )}
                                   </button>
                                 </td>

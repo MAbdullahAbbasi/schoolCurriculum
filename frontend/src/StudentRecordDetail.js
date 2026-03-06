@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
+import { IconCancel, IconEdit, IconNotAttempted, IconSave } from './ButtonIcons';
 import './StudentRecordDetail.css';
 
 const StudentRecordDetail = () => {
@@ -447,7 +448,7 @@ const StudentRecordDetail = () => {
                                     onClick={() => toggleNotAttempted(reg, slot.slotKey)}
                                     aria-pressed={na}
                                   >
-                                    {na ? 'Undo' : 'Not attempted'}
+                                    <span className="btn-icon-wrap"><IconNotAttempted />{na ? 'Undo' : 'Not attempted'}</span>
                                   </button>
                                 )}
                               </td>
@@ -482,15 +483,15 @@ const StudentRecordDetail = () => {
 
               <div className="matrix-form-actions">
                 <button type="button" className="cancel-record-button" onClick={handleCancel}>
-                  Cancel
+                  <span className="btn-icon-wrap"><IconCancel />Cancel</span>
                 </button>
                 {!isEditMode ? (
                   <button type="button" className="edit-record-button" onClick={handleEditClick}>
-                    Edit
+                    <span className="btn-icon-wrap"><IconEdit />Edit</span>
                   </button>
                 ) : (
                   <button type="button" className="save-record-button" onClick={handleSaveRecord} disabled={saving}>
-                    {saving ? 'Saving...' : 'Submit'}
+                    <span className="btn-icon-wrap"><IconSave />{saving ? 'Saving...' : 'Submit'}</span>
                   </button>
                 )}
               </div>

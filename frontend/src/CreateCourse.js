@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import CurriculumHeader from './CurriculumHeader';
+import { IconCancel, IconNext } from './ButtonIcons';
 import './CreateCourse.css';
 
 const defaultFormData = {
@@ -393,10 +394,10 @@ const CreateCourse = () => {
 
           <div className="create-course-actions">
             <button type="button" className="create-course-cancel-btn" onClick={handleCancel}>
-              Cancel
+              <span className="btn-icon-wrap"><IconCancel />Cancel</span>
             </button>
             <button type="submit" className="create-course-submit-btn" disabled={totalQuestionsNum < 1}>
-              Next
+              <span className="btn-icon-wrap"><IconNext />Next</span>
             </button>
           </div>
         </form>

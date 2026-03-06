@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
+import { IconAdd, IconCancel, IconClose, IconDelete, IconEdit, IconRemove, IconSave } from './ButtonIcons';
 import './StudentsRecord.css';
 
 const normalizeDateForInput = (d) => {
@@ -273,7 +274,7 @@ const StudentsRecord = () => {
                 onClick={handleDeleteAll}
                 disabled={deletingAll}
               >
-                {deletingAll ? 'Deleting...' : 'Delete all'}
+                <span className="btn-icon-wrap"><IconDelete />{deletingAll ? 'Deleting...' : 'Delete all'}</span>
               </button>
             </div>
             <div className="courses-table-wrapper">
@@ -320,7 +321,7 @@ const StudentsRecord = () => {
                           title="Edit course"
                           aria-label="Edit course"
                         >
-                          Edit
+                          <span className="btn-icon-wrap"><IconEdit />Edit</span>
                         </button>
                         <button
                           type="button"
@@ -330,7 +331,7 @@ const StudentsRecord = () => {
                           title="Delete course"
                           aria-label="Delete course"
                         >
-                          {deletingCourseCode === course.code ? 'Deleting...' : 'Delete'}
+                          <span className="btn-icon-wrap"><IconDelete />{deletingCourseCode === course.code ? 'Deleting...' : 'Delete'}</span>
                         </button>
                       </td>
                     </tr>
@@ -355,7 +356,7 @@ const StudentsRecord = () => {
             <div className="course-edit-header">
               <h3 className="course-edit-title">Edit Course</h3>
               <button type="button" className="course-edit-close-btn" onClick={closeEdit} aria-label="Close">
-                ✕
+                <span className="btn-icon-wrap"><IconClose />Close</span>
               </button>
             </div>
 
@@ -409,7 +410,7 @@ const StudentsRecord = () => {
               <div className="course-edit-section">
                 <div className="course-edit-section-header">
                   <h4>Topics</h4>
-                  <button type="button" className="course-edit-small-btn" onClick={addTopicItem}>+ Add</button>
+                  <button type="button" className="course-edit-small-btn" onClick={addTopicItem}><span className="btn-icon-wrap"><IconAdd />+ Add</span></button>
                 </div>
                 <div className="course-edit-table-wrapper">
                   <table className="course-edit-table">
@@ -459,7 +460,7 @@ const StudentsRecord = () => {
                           </td>
                           <td>
                             <button type="button" className="course-edit-remove-btn" onClick={() => removeTopicItem(i)}>
-                              Remove
+                              <span className="btn-icon-wrap"><IconRemove />Remove</span>
                             </button>
                           </td>
                         </tr>
@@ -472,7 +473,7 @@ const StudentsRecord = () => {
               <div className="course-edit-section">
                 <div className="course-edit-section-header">
                   <h4>Weightage</h4>
-                  <button type="button" className="course-edit-small-btn" onClick={addWeightageItem}>+ Add</button>
+                  <button type="button" className="course-edit-small-btn" onClick={addWeightageItem}><span className="btn-icon-wrap"><IconAdd />+ Add</span></button>
                 </div>
                 <div className="course-edit-table-wrapper">
                   <table className="course-edit-table">
@@ -505,7 +506,7 @@ const StudentsRecord = () => {
                           </td>
                           <td>
                             <button type="button" className="course-edit-remove-btn" onClick={() => removeWeightageItem(i)}>
-                              Remove
+                              <span className="btn-icon-wrap"><IconRemove />Remove</span>
                             </button>
                           </td>
                         </tr>
@@ -521,10 +522,10 @@ const StudentsRecord = () => {
 
             <div className="course-edit-footer">
               <button type="button" className="course-edit-cancel-btn" onClick={closeEdit} disabled={savingEdit}>
-                Cancel
+                <span className="btn-icon-wrap"><IconCancel />Cancel</span>
               </button>
               <button type="button" className="course-edit-save-btn" onClick={saveEdit} disabled={savingEdit}>
-                {savingEdit ? 'Saving...' : 'Save'}
+                <span className="btn-icon-wrap"><IconSave />{savingEdit ? 'Saving...' : 'Save'}</span>
               </button>
             </div>
           </div>

@@ -22,6 +22,54 @@
   margin: 0 0 1.5rem 0;
 }
 
+.grading-scheme-error {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 0.9rem;
+}
+
+.grading-scheme-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.grading-scheme-create-btn {
+  padding: 0.6rem 1.4rem;
+  border-radius: 8px;
+  border: none;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.grading-scheme-create-btn:hover {
+  background: #1d4ed8;
+}
+
+.grading-scheme-delete-all-btn {
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  border: 1px solid #ef4444;
+  background: #fff;
+  color: #b91c1c;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.grading-scheme-delete-all-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 .grading-scheme-table-wrapper {
   overflow-x: auto;
   border: 1px solid #e0e0e0;
@@ -75,4 +123,190 @@
 
 .grading-scheme-add-btn:hover {
   background: #2980b9;
+}
+
+.grading-scheme-loading,
+.grading-scheme-empty {
+  font-size: 0.95rem;
+  color: #6b7280;
+}
+
+.grading-scheme-list-wrapper {
+  margin-top: 0.5rem;
+}
+
+.grading-scheme-list-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+  margin-bottom: 1.5rem;
+}
+
+.grading-scheme-list-table th,
+.grading-scheme-list-table td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.grading-scheme-list-table th {
+  background: #f9fafb;
+  font-weight: 700;
+  color: #111827;
+  text-align: left;
+}
+
+.grading-scheme-actions-cell {
+  white-space: nowrap;
+}
+
+.grading-scheme-row-edit-btn,
+.grading-scheme-row-delete-btn {
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  border: none;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-right: 0.35rem;
+}
+
+.grading-scheme-row-edit-btn {
+  background: #3b82f6;
+  color: #fff;
+}
+
+.grading-scheme-row-edit-btn:hover {
+  background: #2563eb;
+}
+
+.grading-scheme-row-delete-btn {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.grading-scheme-row-delete-btn:hover {
+  background: #fecaca;
+}
+
+/* Editor modal */
+.grading-scheme-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+}
+
+.grading-scheme-editor {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(840px, 95vw);
+  max-height: 90vh;
+  overflow: auto;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  z-index: 1001;
+  padding: 1.25rem 1.5rem;
+}
+
+.grading-scheme-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 0.5rem;
+}
+
+.grading-scheme-editor-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #111827;
+}
+
+.grading-scheme-editor-close-btn {
+  border: none;
+  background: transparent;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: #6b7280;
+}
+
+.grading-scheme-editor-body {
+  margin-top: 0.75rem;
+}
+
+.grading-scheme-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.grading-scheme-editor-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.grading-scheme-editor-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.grading-scheme-editor-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 0.75rem;
+  margin-top: 1rem;
+}
+
+.grading-scheme-cancel-btn,
+.grading-scheme-save-btn {
+  padding: 0.55rem 1.25rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.grading-scheme-cancel-btn {
+  border-color: #d1d5db;
+  background: #f9fafb;
+  color: #374151;
+}
+
+.grading-scheme-save-btn {
+  background: #10b981;
+  color: #fff;
+}
+
+.grading-scheme-save-btn:disabled,
+.grading-scheme-cancel-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.grading-scheme-td-remove {
+  width: 90px;
+  text-align: right;
+}
+
+.grading-scheme-remove-row-btn {
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid #ef4444;
+  background: #fff;
+  color: #b91c1c;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.grading-scheme-remove-row-btn:hover {
+  background: #fee2e2;
 }

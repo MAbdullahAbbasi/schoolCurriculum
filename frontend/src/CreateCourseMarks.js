@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
+import { IconBack, IconCreate } from './ButtonIcons';
 import './CreateCourseMarks.css';
 
 const slotKey = (q, part) => (part === 0 ? `q${q}` : `q${q}-p${part}`);
@@ -177,7 +178,7 @@ const CreateCourseMarks = () => {
         <div className="create-course-marks-content">
           <p className="create-course-marks-missing">Missing course data. Please start from the Create Course page.</p>
           <button type="button" className="create-course-marks-back-btn" onClick={() => navigate('/create-course')}>
-            Back to Create Course
+            <span className="btn-icon-wrap"><IconBack />Back to Create Course</span>
           </button>
         </div>
       </div>
@@ -257,7 +258,7 @@ const CreateCourseMarks = () => {
         )}
         <div className="create-course-marks-actions">
           <button type="button" className="create-course-marks-back-btn" onClick={handleBack} disabled={creating}>
-            Back
+            <span className="btn-icon-wrap"><IconBack />Back</span>
           </button>
           <button
             type="button"
@@ -265,7 +266,7 @@ const CreateCourseMarks = () => {
             onClick={handleCreateCourse}
             disabled={!totalValid || !allObjectivesSelected || creating}
           >
-            {creating ? 'Creating...' : 'Create course'}
+            <span className="btn-icon-wrap"><IconCreate />{creating ? 'Creating...' : 'Create course'}</span>
           </button>
         </div>
       </div>

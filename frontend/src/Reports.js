@@ -3,17 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
+import { IconDownload, IconView } from './ButtonIcons';
 import './Reports.css';
 
 const GRADES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-
-const downloadIcon = (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-    <polyline points="7 10 12 15 17 10" />
-    <line x1="12" y1="15" x2="12" y2="3" />
-  </svg>
-);
 
 const Reports = () => {
   const navigate = useNavigate();
@@ -158,8 +151,7 @@ const Reports = () => {
                 title="Download all reports for this grade"
                 aria-label="Download all reports for this grade"
               >
-                {downloadIcon}
-                <span>Download All Reports</span>
+                <span className="btn-icon-wrap"><IconDownload />Download All Reports</span>
               </button>
             </div>
             <div className="reports-table-wrapper">
@@ -192,7 +184,7 @@ const Reports = () => {
                           title={`View report for ${student.studentName}`}
                           aria-label={`View report for ${student.studentName}`}
                         >
-                          View
+                          <span className="btn-icon-wrap"><IconView />View</span>
                         </button>
                       </td>
                       <td className="reports-td reports-td-report">
@@ -203,7 +195,7 @@ const Reports = () => {
                           title={`Download report for ${student.studentName}`}
                           aria-label={`Download report for ${student.studentName}`}
                         >
-                          {downloadIcon}
+                          <span className="btn-icon-wrap"><IconDownload />Download</span>
                         </button>
                       </td>
                     </tr>

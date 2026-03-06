@@ -5,6 +5,15 @@ import Record from '../models/Record.js';
 
 const router = express.Router();
 
+// Normalize topic grade: number for digit-only, string for KG (e.g. KG-1), never NaN
+function normalizeTopicGrade(grade) {
+  if (grade == null || grade === '') return null;
+  const s = String(grade).trim();
+  if (s === '') return null;
+  if (/^\d+$/.test(s)) return Number(s);
+  return s;
+}
+
 // Generate unique course code
 const generateCourseCode = async () => {
   let code;
@@ -113,8 +122,7 @@ router.post('/', async (req, res) => {
       courseCode: (t.courseCode != null ? String(t.courseCode) : '').trim(),
       topicName: (t.topicName != null ? String(t.topicName) : '').trim(),
       marks: Number(t.marks) || 0,
-      // Allow numeric grades and KG labels (e.g. KG-1)
-      grade: t.grade != null && t.grade !== '' ? (/^\d+$/.test(String(t.grade)) ? Number(t.grade) : String(t.grade)) : null,
+      grade: normalizeTopicGrade(t.grade),
     }));
     const sumMarks = topicsWithMarks.reduce((sum, t) => sum + (t.marks || 0), 0);
     const expectedTotal =
@@ -128,13 +136,9 @@ router.post('/', async (req, res) => {
         message: 'Total marks must be a number greater than 0, or provide objective marks that sum to at least 1.',
       });
     }
-    if (Math.abs(sumMarks - expectedTotal) > 0.01) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid marks',
-        message: `Total marks for all objectives must equal ${expectedTotal}.`,
-      });
-    }
+    // Do not require sum of all objective marks to equal course total: frontend validates
+    // compulsory parts sum = totalMarks and that all fields are filled; optional parts
+    // can make objective total exceed course total.
 
     let questionsToSave = [];
     const totalQuestionsNum = bodyTotalQuestions != null && Number.isFinite(Number(bodyTotalQuestions)) && Number(bodyTotalQuestions) >= 1
@@ -401,7 +405,7 @@ router.put('/:code', async (req, res) => {
         courseCode: (t?.courseCode != null ? String(t.courseCode) : '').trim(),
         topicName: (t?.topicName != null ? String(t.topicName) : '').trim(),
         marks: Number(t?.marks) || 0,
-        grade: t?.grade != null ? Number(t.grade) : null,
+        grade: normalizeTopicGrade(t?.grade),
       }));
     }
 

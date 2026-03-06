@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { IconLogin } from './ButtonIcons';
 import axios from 'axios';
 import { API_URL } from './config/api';
 import './Login.css';
@@ -71,7 +72,7 @@ const Login = ({ onLoginSuccess }) => {
           </div>
           {error && <p className="login-error">{error}</p>}
           <button type="submit" className="login-submit" disabled={loading}>
-            {loading ? 'Signing in...' : 'Sign in'}
+            <span className="btn-icon-wrap"><IconLogin />{loading ? 'Signing in...' : 'Sign in'}</span>
           </button>
         </form>
       </div>

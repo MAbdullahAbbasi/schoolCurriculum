@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
+import { IconBack, IconCancel, IconCreate, IconList } from './ButtonIcons';
 import './MapCourseQuestions.css';
 
 const slotKey = (q, part) => (part === 0 ? `q${q}` : `q${q}-p${part}`);
@@ -256,7 +257,7 @@ const MapCourseQuestions = () => {
             Missing course data or objectives. Please start from the curriculum and create course again.
           </p>
           <button type="button" className="map-questions-back-btn" onClick={() => navigate('/')}>
-            Back to Curriculum
+            <span className="btn-icon-wrap"><IconBack />Back to Curriculum</span>
           </button>
         </div>
       </div>
@@ -301,7 +302,7 @@ const MapCourseQuestions = () => {
                 className={`map-part-btn ${selectedPart === s.partIndex ? 'map-part-btn-active' : ''} ${isSlotDone(s.slotKey) ? 'map-part-btn-done' : ''}`}
                 onClick={() => setSelectedPart(s.partIndex)}
               >
-                {s.partLabel}
+                <span className="btn-icon-wrap"><IconList />{s.partLabel}</span>
               </button>
             ))}
           </div>
@@ -382,7 +383,7 @@ const MapCourseQuestions = () => {
 
         <div className="map-questions-actions">
           <button type="button" className="map-questions-cancel-btn" onClick={handleCancel} disabled={submitting}>
-            Cancel
+            <span className="btn-icon-wrap"><IconCancel />Cancel</span>
           </button>
           <button
             type="button"
@@ -390,7 +391,7 @@ const MapCourseQuestions = () => {
             onClick={handleCreate}
             disabled={submitting || !allSlotsDone}
           >
-            {submitting ? 'Creating...' : 'Create course'}
+            <span className="btn-icon-wrap"><IconCreate />{submitting ? 'Creating...' : 'Create course'}</span>
           </button>
         </div>
         {!allSlotsDone && slots.length > 0 && (

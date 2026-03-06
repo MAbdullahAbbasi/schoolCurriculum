@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
+import { IconBack } from './ButtonIcons';
 import './StudentReportDetail.css';
 
 const GRADING_SCHEME_STORAGE_KEY = 'curriculum_grading_scheme';
@@ -231,7 +232,7 @@ const StudentReportDetail = () => {
         <CurriculumHeader />
         <div className="student-report-detail-error">{error}</div>
         <button type="button" className="student-report-detail-back-btn" onClick={handleBack}>
-          Back to Reports
+          <span className="btn-icon-wrap"><IconBack />Back to Reports</span>
         </button>
       </div>
     );
@@ -250,7 +251,7 @@ const StudentReportDetail = () => {
             Report: {displayName} ({displayRegNo})
           </h2>
           <button type="button" className="student-report-detail-back-btn" onClick={handleBack}>
-            Back to Reports
+            <span className="btn-icon-wrap"><IconBack />Back to Reports</span>
           </button>
         </div>
 
