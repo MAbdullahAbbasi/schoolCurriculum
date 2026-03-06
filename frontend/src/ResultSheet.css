@@ -118,6 +118,19 @@
   text-align: center;
 }
 
+.result-sheet-cell-content {
+  display: block;
+}
+
+.result-sheet-cell-marks {
+  font-weight: 600;
+}
+
+.result-sheet-cell-pct {
+  font-size: 0.85em;
+  color: #5d6d7e;
+}
+
 .result-sheet-row-total .result-sheet-td {
   font-weight: 700;
   background: #e8f5e9;

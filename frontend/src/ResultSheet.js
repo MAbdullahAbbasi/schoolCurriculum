@@ -118,7 +118,7 @@ const ResultSheet = () => {
     return () => { cancelled = true; };
   }, [selectedGrade, courseCodesForGrade]);
 
-  // Matrix: subject rows, student columns. marks[courseIndex][studentIndex] = obtained marks
+  // Matrix: subject rows, student columns. Each cell has { marks, percentage } for that subject
   const { subjectRows, studentTotals, studentPercentages } = useMemo(() => {
     const rows = coursesForGrade.map((course) => {
       const subjectName = (course.subject && String(course.subject).trim()) || course.courseName || course.code || '—';
@@ -129,14 +129,19 @@ const ResultSheet = () => {
         if (!entry || courseTotal <= 0) return null;
         const pct = Number(entry.overallPercentage);
         if (!Number.isFinite(pct)) return null;
-        return Math.round((pct / 100) * courseTotal * 100) / 100;
+        const marks = Math.round((pct / 100) * courseTotal * 100) / 100;
+        const percentage = Math.round(pct * 100) / 100;
+        return { marks, percentage };
       });
       return { subjectName, courseTotal, marksPerStudent };
     });
 
     const totalMaxGrade = rows.reduce((sum, r) => sum + r.courseTotal, 0);
     const studentTotals = studentsInGrade.map((_, studentIdx) =>
-      rows.reduce((sum, r) => sum + (r.marksPerStudent[studentIdx] ?? 0), 0)
+      rows.reduce((sum, r) => {
+        const cell = r.marksPerStudent[studentIdx];
+        return sum + (cell ? cell.marks : 0);
+      }, 0)
     );
     const studentPercentages = studentTotals.map((total) =>
       totalMaxGrade > 0 ? Math.round((total / totalMaxGrade) * 10000) / 100 : 0
@@ -211,9 +216,14 @@ const ResultSheet = () => {
               {subjectRows.map((row, idx) => (
                 <tr key={idx}>
                   <td className="result-sheet-td result-sheet-td-subject">{row.subjectName}</td>
-                  {row.marksPerStudent.map((marks, studentIdx) => (
+                  {row.marksPerStudent.map((cell, studentIdx) => (
                     <td key={studentsInGrade[studentIdx]?.registrationNumber} className="result-sheet-td result-sheet-td-marks">
-                      {marks != null ? marks : '—'}
+                      {cell != null ? (
+                        <span className="result-sheet-cell-content">
+                          <span className="result-sheet-cell-marks">{cell.marks}</span>
+                          <span className="result-sheet-cell-pct"> ({cell.percentage}%)</span>
+                        </span>
+                      ) : '—'}
                     </td>
                   ))}
                 </tr>
