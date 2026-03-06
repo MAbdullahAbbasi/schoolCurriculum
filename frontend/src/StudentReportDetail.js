@@ -8,43 +8,55 @@ import './StudentReportDetail.css';
 
 const GRADING_SCHEME_STORAGE_KEY = 'curriculum_grading_scheme';
 
-// Fixed report format matching the school annual examination template (exact order and labels)
+// Report marksheet order: Urdu, Eng, Math, Sci, S.St, Comp, T.Q, Islamiat, Nazra, A.A (then others)
 const MARKSHEET_TEMPLATE_ROWS = [
-  { label: 'Islamiat (Oral)', key: 'islamiat_oral' },
-  { label: 'Islamiat (Written)', key: 'islamiat_written' },
-  { label: 'English (Oral)', key: 'english_oral' },
-  { label: 'English (Written)', key: 'english_written' },
   { label: 'Urdu (Oral)', key: 'urdu_oral' },
   { label: 'Urdu (Written)', key: 'urdu_written' },
+  { label: 'English (Oral)', key: 'english_oral' },
+  { label: 'English (Written)', key: 'english_written' },
   { label: "Math's (Oral)", key: 'math_oral' },
   { label: "Math's (Written)", key: 'math_written' },
-  { label: 'General Knowledge', key: 'general_knowledge' },
-  { label: 'Social Studies', key: 'social_studies' },
   { label: 'Science', key: 'science' },
+  { label: 'Social Studies', key: 'social_studies' },
+  { label: 'Computer', key: 'computer' },
+  { label: 'Tarjuma Tul Quran (T.Q)', key: 'tarjuma_tul_quran' },
+  { label: 'Islamiat (Oral)', key: 'islamiat_oral' },
+  { label: 'Islamiat (Written)', key: 'islamiat_written' },
+  { label: 'Nazra', key: 'nazra' },
+  { label: 'Art', key: 'art' },
+  { label: 'General Knowledge', key: 'general_knowledge' },
   { label: 'Physics', key: 'physics' },
   { label: 'Chemistry', key: 'chemistry' },
   { label: 'Biology', key: 'biology' },
-  { label: 'Computer', key: 'computer' },
-  { label: 'Art', key: 'art' },
 ];
 
 // Map course subject (from DB) to template row key – first matching row gets the marks (we don't have Oral/Written split in data)
 const SUBJECT_TO_TEMPLATE_KEY = {
-  islamiat: 'islamiat_oral',
-  english: 'english_oral',
   urdu: 'urdu_oral',
+  english: 'english_oral',
+  eng: 'english_oral',
   math: 'math_oral',
   maths: 'math_oral',
   mathematics: 'math_oral',
   "math's": 'math_oral',
-  'general knowledge': 'general_knowledge',
-  'social studies': 'social_studies',
   science: 'science',
+  sci: 'science',
+  'social studies': 'social_studies',
+  's.st': 'social_studies',
+  computer: 'computer',
+  comp: 'computer',
+  'tarjuma tul quran': 'tarjuma_tul_quran',
+  't.q': 'tarjuma_tul_quran',
+  tq: 'tarjuma_tul_quran',
+  islamiat: 'islamiat_oral',
+  nazra: 'nazra',
+  nazars: 'nazra',
+  art: 'art',
+  'a.a': 'art',
+  'general knowledge': 'general_knowledge',
   physics: 'physics',
   chemistry: 'chemistry',
   biology: 'biology',
-  computer: 'computer',
-  art: 'art',
 };
 
 const getGradingSchemeFromStorage = () => {

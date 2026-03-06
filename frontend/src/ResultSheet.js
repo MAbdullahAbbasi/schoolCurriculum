@@ -35,6 +35,27 @@ const getSerialFromRegistration = (regNo) => {
   return parts.length >= 2 ? parts[1].trim() : '—';
 };
 
+// Subject order for result sheet and reports (from school specification): Urdu, Eng, Math, Sci, S.St, Comp, T.Q, Islamiat, Nazra, A.A
+const SUBJECT_ORDER = [
+  'urdu', 'english', 'math', 'science', 'social studies', 'computer',
+  'tarjuma tul quran', 'tq', 'islamiat', 'nazra', 'art',
+];
+const getSubjectSortIndex = (subjectName) => {
+  if (!subjectName || typeof subjectName !== 'string') return SUBJECT_ORDER.length;
+  const n = subjectName.toLowerCase().trim().replace(/\s+/g, ' ');
+  if (n.startsWith('urdu')) return 0;
+  if (n.startsWith('eng')) return 1;
+  if (/\bmath|maths\b/.test(n) || n === 'mathematics') return 2;
+  if (n.startsWith('sci') || n === 'science') return 3;
+  if (n.includes('social') || n === 's.st' || n === 's.st.') return 4;
+  if (n.startsWith('comp') || n === 'computer') return 5;
+  if (n.includes('tarjuma') || n.includes('t.q') || n === 'tq') return 6;
+  if (n.includes('islamiat') || n.startsWith('isl') || n.startsWith('del')) return 7;
+  if (n.startsWith('nazar') || n === 'nazra') return 8;
+  if (n.startsWith('art') || n === 'a.a' || n === 'a.a.') return 9;
+  return SUBJECT_ORDER.length;
+};
+
 const ResultSheet = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -125,7 +146,7 @@ const ResultSheet = () => {
     return () => { cancelled = true; };
   }, [selectedGrade, courseCodesForGrade]);
 
-  // Matrix: subject rows, student columns. Each cell has { marks, percentage } for that subject
+  // Matrix: subject rows, student columns. Each cell has { marks, percentage } for that subject. Rows sorted by SUBJECT_ORDER.
   const { subjectRows, studentTotals, studentPercentages } = useMemo(() => {
     const rows = coursesForGrade.map((course) => {
       const subjectName = (course.subject && String(course.subject).trim()) || course.courseName || course.code || '—';
@@ -142,6 +163,7 @@ const ResultSheet = () => {
       });
       return { subjectName, courseTotal, marksPerStudent };
     });
+    rows.sort((a, b) => getSubjectSortIndex(a.subjectName) - getSubjectSortIndex(b.subjectName));
 
     const totalMaxGrade = rows.reduce((sum, r) => sum + r.courseTotal, 0);
     const studentTotals = studentsInGrade.map((_, studentIdx) =>
