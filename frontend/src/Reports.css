@@ -62,6 +62,110 @@
   font-size: 1rem;
 }
 
+/* Top 3 performers card */
+.reports-top-three-card {
+  margin-bottom: 1.75rem;
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(135deg, #fff9e6 0%, #fffbf0 50%, #fff5e0 100%);
+  border: 1px solid #f0e6c8;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.reports-top-three-header {
+  text-align: center;
+  margin-bottom: 1.25rem;
+}
+
+.reports-top-three-icon {
+  font-size: 2rem;
+  display: inline-block;
+  margin-bottom: 0.25rem;
+}
+
+.reports-top-three-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0 0 0.25rem 0;
+}
+
+.reports-top-three-subtitle {
+  font-size: 0.9rem;
+  color: #7f8c8d;
+}
+
+.reports-top-three-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.reports-top-three-item {
+  flex: 1;
+  min-width: 200px;
+  max-width: 280px;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-left: 4px solid #bdc3c7;
+}
+
+.reports-top-three-item.first {
+  border-left-color: #f1c40f;
+  background: linear-gradient(to right, rgba(241, 196, 15, 0.08), #fff);
+}
+
+.reports-top-three-item.second {
+  border-left-color: #95a5a6;
+  background: linear-gradient(to right, rgba(149, 165, 166, 0.08), #fff);
+}
+
+.reports-top-three-item.third {
+  border-left-color: #cd7f32;
+  background: linear-gradient(to right, rgba(205, 127, 50, 0.08), #fff);
+}
+
+.reports-top-three-item-medal {
+  font-size: 2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.reports-top-three-item-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.reports-top-three-item-name {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
+.reports-top-three-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  font-size: 0.85rem;
+  color: #5d6d7e;
+}
+
+.reports-top-three-item-meta span {
+  white-space: nowrap;
+}
+
+.reports-top-three-item-grade {
+  font-weight: 600;
+  color: #27ae60;
+}
+
 .reports-download-all-wrapper {
   margin-bottom: 1rem;
 }
