@@ -230,6 +230,26 @@ export const buildStudentReportData = ({
   const totalObtained = Object.values(marksByTemplateKey).reduce((s, r) => s + r.obtainedTotal, 0);
   const totalPercentage = totalMax > 0 ? `${((totalObtained / totalMax) * 100).toFixed(2)}%` : '';
 
+  const totalByStudent = {};
+  enrolledCoursesWithMarks.forEach(({ record }) => {
+    if (!record?.students?.length) return;
+    record.students.forEach((studentEntry) => {
+      const reg = String(studentEntry.registrationNumber || '');
+      if (!reg) return;
+      if (gradeByRegistration.get(reg) !== currentStudentGrade) return;
+      const overallPercentage = studentEntry?.overallPercentage;
+      const percentage = overallPercentage != null && Number.isFinite(Number(overallPercentage))
+        ? Number(overallPercentage)
+        : null;
+      if (percentage == null) return;
+      totalByStudent[reg] = (totalByStudent[reg] || 0) + percentage;
+    });
+  });
+  const currentStudentTotal = totalByStudent[decodedRegNo] || 0;
+  const classPosition = currentStudentTotal > 0
+    ? Object.values(totalByStudent).filter((value) => Number(value) > currentStudentTotal).length + 1
+    : null;
+
   const objectiveSections = enrolledCoursesWithMarks.map(({ course, objectiveMarks }) => ({
     title: course.courseName || course.code,
     rows: (course.topics || []).map((topic, topicIndex) => {
@@ -269,6 +289,7 @@ export const buildStudentReportData = ({
     totalMax: totalMax > 0 ? totalMax : '',
     totalObtained: totalMax > 0 ? Number(totalObtained).toFixed(2) : '',
     totalPercentage,
+    classPosition,
     gradingSchemeRows: effectiveSchemeRows,
   };
 };

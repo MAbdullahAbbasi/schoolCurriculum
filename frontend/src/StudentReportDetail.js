@@ -314,6 +314,36 @@ const StudentReportDetail = () => {
     return highestByKey;
   }, [allStudents, enrolledCoursesWithMarks, student]);
 
+  const classPosition = useMemo(() => {
+    const currentStudentGrade = normalizeGradeForMatch(student?.grade);
+    if (!currentStudentGrade) return null;
+
+    const gradeByRegistration = new Map(
+      (allStudents || []).map((s) => [String(s.registrationNumber), normalizeGradeForMatch(s.grade)])
+    );
+
+    const totalByStudent = {};
+    enrolledCoursesWithMarks.forEach(({ record }) => {
+      if (!record?.students?.length) return;
+      record.students.forEach((studentEntry) => {
+        const reg = String(studentEntry.registrationNumber || '');
+        if (!reg) return;
+        if (gradeByRegistration.get(reg) !== currentStudentGrade) return;
+        const overallPercentage = studentEntry?.overallPercentage;
+        const percentage = overallPercentage != null && Number.isFinite(Number(overallPercentage))
+          ? Number(overallPercentage)
+          : null;
+        if (percentage == null) return;
+        totalByStudent[reg] = (totalByStudent[reg] || 0) + percentage;
+      });
+    });
+
+    const currentTotal = totalByStudent[decodedRegNo] || 0;
+    return currentTotal > 0
+      ? Object.values(totalByStudent).filter((value) => Number(value) > currentTotal).length + 1
+      : null;
+  }, [allStudents, enrolledCoursesWithMarks, student, decodedRegNo]);
+
   const getGradeFromPercentage = (percentage) => {
     const scheme = latestGradingSchemeRows;
     if (!scheme || scheme.length === 0) return '—';
@@ -551,7 +581,9 @@ const StudentReportDetail = () => {
                 <tr className="student-report-marksheet-summary-row">
                   <td className="student-report-marksheet-td" colSpan={3} />
                   <td className="student-report-marksheet-td"><strong>Position</strong></td>
-                  <td className="student-report-marksheet-td" colSpan={2} />
+                  <td className="student-report-marksheet-td student-report-marksheet-td-num" colSpan={2}>
+                    {classPosition != null ? classPosition : ''}
+                  </td>
                 </tr>
               </tfoot>
             </table>
