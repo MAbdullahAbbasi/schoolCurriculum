@@ -50,7 +50,6 @@ const Reports = () => {
   const [students, setStudents] = useState([]);
   const [courses, setCourses] = useState([]);
   const [recordsByCourse, setRecordsByCourse] = useState({});
-  const [recordsLoading, setRecordsLoading] = useState(false);
   const [selectedGrade, setSelectedGrade] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -80,6 +79,23 @@ const Reports = () => {
         return (a.registrationNumber || '').localeCompare(b.registrationNumber || '');
       });
   }, [students, selectedGrade]);
+
+  // Courses that belong to the selected grade (topic grades match)
+  const courseCodesForGrade = useMemo(() => {
+    if (!selectedGrade) return [];
+    const normalized = normalizeGradeForMatch(selectedGrade);
+    if (!normalized) return [];
+    return (courses || [])
+      .filter((course) => {
+        const topics = course.topics || [];
+        for (const t of topics) {
+          if (t.grade != null && normalizeGradeForMatch(t.grade) === normalized) return true;
+        }
+        return false;
+      })
+      .map((c) => c.code)
+      .filter(Boolean);
+  }, [courses, selectedGrade]);
 
   // Course total marks (from topics or questionPartMarks)
   const getCourseTotalMarks = (course) => {
@@ -142,23 +158,6 @@ const Reports = () => {
     fetchStudentsAndCourses();
   }, []);
 
-  // Courses that belong to the selected grade (topic grades match)
-  const courseCodesForGrade = useMemo(() => {
-    if (!selectedGrade) return [];
-    const normalized = normalizeGradeForMatch(selectedGrade);
-    if (!normalized) return [];
-    return (courses || [])
-      .filter((course) => {
-        const topics = course.topics || [];
-        for (const t of topics) {
-          if (t.grade != null && normalizeGradeForMatch(t.grade) === normalized) return true;
-        }
-        return false;
-      })
-      .map((c) => c.code)
-      .filter(Boolean);
-  }, [courses, selectedGrade]);
-
   useEffect(() => {
     if (!selectedGrade || courseCodesForGrade.length === 0) {
       setRecordsByCourse({});
@@ -166,7 +165,6 @@ const Reports = () => {
     }
     let cancelled = false;
     const fetchRecords = async () => {
-      setRecordsLoading(true);
       const byCourse = {};
       await Promise.all(
         courseCodesForGrade.map(async (code) => {
@@ -180,11 +178,10 @@ const Reports = () => {
         })
       );
       if (!cancelled) setRecordsByCourse(byCourse);
-      setRecordsLoading(false);
     };
     fetchRecords();
     return () => { cancelled = true; };
-  }, [selectedGrade, courseCodesForGrade.join(',')]);
+  }, [selectedGrade, courseCodesForGrade]);
 
   const triggerDownload = (filename, csvContent) => {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
