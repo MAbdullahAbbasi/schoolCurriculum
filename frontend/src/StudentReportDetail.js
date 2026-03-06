@@ -75,6 +75,20 @@ const getGradingSchemeFromStorage = () => {
   }
 };
 
+const normalizeGradeForMatch = (grade) => {
+  if (grade == null || grade === '') return '';
+  let s = String(grade).trim();
+  if (s === '') return '';
+  s = s.replace(/^(grade|class)\s+/i, '').trim();
+  if (s === '') return '';
+  const lower = s.toLowerCase().replace(/\s+/g, ' ');
+  const compact = lower.replace(/\s/g, '').replace(/k\.g\.?/g, 'kg');
+  if (/^kg[- ]?1$|^kg[- ]?i$|^k\.g\.?[- ]?1$|^k\.g\.?[- ]?i$/i.test(lower) || /^kg[-]?1$|^kg[-]?i$/.test(compact)) return 'KG-1';
+  if (/^kg[- ]?2$|^kg\s*ii$|^kg[- ]?ii$|^k\.g\.?[- ]?2$|^k\.g\.?[- ]?ii$/i.test(lower) || /^kg[-]?2$|^kg[-]?ii$/.test(compact)) return 'KG-2';
+  if (/^kg[- ]?3$|^kg[- ]?iii$|^k\.g\.?[- ]?3$|^k\.g\.?[- ]?iii$/i.test(lower) || /^kg[-]?3$|^kg[-]?iii$/.test(compact)) return 'KG-3';
+  return s;
+};
+
 const StudentReportDetail = () => {
   const { registrationNumber } = useParams();
   const decodedRegNo = decodeURIComponent(registrationNumber || '');
@@ -83,6 +97,7 @@ const StudentReportDetail = () => {
   const studentFromState = location.state?.student;
 
   const [student, setStudent] = useState(studentFromState || null);
+  const [allStudents, setAllStudents] = useState([]);
   const [courses, setCourses] = useState([]);
   const [recordsByCourse, setRecordsByCourse] = useState({});
   const [latestGradingSchemeRows, setLatestGradingSchemeRows] = useState([]);
@@ -121,6 +136,7 @@ const StudentReportDetail = () => {
           : getGradingSchemeFromStorage();
 
         setCourses(coursesList);
+        setAllStudents(studentsList);
         setLatestGradingSchemeRows(normalizedLatestSchemeRows);
 
         let currentStudent = studentFromState && String(studentFromState.registrationNumber) === decodedRegNo
@@ -226,6 +242,51 @@ const StudentReportDetail = () => {
     });
     return byKey;
   }, [enrolledCoursesWithMarks, decodedRegNo]);
+
+  const highestMarksByTemplateKey = useMemo(() => {
+    const byKeyByStudent = {};
+    const currentStudentGrade = normalizeGradeForMatch(student?.grade);
+    if (!currentStudentGrade) return {};
+
+    const gradeByRegistration = new Map(
+      (allStudents || []).map((s) => [String(s.registrationNumber), normalizeGradeForMatch(s.grade)])
+    );
+
+    enrolledCoursesWithMarks.forEach(({ course, record }) => {
+      const rawSubject = (course.subject && String(course.subject).trim()) || '';
+      const normalized = rawSubject.toLowerCase().trim();
+      const templateKey = SUBJECT_TO_TEMPLATE_KEY[normalized] || null;
+      if (!templateKey || !record?.students?.length) return;
+
+      record.students.forEach((studentEntry) => {
+        const registrationNumber = String(studentEntry.registrationNumber || '');
+        if (!registrationNumber) return;
+        if (gradeByRegistration.get(registrationNumber) !== currentStudentGrade) return;
+
+        const overallPercentage = studentEntry?.overallPercentage;
+        const percentage = overallPercentage != null && Number.isFinite(Number(overallPercentage))
+          ? Number(overallPercentage)
+          : null;
+        if (percentage == null) return;
+
+        if (!byKeyByStudent[templateKey]) byKeyByStudent[templateKey] = {};
+        if (!byKeyByStudent[templateKey][registrationNumber]) {
+          byKeyByStudent[templateKey][registrationNumber] = { maxTotal: 0, obtainedTotal: 0 };
+        }
+        byKeyByStudent[templateKey][registrationNumber].maxTotal += 100;
+        byKeyByStudent[templateKey][registrationNumber].obtainedTotal += percentage;
+      });
+    });
+
+    const highestByKey = {};
+    Object.keys(byKeyByStudent).forEach((templateKey) => {
+      const highest = Math.max(
+        ...Object.values(byKeyByStudent[templateKey]).map((row) => Number(row.obtainedTotal) || 0)
+      );
+      highestByKey[templateKey] = highest;
+    });
+    return highestByKey;
+  }, [allStudents, enrolledCoursesWithMarks, student]);
 
   const getGradeFromPercentage = (percentage) => {
     const scheme = latestGradingSchemeRows;
@@ -364,7 +425,11 @@ const StudentReportDetail = () => {
                       <td className="student-report-marksheet-td">
                         {hasData ? getGradeFromPercentage(data.percentage) : ''}
                       </td>
-                      <td className="student-report-marksheet-td">{hasData ? '—' : ''}</td>
+                      <td className="student-report-marksheet-td student-report-marksheet-td-num">
+                        {hasData && highestMarksByTemplateKey[row.key] != null
+                          ? Number(highestMarksByTemplateKey[row.key]).toFixed(2)
+                          : ''}
+                      </td>
                     </tr>
                   );
                 })}
