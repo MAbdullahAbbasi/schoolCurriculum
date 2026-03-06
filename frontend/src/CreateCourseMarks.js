@@ -8,7 +8,7 @@ import './CreateCourseMarks.css';
 
 const slotKey = (q, part) => (part === 0 ? `q${q}` : `q${q}-p${part}`);
 
-// Normalize grade for matching: any KG-2 variant -> "KG-2" so course and students match (handles "KG II", "KG-2", "KG 2", "Grade KG II", "kg - 2", etc.)
+// Normalize grade for matching: any KG-2 variant -> "KG-2" (handles "KG II", "K.G-II", "KG-2", "Grade KG II", etc.)
 const normalizeGradeForMatch = (grade) => {
   if (grade == null || grade === '') return '';
   let s = String(grade).trim();
@@ -16,10 +16,10 @@ const normalizeGradeForMatch = (grade) => {
   s = s.replace(/^(grade|class)\s+/i, '').trim();
   if (s === '') return '';
   const lower = s.toLowerCase().replace(/\s+/g, ' ');
-  const compact = lower.replace(/\s/g, ''); // "kg - 2" -> "kg-2", "kg  ii" -> "kgii"
-  if (/^kg[- ]?1$|^kg[- ]?i$/.test(lower) || /^kg[-]?1$|^kg[-]?i$/.test(compact)) return 'KG-1';
-  if (/^kg[- ]?2$|^kg\s*ii$|^kg[- ]?ii$/.test(lower) || /^kg[-]?2$|^kg[-]?ii$/.test(compact)) return 'KG-2';
-  if (/^kg[- ]?3$|^kg[- ]?iii$/.test(lower) || /^kg[-]?3$|^kg[-]?iii$/.test(compact)) return 'KG-3';
+  const compact = lower.replace(/\s/g, '').replace(/k\.g\.?/g, 'kg'); // "k.g-ii" -> "kg-ii", "k.g.2" -> "kg2"
+  if (/^kg[- ]?1$|^kg[- ]?i$|^k\.g\.?[- ]?1$|^k\.g\.?[- ]?i$/i.test(lower) || /^kg[-]?1$|^kg[-]?i$/.test(compact)) return 'KG-1';
+  if (/^kg[- ]?2$|^kg\s*ii$|^kg[- ]?ii$|^k\.g\.?[- ]?2$|^k\.g\.?[- ]?ii$/i.test(lower) || /^kg[-]?2$|^kg[-]?ii$/.test(compact)) return 'KG-2';
+  if (/^kg[- ]?3$|^kg[- ]?iii$|^k\.g\.?[- ]?3$|^k\.g\.?[- ]?iii$/i.test(lower) || /^kg[-]?3$|^kg[-]?iii$/.test(compact)) return 'KG-3';
   return s;
 };
 

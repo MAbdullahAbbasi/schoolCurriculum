@@ -475,6 +475,13 @@
   border-right: none;
 }
 
+.students-table-th-srno,
+.students-table-td-srno {
+  width: 4rem;
+  min-width: 4rem;
+  text-align: center;
+}
+
 .students-table tbody tr {
   border-bottom: 1px solid #e0e0e0;
   transition: background-color 0.2s ease;

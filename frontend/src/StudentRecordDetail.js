@@ -6,7 +6,7 @@ import { API_URL } from './config/api';
 import { IconCancel, IconEdit, IconNotAttempted, IconSave } from './ButtonIcons';
 import './StudentRecordDetail.css';
 
-// Normalize grade for matching: any KG variant -> KG-1/KG-2/KG-3 (same logic as CreateCourseMarks)
+// Normalize grade for matching: any KG variant -> KG-1/KG-2/KG-3 (same logic as CreateCourseMarks; includes "K.G-II")
 const normalizeGradeForMatch = (grade) => {
   if (grade == null || grade === '') return '';
   let s = String(grade).trim();
@@ -14,10 +14,10 @@ const normalizeGradeForMatch = (grade) => {
   s = s.replace(/^(grade|class)\s+/i, '').trim();
   if (s === '') return '';
   const lower = s.toLowerCase().replace(/\s+/g, ' ');
-  const compact = lower.replace(/\s/g, '');
-  if (/^kg[- ]?1$|^kg[- ]?i$/.test(lower) || /^kg[-]?1$|^kg[-]?i$/.test(compact)) return 'KG-1';
-  if (/^kg[- ]?2$|^kg\s*ii$|^kg[- ]?ii$/.test(lower) || /^kg[-]?2$|^kg[-]?ii$/.test(compact)) return 'KG-2';
-  if (/^kg[- ]?3$|^kg[- ]?iii$/.test(lower) || /^kg[-]?3$|^kg[-]?iii$/.test(compact)) return 'KG-3';
+  const compact = lower.replace(/\s/g, '').replace(/k\.g\.?/g, 'kg');
+  if (/^kg[- ]?1$|^kg[- ]?i$|^k\.g\.?[- ]?1$|^k\.g\.?[- ]?i$/i.test(lower) || /^kg[-]?1$|^kg[-]?i$/.test(compact)) return 'KG-1';
+  if (/^kg[- ]?2$|^kg\s*ii$|^kg[- ]?ii$|^k\.g\.?[- ]?2$|^k\.g\.?[- ]?ii$/i.test(lower) || /^kg[-]?2$|^kg[-]?ii$/.test(compact)) return 'KG-2';
+  if (/^kg[- ]?3$|^kg[- ]?iii$|^k\.g\.?[- ]?3$|^k\.g\.?[- ]?iii$/i.test(lower) || /^kg[-]?3$|^kg[-]?iii$/.test(compact)) return 'KG-3';
   return s;
 };
 

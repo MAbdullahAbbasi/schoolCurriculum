@@ -87,9 +87,82 @@
 
 .courses-record-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
   margin-bottom: 1rem;
   margin-top: 0.5rem;
+}
+
+.courses-record-select-btn {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.courses-record-select-btn:hover:not(:disabled) {
+  background: #2980b9;
+  transform: translateY(-1px);
+}
+
+.courses-record-select-btn.active {
+  background: #7f8c8d;
+}
+
+.courses-record-select-btn.active:hover:not(:disabled) {
+  background: #95a5a6;
+}
+
+.courses-record-select-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.courses-record-delete-selected-btn {
+  background: #e67e22;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.courses-record-delete-selected-btn:hover:not(:disabled) {
+  background: #d35400;
+  transform: translateY(-1px);
+}
+
+.courses-record-delete-selected-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.courses-record-th-checkbox,
+.courses-record-td-checkbox {
+  width: 3.5rem;
+  min-width: 3.5rem;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.courses-record-th-checkbox {
+  white-space: nowrap;
+}
+
+.courses-record-select-col-label {
+  display: inline-block;
+  margin-right: 0.35rem;
+  font-weight: 600;
 }
 
 .delete-all-courses-btn {

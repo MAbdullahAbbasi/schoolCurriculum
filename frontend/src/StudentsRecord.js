@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
-import { IconAdd, IconCancel, IconClose, IconDelete, IconEdit, IconRemove, IconSave } from './ButtonIcons';
+import { IconAdd, IconCancel, IconClose, IconDelete, IconEdit, IconRemove, IconSave, IconSelectAll } from './ButtonIcons';
 import './StudentsRecord.css';
 
 const normalizeDateForInput = (d) => {
@@ -27,6 +27,9 @@ const StudentsRecord = () => {
   const [editForm, setEditForm] = useState(null);
   const [savingEdit, setSavingEdit] = useState(false);
   const [courseNameSearch, setCourseNameSearch] = useState('');
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedCourseCodes, setSelectedCourseCodes] = useState(new Set());
+  const [deletingSelected, setDeletingSelected] = useState(false);
 
   useEffect(() => {
     fetchCourses();
@@ -247,6 +250,48 @@ const StudentsRecord = () => {
     }
   };
 
+  const toggleSelectionMode = () => {
+    setSelectionMode((prev) => !prev);
+    if (selectionMode) setSelectedCourseCodes(new Set());
+  };
+
+  const toggleCourseSelection = (e, courseCode) => {
+    e.stopPropagation();
+    setSelectedCourseCodes((prev) => {
+      const next = new Set(prev);
+      if (next.has(courseCode)) next.delete(courseCode);
+      else next.add(courseCode);
+      return next;
+    });
+  };
+
+  const handleSelectAllCourses = (e) => {
+    e.stopPropagation();
+    const checked = e.target.checked;
+    setSelectedCourseCodes(checked ? new Set(filteredCourses.map((c) => c.code).filter(Boolean)) : new Set());
+  };
+
+  const handleDeleteSelected = async () => {
+    const codes = Array.from(selectedCourseCodes);
+    if (codes.length === 0) return;
+    if (!window.confirm(`Delete ${codes.length} selected course(s) and their records? This cannot be undone.`)) return;
+    try {
+      setDeletingSelected(true);
+      setError(null);
+      for (const code of codes) {
+        await axios.delete(`${API_URL}/api/courses/${encodeURIComponent(code)}`);
+      }
+      await fetchCourses();
+      setSelectedCourseCodes(new Set());
+      setSelectionMode(false);
+    } catch (err) {
+      const msg = err.response?.data?.message || err.response?.data?.error || err.message || 'Failed to delete selected courses.';
+      setError(msg);
+    } finally {
+      setDeletingSelected(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="students-record-container">
@@ -296,19 +341,48 @@ const StudentsRecord = () => {
             <div className="courses-record-actions">
               <button
                 type="button"
+                className={`courses-record-select-btn ${selectionMode ? 'active' : ''}`}
+                onClick={toggleSelectionMode}
+                disabled={deletingAll || deletingSelected}
+              >
+                <span className="btn-icon-wrap"><IconSelectAll />{selectionMode ? 'Cancel' : 'Select'}</span>
+              </button>
+              {selectionMode && (
+                <button
+                  type="button"
+                  className="courses-record-delete-selected-btn"
+                  onClick={handleDeleteSelected}
+                  disabled={selectedCourseCodes.size === 0 || deletingSelected}
+                >
+                  <span className="btn-icon-wrap"><IconDelete />{deletingSelected ? 'Deleting...' : `Delete selected (${selectedCourseCodes.size})`}</span>
+                </button>
+              )}
+              <button
+                type="button"
                 className="delete-all-courses-btn"
                 onClick={handleDeleteAll}
-                disabled={deletingAll}
+                disabled={deletingAll || deletingSelected || selectionMode}
               >
                 <span className="btn-icon-wrap"><IconDelete />{deletingAll ? 'Deleting...' : 'Delete all'}</span>
               </button>
             </div>
             <div className="courses-table-wrapper">
               <table className="courses-record-table">
-                <thead>
-                  <tr>
-                    <th>Sr. No</th>
-                    <th>Course Code</th>
+<thead>
+                <tr>
+                  {selectionMode && (
+                    <th className="courses-record-th-checkbox">
+                      <span className="courses-record-select-col-label">Select</span>
+                      <input
+                        type="checkbox"
+                        aria-label="Select all"
+                        checked={filteredCourses.length > 0 && filteredCourses.every((c) => selectedCourseCodes.has(c.code))}
+                        onChange={handleSelectAllCourses}
+                      />
+                    </th>
+                  )}
+                  <th>Sr. No</th>
+                  <th>Course Code</th>
                     <th>Course Name</th>
                     <th>Duration</th>
                     <th>Start Date</th>
@@ -320,7 +394,7 @@ const StudentsRecord = () => {
                 <tbody>
                   {filteredCourses.length === 0 && courseNameSearch.trim() ? (
                     <tr>
-                      <td colSpan={8} className="courses-record-empty-search">
+                      <td colSpan={selectionMode ? 9 : 8} className="courses-record-empty-search">
                         No courses match &quot;{courseNameSearch.trim()}&quot;. Try a different search.
                       </td>
                     </tr>
@@ -329,8 +403,18 @@ const StudentsRecord = () => {
                     <tr
                       key={course._id || course.code}
                       className="courses-record-row"
-                      onClick={() => handleCourseClick(course.code)}
+                      onClick={() => !selectionMode && handleCourseClick(course.code)}
                     >
+                      {selectionMode && (
+                        <td className="courses-record-td-checkbox" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            aria-label={`Select ${course.courseName || course.code}`}
+                            checked={selectedCourseCodes.has(course.code)}
+                            onChange={(e) => toggleCourseSelection(e, course.code)}
+                          />
+                        </td>
+                      )}
                       <td>{idx + 1}</td>
                       <td>{course.code || '-'}</td>
                       <td>{course.courseName || '-'}</td>

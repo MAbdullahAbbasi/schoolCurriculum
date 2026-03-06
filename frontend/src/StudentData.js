@@ -491,6 +491,7 @@ const StudentData = () => {
             <table className="students-table">
               <thead>
                 <tr>
+                  <th className="students-table-th-srno">Sr. No</th>
                   {selectionMode && (
                     <th className="checkbox-cell">
                       <input
@@ -516,6 +517,7 @@ const StudentData = () => {
                   const isSelected = selectedRegistrationNumbers.has(student.registrationNumber);
                   return (
                     <tr key={student.registrationNumber || index} className={isEditing ? 'editing-row' : ''}>
+                      <td className="students-table-td-srno">{index + 1}</td>
                       {selectionMode && (
                         <td className="checkbox-cell">
                           <input
