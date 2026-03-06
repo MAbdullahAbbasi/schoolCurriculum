@@ -8,7 +8,12 @@ import { createRoot } from 'react-dom/client';
 import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
 import { IconDownload, IconList, IconView } from './ButtonIcons';
-import StudentReportDocument from './StudentReportDocument';
+import {
+  StudentReportCover,
+  StudentReportGradingScheme,
+  StudentReportMarksheet,
+  StudentReportObjectiveSection,
+} from './StudentReportDocument';
 import { buildStudentReportData, normalizeGradingSchemeRows } from './reportUtils';
 import './Reports.css';
 
@@ -238,51 +243,91 @@ const Reports = () => {
       registrationNumber: student.registrationNumber,
     });
 
-    const mountNode = document.createElement('div');
-    mountNode.style.position = 'fixed';
-    mountNode.style.left = '-10000px';
-    mountNode.style.top = '0';
-    mountNode.style.width = '900px';
-    mountNode.style.background = '#ffffff';
-    mountNode.style.zIndex = '-1';
-    document.body.appendChild(mountNode);
+    const renderComponentToCanvas = async (element) => {
+      const mountNode = document.createElement('div');
+      mountNode.style.position = 'fixed';
+      mountNode.style.left = '-10000px';
+      mountNode.style.top = '0';
+      mountNode.style.width = '900px';
+      mountNode.style.background = '#ffffff';
+      mountNode.style.zIndex = '-1';
+      document.body.appendChild(mountNode);
 
-    const root = createRoot(mountNode);
-    root.render(<StudentReportDocument reportData={reportData} />);
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    await waitForImages(mountNode);
+      const root = createRoot(mountNode);
+      root.render(element);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      await waitForImages(mountNode);
+      const canvas = await html2canvas(mountNode, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+      });
+      root.unmount();
+      document.body.removeChild(mountNode);
+      return canvas;
+    };
 
-    const canvas = await html2canvas(mountNode, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: '#ffffff',
-      logging: false,
-    });
+    const addCanvasToPdf = (pdf, canvas, addNewPage = false) => {
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const marginX = 10;
+      const marginY = 10;
+      const usableWidth = pageWidth - marginX * 2;
+      const usableHeight = pageHeight - marginY * 2;
+      const imgWidth = usableWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const imgData = canvas.toDataURL('image/png');
 
-    root.unmount();
-    document.body.removeChild(mountNode);
+      if (addNewPage) pdf.addPage();
+      let heightLeft = imgHeight;
+      let position = marginY;
+
+      pdf.addImage(imgData, 'PNG', marginX, position, imgWidth, imgHeight);
+      heightLeft -= usableHeight;
+
+      while (heightLeft > 0) {
+        position = marginY + (heightLeft - imgHeight);
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', marginX, position, imgWidth, imgHeight);
+        heightLeft -= usableHeight;
+      }
+    };
 
     const pdf = new jsPDF('p', 'mm', 'a4');
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const imgWidth = pageWidth;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    const imgData = canvas.toDataURL('image/png');
 
-    let heightLeft = imgHeight;
-    let position = 0;
+    const coverCanvas = await renderComponentToCanvas(
+      <div className="student-report-detail-content student-report-pdf-content">
+        <StudentReportCover reportData={reportData} />
+      </div>
+    );
+    addCanvasToPdf(pdf, coverCanvas, false);
 
-    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
-
-    while (heightLeft > 0) {
-      position = heightLeft - imgHeight;
-      pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
+    for (const section of reportData.objectiveSections) {
+      const sectionCanvas = await renderComponentToCanvas(
+        <div className="student-report-detail-content student-report-pdf-content">
+          <StudentReportObjectiveSection section={section} />
+        </div>
+      );
+      addCanvasToPdf(pdf, sectionCanvas, true);
     }
 
+    const marksheetCanvas = await renderComponentToCanvas(
+      <div className="student-report-detail-content student-report-pdf-content">
+        <StudentReportMarksheet reportData={reportData} />
+      </div>
+    );
+    addCanvasToPdf(pdf, marksheetCanvas, true);
+
+    const gradingCanvas = await renderComponentToCanvas(
+      <div className="student-report-detail-content student-report-pdf-content">
+        <StudentReportGradingScheme reportData={reportData} />
+      </div>
+    );
+    addCanvasToPdf(pdf, gradingCanvas, true);
+
     return pdf.output('blob');
+
   };
 
   const getStudentPdfFileName = (student) => {
