@@ -61,6 +61,104 @@
   margin: 0;
 }
 
+.student-report-cover-section {
+  margin-bottom: 2rem;
+  padding: 1.5rem 1.5rem 1.25rem;
+  border: 1px solid #dcdcdc;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.student-report-cover-top {
+  display: grid;
+  grid-template-columns: 110px 1fr 130px;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.student-report-cover-logo {
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.student-report-cover-logo-left {
+  width: 90px;
+  justify-self: start;
+}
+
+.student-report-cover-logo-right {
+  width: 120px;
+  justify-self: end;
+}
+
+.student-report-cover-title-block {
+  text-align: center;
+}
+
+.student-report-cover-school-title {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 800;
+  color: #111;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.student-report-cover-registered {
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-transform: none;
+}
+
+.student-report-cover-school-subtitle {
+  margin: 0.4rem 0 0.35rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #222;
+}
+
+.student-report-cover-term-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+  text-decoration: underline;
+}
+
+.student-report-cover-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 2rem;
+}
+
+.student-report-cover-detail {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  border-bottom: 1px solid #ececec;
+  padding-bottom: 0.35rem;
+}
+
+.student-report-cover-detail-wide {
+  grid-column: 1 / -1;
+}
+
+.student-report-cover-label {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.student-report-cover-value {
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: #222;
+}
+
 .student-report-detail-sections {
   display: flex;
   flex-direction: column;
@@ -253,4 +351,24 @@
 .student-report-grading-scheme-table .student-report-th,
 .student-report-grading-scheme-table .student-report-td {
   padding: 0.6rem 1rem;
+}
+
+@media (max-width: 768px) {
+  .student-report-cover-top {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .student-report-cover-logo-left,
+  .student-report-cover-logo-right {
+    justify-self: center;
+  }
+
+  .student-report-cover-school-title {
+    font-size: 1.5rem;
+  }
+
+  .student-report-cover-details-grid {
+    grid-template-columns: 1fr;
+  }
 }
