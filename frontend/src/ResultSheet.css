@@ -98,6 +98,20 @@
 .result-sheet-th-student {
   text-align: center;
   min-width: 100px;
+  vertical-align: bottom;
+}
+
+.result-sheet-student-name {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.result-sheet-student-serial {
+  display: block;
+  font-size: 0.8em;
+  font-weight: 500;
+  color: #5d6d7e;
 }
 
 .result-sheet-td {

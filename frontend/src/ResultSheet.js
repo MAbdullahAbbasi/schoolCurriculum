@@ -28,6 +28,13 @@ const getCourseTotalMarks = (course) => {
   return topics.reduce((s, t) => s + (Number(t.marks) || 0), 0);
 };
 
+// Registration number has 4 parts separated by 3 hyphens: year - serialNumber - part3 - part4
+const getSerialFromRegistration = (regNo) => {
+  if (regNo == null || String(regNo).trim() === '') return '—';
+  const parts = String(regNo).trim().split('-');
+  return parts.length >= 2 ? parts[1].trim() : '—';
+};
+
 const ResultSheet = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -207,7 +214,8 @@ const ResultSheet = () => {
                 <th className="result-sheet-th result-sheet-th-subject">Subject</th>
                 {studentsInGrade.map((s) => (
                   <th key={s.registrationNumber} className="result-sheet-th result-sheet-th-student">
-                    {s.studentName || s.registrationNumber || '—'}
+                    <span className="result-sheet-student-name">{s.studentName || s.registrationNumber || '—'}</span>
+                    <span className="result-sheet-student-serial">Sr. {getSerialFromRegistration(s.registrationNumber)}</span>
                   </th>
                 ))}
               </tr>
