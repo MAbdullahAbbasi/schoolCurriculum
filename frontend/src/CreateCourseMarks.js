@@ -8,6 +8,18 @@ import './CreateCourseMarks.css';
 
 const slotKey = (q, part) => (part === 0 ? `q${q}` : `q${q}-p${part}`);
 
+// Normalize grade for matching (same as StudentRecordDetail): KG variants -> KG-1/KG-2/KG-3
+const normalizeGradeForMatch = (grade) => {
+  if (grade == null || grade === '') return '';
+  const s = String(grade).trim();
+  if (s === '') return '';
+  const lower = s.toLowerCase().replace(/\s+/g, ' ');
+  if (/^kg[- ]?1$|^kg[- ]?i$/.test(lower)) return 'KG-1';
+  if (/^kg[- ]?2$|^kg[- ]?ii$/.test(lower)) return 'KG-2';
+  if (/^kg[- ]?3$|^kg[- ]?iii$/.test(lower)) return 'KG-3';
+  return s;
+};
+
 const CreateCourseMarks = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -158,6 +170,32 @@ const CreateCourseMarks = () => {
         headers: { 'Content-Type': 'application/json' },
       });
       if (response.data.success) {
+        let enrolledCount = 0;
+        try {
+          const studentsRes = await axios.get(`${API_URL}/api/students-data`);
+          const studentsList = Array.isArray(studentsRes.data) ? studentsRes.data : [];
+          const courseGrades = new Set();
+          resolvedTopics.forEach((t) => {
+            if (t.grade != null && t.grade !== '') {
+              courseGrades.add(normalizeGradeForMatch(t.grade));
+            }
+          });
+          if (courseGrades.size > 0) {
+            enrolledCount = studentsList.filter((s) => {
+              const normalized = normalizeGradeForMatch(s.grade);
+              return normalized !== '' && courseGrades.has(normalized);
+            }).length;
+          } else {
+            enrolledCount = studentsList.length;
+          }
+        } catch (_) {
+          // ignore; we still show success
+        }
+        const enrolledMsg =
+          enrolledCount === 0
+            ? 'Course created successfully. No students are currently enrolled in this course (no students in the selected grade(s)).'
+            : `Course created successfully. ${enrolledCount} student${enrolledCount === 1 ? '' : 's'} ${enrolledCount === 1 ? 'is' : 'are'} enrolled in this course.`;
+        alert(enrolledMsg);
         navigate('/', { replace: true });
       } else {
         setCreateError(response.data.message || response.data.error || 'Failed to create course.');
