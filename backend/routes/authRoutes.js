@@ -8,14 +8,24 @@ const router = express.Router();
 
 const SALT_ROUNDS = 10;
 
-// Ensure sample user exists (username: sapling, password: sapling)
+const ADMIN_PASSWORD = '$@pling';
+const OLD_ADMIN_PASSWORD = 'sapling';
+
+// Ensure sample user exists (username: sapling, password: $@pling)
 const ensureSampleUser = async () => {
   if (mongoose.connection.readyState !== 1) return;
   const existing = await User.findOne({ username: 'sapling' });
   if (!existing) {
-    const hash = await bcrypt.hash('sapling', SALT_ROUNDS);
+    const hash = await bcrypt.hash(ADMIN_PASSWORD, SALT_ROUNDS);
     await User.create({ username: 'sapling', passwordHash: hash });
-    console.log('Created sample user: sapling / sapling');
+    console.log('Created sample user: sapling / $@pling');
+  } else {
+    const stillOldPassword = await bcrypt.compare(OLD_ADMIN_PASSWORD, existing.passwordHash);
+    if (stillOldPassword) {
+      const hash = await bcrypt.hash(ADMIN_PASSWORD, SALT_ROUNDS);
+      await User.updateOne({ username: 'sapling' }, { passwordHash: hash });
+      console.log('Updated admin password to $@pling');
+    }
   }
 };
 
