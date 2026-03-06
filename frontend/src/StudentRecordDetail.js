@@ -6,6 +6,18 @@ import { API_URL } from './config/api';
 import { IconCancel, IconEdit, IconNotAttempted, IconSave } from './ButtonIcons';
 import './StudentRecordDetail.css';
 
+// Normalize grade for matching: KG I/II/III and variants -> KG-1/KG-2/KG-3, numbers stay as string
+const normalizeGradeForMatch = (grade) => {
+  if (grade == null || grade === '') return '';
+  const s = String(grade).trim();
+  if (s === '') return '';
+  const lower = s.toLowerCase().replace(/\s+/g, ' ');
+  if (/^kg[- ]?1$|^kg[- ]?i$/.test(lower)) return 'KG-1';
+  if (/^kg[- ]?2$|^kg[- ]?ii$/.test(lower)) return 'KG-2';
+  if (/^kg[- ]?3$|^kg[- ]?iii$/.test(lower)) return 'KG-3';
+  return s;
+};
+
 const StudentRecordDetail = () => {
   const { courseCode } = useParams();
   const navigate = useNavigate();
@@ -75,14 +87,19 @@ const StudentRecordDetail = () => {
   const courseGrades = useMemo(() => {
     const grades = new Set();
     topics.forEach((t) => {
-      if (t.grade != null && t.grade !== '') grades.add(String(t.grade));
+      if (t.grade != null && t.grade !== '') {
+        grades.add(normalizeGradeForMatch(t.grade));
+      }
     });
     return grades;
   }, [topics]);
 
   const enrolledStudents = useMemo(() => {
     if (courseGrades.size === 0) return students;
-    return students.filter((s) => courseGrades.has(String(s.grade)));
+    return students.filter((s) => {
+      const normalized = normalizeGradeForMatch(s.grade);
+      return normalized !== '' && courseGrades.has(normalized);
+    });
   }, [students, courseGrades]);
 
   const fetchData = useCallback(async () => {
