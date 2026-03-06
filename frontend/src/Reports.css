@@ -273,7 +273,7 @@
 
 .reports-th-report {
   text-align: center;
-  width: 100px;
+  width: 180px;
 }
 
 .reports-td-action {
@@ -313,11 +313,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  background: transparent;
-  border: none;
+  gap: 0.35rem;
+  min-width: 110px;
+  min-height: 36px;
+  padding: 0.4rem 0.75rem;
+  background: rgba(21, 101, 192, 0.08);
+  border: 1px solid rgba(21, 101, 192, 0.2);
   border-radius: 6px;
   color: #1565c0;
   cursor: pointer;
@@ -331,6 +332,11 @@
 .reports-download-btn:hover {
   background: rgba(21, 101, 192, 0.1);
   color: #0d47a1;
+}
+
+.reports-download-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .reports-download-btn svg {

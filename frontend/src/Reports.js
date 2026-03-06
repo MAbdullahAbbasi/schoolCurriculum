@@ -1,9 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+import JSZip from 'jszip';
+import { createRoot } from 'react-dom/client';
 import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
 import { IconDownload, IconList, IconView } from './ButtonIcons';
+import StudentReportDocument from './StudentReportDocument';
+import { buildStudentReportData, normalizeGradingSchemeRows } from './reportUtils';
 import './Reports.css';
 
 // Normalize grade for matching (e.g. K.G-II, KG-2 -> same)
@@ -50,9 +56,12 @@ const Reports = () => {
   const [students, setStudents] = useState([]);
   const [courses, setCourses] = useState([]);
   const [recordsByCourse, setRecordsByCourse] = useState({});
+  const [latestGradingSchemeRows, setLatestGradingSchemeRows] = useState([]);
   const [selectedGrade, setSelectedGrade] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [downloadingRegNo, setDownloadingRegNo] = useState('');
+  const [downloadingAll, setDownloadingAll] = useState(false);
 
   // Grades present in DB (from students), sorted: KG first, then 1–10
   const gradesFromDb = useMemo(() => {
@@ -142,12 +151,15 @@ const Reports = () => {
       try {
         setLoading(true);
         setError(null);
-        const [studentsRes, coursesRes] = await Promise.all([
+        const [studentsRes, coursesRes, gradingSchemesRes] = await Promise.all([
           axios.get(`${API_URL}/api/students-data`),
           axios.get(`${API_URL}/api/courses`),
+          axios.get(`${API_URL}/api/grading-schemes`),
         ]);
         setStudents(Array.isArray(studentsRes.data) ? studentsRes.data : (studentsRes.data?.data || []));
         setCourses(coursesRes.data?.success ? (coursesRes.data.data || []) : []);
+        const gradingSchemesList = gradingSchemesRes.data?.success ? gradingSchemesRes.data.data || [] : [];
+        setLatestGradingSchemeRows(normalizeGradingSchemeRows(gradingSchemesList[0]?.rows || []));
       } catch (err) {
         console.error('Error fetching data:', err);
         setError('Failed to load students.');
@@ -183,8 +195,7 @@ const Reports = () => {
     return () => { cancelled = true; };
   }, [selectedGrade, courseCodesForGrade]);
 
-  const triggerDownload = (filename, csvContent) => {
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const triggerBlobDownload = (filename, blob) => {
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = filename;
@@ -192,38 +203,128 @@ const Reports = () => {
     URL.revokeObjectURL(link.href);
   };
 
-  const handleDownloadReport = (student) => {
-    if (!student) return;
-    const headers = ['Student Name', 'Registration Number', 'Grade'];
-    const row = [
-      student.studentName || '',
-      student.registrationNumber || '',
-      student.grade != null ? String(student.grade) : selectedGrade,
-    ];
-    const csvRows = [
-      headers.join(','),
-      row.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','),
-    ];
-    const filename = `Grade_${selectedGrade}_${student.studentName}_${student.registrationNumber}.csv`.replace(
-      /[^a-zA-Z0-9._-]/g,
-      '_'
-    );
-    triggerDownload(filename, '\uFEFF' + csvRows.join('\r\n'));
+  const getSerialFromRegistration = (registrationNumber) => {
+    const parts = String(registrationNumber || '').split('-');
+    return parts.length >= 2 ? parts[1].trim() : String(registrationNumber || '').trim();
   };
 
-  const handleDownloadAllReports = () => {
-    if (!selectedGrade || studentsInGrade.length === 0) return;
-    const headers = ['Student Name', 'Registration Number', 'Grade'];
-    const dataRows = studentsInGrade.map((student) =>
-      [
-        student.studentName || '',
-        student.registrationNumber || '',
-        student.grade != null ? String(student.grade) : selectedGrade,
-      ].map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')
+  const sanitizeNamePart = (value) =>
+    String(value || '')
+      .trim()
+      .replace(/[\\/:*?"<>|]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
+
+  const waitForImages = async (container) => {
+    const images = Array.from(container.querySelectorAll('img'));
+    await Promise.all(
+      images.map((img) => {
+        if (img.complete) return Promise.resolve();
+        return new Promise((resolve) => {
+          img.onload = resolve;
+          img.onerror = resolve;
+        });
+      })
     );
-    const csvContent = '\uFEFF' + [headers.join(','), ...dataRows].join('\r\n');
-    const filename = `Grade_${selectedGrade}_All_Reports.csv`;
-    triggerDownload(filename, csvContent);
+  };
+
+  const createPdfBlobForStudent = async (student) => {
+    const reportData = buildStudentReportData({
+      student,
+      allStudents: students,
+      courses,
+      recordsByCourse,
+      gradingSchemeRows: latestGradingSchemeRows,
+      registrationNumber: student.registrationNumber,
+    });
+
+    const mountNode = document.createElement('div');
+    mountNode.style.position = 'fixed';
+    mountNode.style.left = '-10000px';
+    mountNode.style.top = '0';
+    mountNode.style.width = '900px';
+    mountNode.style.background = '#ffffff';
+    mountNode.style.zIndex = '-1';
+    document.body.appendChild(mountNode);
+
+    const root = createRoot(mountNode);
+    root.render(<StudentReportDocument reportData={reportData} />);
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    await waitForImages(mountNode);
+
+    const canvas = await html2canvas(mountNode, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+    });
+
+    root.unmount();
+    document.body.removeChild(mountNode);
+
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const imgWidth = pageWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    const imgData = canvas.toDataURL('image/png');
+
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+
+    while (heightLeft > 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+
+    return pdf.output('blob');
+  };
+
+  const getStudentPdfFileName = (student) => {
+    const serial = sanitizeNamePart(getSerialFromRegistration(student.registrationNumber));
+    const studentName = sanitizeNamePart(student.studentName);
+    const grade = sanitizeNamePart(student.grade != null ? String(student.grade) : selectedGrade);
+    return `${serial}-${studentName}-${grade}.pdf`;
+  };
+
+  const handleDownloadReport = async (student) => {
+    if (!student) return;
+    try {
+      setDownloadingRegNo(String(student.registrationNumber || ''));
+      const blob = await createPdfBlobForStudent(student);
+      triggerBlobDownload(getStudentPdfFileName(student), blob);
+    } catch (err) {
+      console.error('Error downloading report PDF:', err);
+      setError('Failed to download report PDF.');
+    } finally {
+      setDownloadingRegNo('');
+    }
+  };
+
+  const handleDownloadAllReports = async () => {
+    if (!selectedGrade || studentsInGrade.length === 0) return;
+    try {
+      setDownloadingAll(true);
+      const zip = new JSZip();
+      for (const student of studentsInGrade) {
+        const blob = await createPdfBlobForStudent(student);
+        zip.file(getStudentPdfFileName(student), blob);
+      }
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const year = new Date().getFullYear();
+      const zipName = `AnnualExamination-${year}-${sanitizeNamePart(selectedGrade)}.zip`;
+      triggerBlobDownload(zipName, zipBlob);
+    } catch (err) {
+      console.error('Error downloading all report PDFs:', err);
+      setError('Failed to download all reports.');
+    } finally {
+      setDownloadingAll(false);
+    }
   };
 
   if (loading) {
@@ -311,11 +412,11 @@ const Reports = () => {
                 type="button"
                 className="reports-download-all-btn"
                 onClick={handleDownloadAllReports}
-                disabled={studentsInGrade.length === 0}
+                disabled={studentsInGrade.length === 0 || downloadingAll}
                 title="Download all reports for this grade"
                 aria-label="Download all reports for this grade"
               >
-                <span className="btn-icon-wrap"><IconDownload />Download All Reports</span>
+                <span className="btn-icon-wrap"><IconDownload />{downloadingAll ? 'Preparing ZIP...' : 'Download All Reports'}</span>
               </button>
               <button
                 type="button"
@@ -366,10 +467,11 @@ const Reports = () => {
                           type="button"
                           className="reports-download-btn"
                           onClick={() => handleDownloadReport(student)}
+                          disabled={downloadingAll || downloadingRegNo === String(student.registrationNumber)}
                           title={`Download report for ${student.studentName}`}
                           aria-label={`Download report for ${student.studentName}`}
                         >
-                          <span className="btn-icon-wrap"><IconDownload />Download</span>
+                          <span className="btn-icon-wrap"><IconDownload />{downloadingRegNo === String(student.registrationNumber) ? 'Preparing...' : 'Download'}</span>
                         </button>
                       </td>
                     </tr>

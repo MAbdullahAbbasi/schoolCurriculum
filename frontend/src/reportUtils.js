@@ -1,0 +1,274 @@
+export const GRADING_SCHEME_STORAGE_KEY = 'curriculum_grading_scheme';
+
+export const MARKSHEET_TEMPLATE_ROWS = [
+  { label: 'Urdu (Oral)', key: 'urdu_oral' },
+  { label: 'Urdu (Written)', key: 'urdu_written' },
+  { label: 'English (Oral)', key: 'english_oral' },
+  { label: 'English (Written)', key: 'english_written' },
+  { label: "Math's (Oral)", key: 'math_oral' },
+  { label: "Math's (Written)", key: 'math_written' },
+  { label: 'Science', key: 'science' },
+  { label: 'Social Studies', key: 'social_studies' },
+  { label: 'Computer', key: 'computer' },
+  { label: 'Tarjuma Tul Quran (T.Q)', key: 'tarjuma_tul_quran' },
+  { label: 'Islamiat (Oral)', key: 'islamiat_oral' },
+  { label: 'Islamiat (Written)', key: 'islamiat_written' },
+  { label: 'Nazra', key: 'nazra' },
+  { label: 'Art', key: 'art' },
+  { label: 'General Knowledge', key: 'general_knowledge' },
+  { label: 'Physics', key: 'physics' },
+  { label: 'Chemistry', key: 'chemistry' },
+  { label: 'Biology', key: 'biology' },
+];
+
+export const SUBJECT_TO_TEMPLATE_KEY = {
+  urdu: 'urdu_oral',
+  english: 'english_oral',
+  eng: 'english_oral',
+  math: 'math_oral',
+  maths: 'math_oral',
+  mathematics: 'math_oral',
+  "math's": 'math_oral',
+  science: 'science',
+  sci: 'science',
+  'social studies': 'social_studies',
+  's.st': 'social_studies',
+  computer: 'computer',
+  comp: 'computer',
+  'tarjuma tul quran': 'tarjuma_tul_quran',
+  't.q': 'tarjuma_tul_quran',
+  tq: 'tarjuma_tul_quran',
+  islamiat: 'islamiat_oral',
+  nazra: 'nazra',
+  nazars: 'nazra',
+  art: 'art',
+  'a.a': 'art',
+  'general knowledge': 'general_knowledge',
+  physics: 'physics',
+  chemistry: 'chemistry',
+  biology: 'biology',
+};
+
+export const normalizeGradeForMatch = (grade) => {
+  if (grade == null || grade === '') return '';
+  let s = String(grade).trim();
+  if (s === '') return '';
+  s = s.replace(/^(grade|class)\s+/i, '').trim();
+  if (s === '') return '';
+  const lower = s.toLowerCase().replace(/\s+/g, ' ');
+  const compact = lower.replace(/\s/g, '').replace(/k\.g\.?/g, 'kg');
+  if (/^kg[- ]?1$|^kg[- ]?i$|^k\.g\.?[- ]?1$|^k\.g\.?[- ]?i$/i.test(lower) || /^kg[-]?1$|^kg[-]?i$/.test(compact)) return 'KG-1';
+  if (/^kg[- ]?2$|^kg\s*ii$|^kg[- ]?ii$|^k\.g\.?[- ]?2$|^k\.g\.?[- ]?ii$/i.test(lower) || /^kg[-]?2$|^kg[-]?ii$/.test(compact)) return 'KG-2';
+  if (/^kg[- ]?3$|^kg[- ]?iii$|^k\.g\.?[- ]?3$|^k\.g\.?[- ]?iii$/i.test(lower) || /^kg[-]?3$|^kg[-]?iii$/.test(compact)) return 'KG-3';
+  return s;
+};
+
+export const getGradingSchemeFromStorage = () => {
+  try {
+    const raw = localStorage.getItem(GRADING_SCHEME_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? parsed.map((row) => ({
+          percentage: row?.percentage ?? row?.marks ?? '',
+          grade: row?.grade ?? '',
+        }))
+      : [];
+  } catch {
+    return [];
+  }
+};
+
+export const formatDateDisplay = (value) => {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
+};
+
+export const getAgeInMonths = (dateOfBirth) => {
+  if (!dateOfBirth) return null;
+  const dob = new Date(dateOfBirth);
+  if (Number.isNaN(dob.getTime())) return null;
+  const today = new Date();
+  let months = (today.getFullYear() - dob.getFullYear()) * 12 + (today.getMonth() - dob.getMonth());
+  if (today.getDate() < dob.getDate()) months -= 1;
+  return months >= 0 ? months : null;
+};
+
+export const formatAgeFromMonths = (months) => {
+  if (months == null || !Number.isFinite(months)) return '—';
+  const years = Math.floor(months / 12);
+  const remainingMonths = months % 12;
+  return `${years} yrs ${remainingMonths} month`;
+};
+
+export const normalizeGradingSchemeRows = (rows) =>
+  Array.isArray(rows)
+    ? rows.map((row) => ({
+        percentage: row?.percentage ?? row?.marks ?? '',
+        grade: row?.grade ?? '',
+      }))
+    : [];
+
+export const getGradeFromPercentageWithScheme = (percentage, schemeRows) => {
+  if (!schemeRows || schemeRows.length === 0) return '—';
+  const num = Number(percentage);
+  if (!Number.isFinite(num)) return '—';
+  const sorted = [...schemeRows]
+    .filter((r) => r.percentage !== undefined && r.percentage !== null && String(r.percentage).trim() !== '')
+    .map((r) => ({ ...r, percentageNum: Number(r.percentage) }))
+    .filter((r) => Number.isFinite(r.percentageNum))
+    .sort((a, b) => b.percentageNum - a.percentageNum);
+  const row = sorted.find((r) => r.percentageNum <= num);
+  return row && row.grade != null ? String(row.grade) : '—';
+};
+
+export const buildStudentReportData = ({
+  student,
+  allStudents,
+  courses,
+  recordsByCourse,
+  gradingSchemeRows,
+  registrationNumber,
+}) => {
+  const decodedRegNo = String(registrationNumber || student?.registrationNumber || '');
+  const latestGradingSchemeRows = normalizeGradingSchemeRows(gradingSchemeRows);
+  const effectiveSchemeRows = latestGradingSchemeRows.length > 0 ? latestGradingSchemeRows : getGradingSchemeFromStorage();
+
+  const studentGrade = student?.grade != null ? String(student.grade) : null;
+  const enrolledCoursesWithMarks = (!studentGrade || !Array.isArray(courses))
+    ? []
+    : courses
+        .filter((course) => {
+          const topics = course.topics || [];
+          const courseGrades = new Set();
+          topics.forEach((t) => {
+            if (t.grade != null && t.grade !== '') courseGrades.add(String(t.grade));
+          });
+          if (courseGrades.size === 0) return true;
+          return courseGrades.has(studentGrade);
+        })
+        .map((course) => {
+          const record = recordsByCourse?.[course.code] || null;
+          const studentEntry = record?.students?.find(
+            (s) => String(s.registrationNumber) === decodedRegNo
+          );
+          const objectiveMarks = studentEntry?.objectiveMarks || {};
+          return { course, record, objectiveMarks };
+        });
+
+  const marksByTemplateKey = {};
+  enrolledCoursesWithMarks.forEach(({ course, record }) => {
+    const rawSubject = (course.subject && String(course.subject).trim()) || '';
+    const normalized = rawSubject.toLowerCase().trim();
+    const templateKey = SUBJECT_TO_TEMPLATE_KEY[normalized] || null;
+    if (!templateKey) return;
+    const studentEntry = record?.students?.find((s) => String(s.registrationNumber) === decodedRegNo);
+    const overallPercentage = studentEntry?.overallPercentage;
+    const percentage = overallPercentage != null && Number.isFinite(Number(overallPercentage)) ? Number(overallPercentage) : null;
+    if (!marksByTemplateKey[templateKey]) {
+      marksByTemplateKey[templateKey] = { maxTotal: 0, obtainedTotal: 0 };
+    }
+    marksByTemplateKey[templateKey].maxTotal += 100;
+    marksByTemplateKey[templateKey].obtainedTotal += percentage != null ? percentage : 0;
+  });
+  Object.keys(marksByTemplateKey).forEach((k) => {
+    const row = marksByTemplateKey[k];
+    row.percentage = row.maxTotal > 0 ? (row.obtainedTotal / row.maxTotal) * 100 : 0;
+  });
+
+  const byKeyByStudent = {};
+  const currentStudentGrade = normalizeGradeForMatch(student?.grade);
+  const gradeByRegistration = new Map(
+    (allStudents || []).map((s) => [String(s.registrationNumber), normalizeGradeForMatch(s.grade)])
+  );
+  enrolledCoursesWithMarks.forEach(({ course, record }) => {
+    const rawSubject = (course.subject && String(course.subject).trim()) || '';
+    const normalized = rawSubject.toLowerCase().trim();
+    const templateKey = SUBJECT_TO_TEMPLATE_KEY[normalized] || null;
+    if (!templateKey || !record?.students?.length) return;
+
+    record.students.forEach((studentEntry) => {
+      const reg = String(studentEntry.registrationNumber || '');
+      if (!reg) return;
+      if (gradeByRegistration.get(reg) !== currentStudentGrade) return;
+      const overallPercentage = studentEntry?.overallPercentage;
+      const percentage = overallPercentage != null && Number.isFinite(Number(overallPercentage))
+        ? Number(overallPercentage)
+        : null;
+      if (percentage == null) return;
+      if (!byKeyByStudent[templateKey]) byKeyByStudent[templateKey] = {};
+      if (!byKeyByStudent[templateKey][reg]) byKeyByStudent[templateKey][reg] = { obtainedTotal: 0 };
+      byKeyByStudent[templateKey][reg].obtainedTotal += percentage;
+    });
+  });
+  const highestMarksByTemplateKey = {};
+  Object.keys(byKeyByStudent).forEach((templateKey) => {
+    highestMarksByTemplateKey[templateKey] = Math.max(
+      ...Object.values(byKeyByStudent[templateKey]).map((row) => Number(row.obtainedTotal) || 0)
+    );
+  });
+
+  const marksheetRows = MARKSHEET_TEMPLATE_ROWS.map((row) => {
+    const data = marksByTemplateKey[row.key];
+    const hasData = data && data.maxTotal > 0;
+    return {
+      key: row.key,
+      label: row.label,
+      maxTotal: hasData ? data.maxTotal : null,
+      obtainedTotal: hasData ? Number(data.obtainedTotal).toFixed(2) : null,
+      grade: hasData ? getGradeFromPercentageWithScheme(data.percentage, effectiveSchemeRows) : '',
+      highestInClass:
+        hasData && highestMarksByTemplateKey[row.key] != null
+          ? Number(highestMarksByTemplateKey[row.key]).toFixed(2)
+          : null,
+    };
+  });
+
+  const totalMax = Object.values(marksByTemplateKey).reduce((s, r) => s + r.maxTotal, 0);
+  const totalObtained = Object.values(marksByTemplateKey).reduce((s, r) => s + r.obtainedTotal, 0);
+  const totalPercentage = totalMax > 0 ? `${((totalObtained / totalMax) * 100).toFixed(2)}%` : '';
+
+  const objectiveSections = enrolledCoursesWithMarks.map(({ course, objectiveMarks }) => ({
+    title: course.courseName || course.code,
+    rows: (course.topics || []).map((topic, topicIndex) => {
+      const marks = objectiveMarks[String(topicIndex)];
+      const displayMarks = marks !== undefined && marks !== null ? Number(marks).toFixed(2) : '—';
+      const totalMarks = topic.marks != null && topic.marks !== '' ? Number(topic.marks) : null;
+      return {
+        objective: topic.topicName || topic.courseCode || `Objective ${topicIndex + 1}`,
+        marks: displayMarks,
+        totalMarks: totalMarks != null ? totalMarks : '—',
+      };
+    }),
+  }));
+
+  const classmatesWithDob = (allStudents || []).filter(
+    (s) =>
+      normalizeGradeForMatch(s.grade) === normalizeGradeForMatch(student?.grade) &&
+      getAgeInMonths(s.dateOfBirth) != null
+  );
+  const averageAgeMonths = classmatesWithDob.length > 0
+    ? Math.round(
+        classmatesWithDob.reduce((sum, s) => sum + getAgeInMonths(s.dateOfBirth), 0) / classmatesWithDob.length
+      )
+    : null;
+
+  return {
+    displayName: student?.studentName || 'Student',
+    displayRegNo: decodedRegNo || '—',
+    displayClass: student?.grade != null && String(student.grade).trim() !== '' ? String(student.grade) : '—',
+    displayFatherName: student?.fathersName && String(student.fathersName).trim() !== '' ? String(student.fathersName) : '—',
+    displayDob: formatDateDisplay(student?.dateOfBirth),
+    studentAge: formatAgeFromMonths(getAgeInMonths(student?.dateOfBirth)),
+    averageAgeInClass: formatAgeFromMonths(averageAgeMonths),
+    reportMonthYear: new Date().toLocaleDateString(undefined, { month: 'short', year: 'numeric' }),
+    objectiveSections,
+    marksheetRows,
+    totalMax: totalMax > 0 ? totalMax : '',
+    totalObtained: totalMax > 0 ? Number(totalObtained).toFixed(2) : '',
+    totalPercentage,
+    gradingSchemeRows: effectiveSchemeRows,
+  };
+};
