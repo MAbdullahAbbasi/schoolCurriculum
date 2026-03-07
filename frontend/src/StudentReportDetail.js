@@ -477,7 +477,6 @@ const StudentReportDetail = () => {
                     <thead>
                       <tr>
                         <th className="student-report-th">Objective</th>
-                        <th className="student-report-th">Percentage</th>
                         <th className="student-report-th">Grade</th>
                       </tr>
                     </thead>
@@ -490,7 +489,6 @@ const StudentReportDetail = () => {
                           totalMarks != null && totalMarks > 0 && obtained != null && Number.isFinite(obtained)
                             ? (obtained / totalMarks) * 100
                             : null;
-                        const displayPercentage = percentage != null ? `${Number(percentage).toFixed(2)}%` : '—';
                         const displayGrade =
                           percentage != null && Number.isFinite(percentage) ? getGradeFromPercentage(percentage) : '—';
                         const objectiveText =
@@ -502,9 +500,6 @@ const StudentReportDetail = () => {
                           <tr key={topicIndex}>
                             <td className="student-report-td student-report-td-objective">
                               {objectiveText}
-                            </td>
-                            <td className="student-report-td student-report-td-percentage">
-                              {displayPercentage}
                             </td>
                             <td className="student-report-td student-report-td-grade">
                               {displayGrade}

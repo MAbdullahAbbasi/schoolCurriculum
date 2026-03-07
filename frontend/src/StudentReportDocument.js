@@ -56,7 +56,6 @@ export const StudentReportObjectiveSection = ({ section }) => (
         <thead>
           <tr>
             <th className="student-report-th">Objective</th>
-            <th className="student-report-th">Percentage</th>
             <th className="student-report-th">Grade</th>
           </tr>
         </thead>
@@ -64,7 +63,6 @@ export const StudentReportObjectiveSection = ({ section }) => (
           {section.rows.map((row, rowIdx) => (
             <tr key={rowIdx}>
               <td className="student-report-td student-report-td-objective">{row.objective}</td>
-              <td className="student-report-td student-report-td-percentage">{row.percentage}</td>
               <td className="student-report-td student-report-td-grade">{row.grade}</td>
             </tr>
           ))}
