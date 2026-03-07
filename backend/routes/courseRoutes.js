@@ -121,6 +121,7 @@ router.post('/', async (req, res) => {
     const topicsWithMarks = topics.map(t => ({
       courseCode: (t.courseCode != null ? String(t.courseCode) : '').trim(),
       topicName: (t.topicName != null ? String(t.topicName) : '').trim(),
+      description: (t.description != null ? String(t.description) : '').trim(),
       marks: Number(t.marks) || 0,
       grade: normalizeTopicGrade(t.grade),
     }));
@@ -404,6 +405,7 @@ router.put('/:code', async (req, res) => {
       existing.topics = topics.map((t) => ({
         courseCode: (t?.courseCode != null ? String(t.courseCode) : '').trim(),
         topicName: (t?.topicName != null ? String(t.topicName) : '').trim(),
+        description: (t?.description != null ? String(t.description) : '').trim(),
         marks: Number(t?.marks) || 0,
         grade: normalizeTopicGrade(t?.grade),
       }));

@@ -175,8 +175,8 @@ const StudentReportDetail = () => {
           return;
         }
 
-        const studentGrade = currentStudent.grade != null ? String(currentStudent.grade) : null;
-        if (!studentGrade) {
+        const normalizedStudentGrade = normalizeGradeForMatch(currentStudent.grade);
+        if (!normalizedStudentGrade) {
           setLoading(false);
           return;
         }
@@ -186,10 +186,12 @@ const StudentReportDetail = () => {
             const topics = course.topics || [];
             const courseGrades = new Set();
             topics.forEach((t) => {
-              if (t.grade != null && t.grade !== '') courseGrades.add(String(t.grade));
+              if (t.grade != null && t.grade !== '') {
+                courseGrades.add(normalizeGradeForMatch(t.grade));
+              }
             });
             if (courseGrades.size === 0) return true;
-            return courseGrades.has(studentGrade);
+            return courseGrades.has(normalizedStudentGrade);
           })
           .map((c) => c.code)
           .filter(Boolean);
@@ -220,20 +222,22 @@ const StudentReportDetail = () => {
     fetchData();
   }, [decodedRegNo]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Enrolled courses: course has topics with grades that include this student's grade
+  // Enrolled courses: course has topics with grades that include this student's grade (normalize KG-II / KG-2 etc.)
   const enrolledCoursesWithMarks = useMemo(() => {
-    const studentGrade = student?.grade != null ? String(student.grade) : null;
-    if (!studentGrade || !Array.isArray(courses)) return [];
+    const normalizedStudentGrade = normalizeGradeForMatch(student?.grade);
+    if (!normalizedStudentGrade || !Array.isArray(courses)) return [];
 
     return courses
       .filter((course) => {
         const topics = course.topics || [];
         const courseGrades = new Set();
         topics.forEach((t) => {
-          if (t.grade != null && t.grade !== '') courseGrades.add(String(t.grade));
+          if (t.grade != null && t.grade !== '') {
+            courseGrades.add(normalizeGradeForMatch(t.grade));
+          }
         });
         if (courseGrades.size === 0) return true;
-        return courseGrades.has(studentGrade);
+        return courseGrades.has(normalizedStudentGrade);
       })
       .map((course) => {
         const record = recordsByCourse[course.code] || null;
@@ -473,28 +477,37 @@ const StudentReportDetail = () => {
                     <thead>
                       <tr>
                         <th className="student-report-th">Objective</th>
-                        <th className="student-report-th">Marks</th>
-                        <th className="student-report-th">Total marks</th>
+                        <th className="student-report-th">Percentage</th>
+                        <th className="student-report-th">Grade</th>
                       </tr>
                     </thead>
                     <tbody>
                       {(course.topics || []).map((topic, topicIndex) => {
                         const marks = objectiveMarks[String(topicIndex)];
-                        const displayMarks =
-                          marks !== undefined && marks !== null
-                            ? Number(marks).toFixed(2)
-                            : '—';
+                        const obtained = marks !== undefined && marks !== null ? Number(marks) : null;
                         const totalMarks = topic.marks != null && topic.marks !== '' ? Number(topic.marks) : null;
+                        const percentage =
+                          totalMarks != null && totalMarks > 0 && obtained != null && Number.isFinite(obtained)
+                            ? (obtained / totalMarks) * 100
+                            : null;
+                        const displayPercentage = percentage != null ? `${Number(percentage).toFixed(2)}%` : '—';
+                        const displayGrade =
+                          percentage != null && Number.isFinite(percentage) ? getGradeFromPercentage(percentage) : '—';
+                        const objectiveText =
+                          (topic.description && String(topic.description).trim()) ||
+                          topic.topicName ||
+                          topic.courseCode ||
+                          `Objective ${topicIndex + 1}`;
                         return (
                           <tr key={topicIndex}>
                             <td className="student-report-td student-report-td-objective">
-                              {topic.topicName || topic.courseCode || `Objective ${topicIndex + 1}`}
+                              {objectiveText}
                             </td>
-                            <td className="student-report-td student-report-td-marks">
-                              {displayMarks}
+                            <td className="student-report-td student-report-td-percentage">
+                              {displayPercentage}
                             </td>
-                            <td className="student-report-td student-report-td-total-marks">
-                              {totalMarks != null ? totalMarks : '—'}
+                            <td className="student-report-td student-report-td-grade">
+                              {displayGrade}
                             </td>
                           </tr>
                         );

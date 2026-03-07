@@ -136,18 +136,20 @@ export const buildStudentReportData = ({
   const latestGradingSchemeRows = normalizeGradingSchemeRows(gradingSchemeRows);
   const effectiveSchemeRows = latestGradingSchemeRows.length > 0 ? latestGradingSchemeRows : getGradingSchemeFromStorage();
 
-  const studentGrade = student?.grade != null ? String(student.grade) : null;
-  const enrolledCoursesWithMarks = (!studentGrade || !Array.isArray(courses))
+  const normalizedStudentGrade = normalizeGradeForMatch(student?.grade);
+  const enrolledCoursesWithMarks = (!normalizedStudentGrade || !Array.isArray(courses))
     ? []
     : courses
         .filter((course) => {
           const topics = course.topics || [];
           const courseGrades = new Set();
           topics.forEach((t) => {
-            if (t.grade != null && t.grade !== '') courseGrades.add(String(t.grade));
+            if (t.grade != null && t.grade !== '') {
+              courseGrades.add(normalizeGradeForMatch(t.grade));
+            }
           });
           if (courseGrades.size === 0) return true;
-          return courseGrades.has(studentGrade);
+          return courseGrades.has(normalizedStudentGrade);
         })
         .map((course) => {
           const record = recordsByCourse?.[course.code] || null;
@@ -254,12 +256,24 @@ export const buildStudentReportData = ({
     title: course.courseName || course.code,
     rows: (course.topics || []).map((topic, topicIndex) => {
       const marks = objectiveMarks[String(topicIndex)];
-      const displayMarks = marks !== undefined && marks !== null ? Number(marks).toFixed(2) : '—';
+      const obtained = marks !== undefined && marks !== null ? Number(marks) : null;
       const totalMarks = topic.marks != null && topic.marks !== '' ? Number(topic.marks) : null;
+      const percentage =
+        totalMarks != null && totalMarks > 0 && obtained != null && Number.isFinite(obtained)
+          ? (obtained / totalMarks) * 100
+          : null;
+      const grade =
+        percentage != null && Number.isFinite(percentage)
+          ? getGradeFromPercentageWithScheme(percentage, effectiveSchemeRows)
+          : '—';
       return {
-        objective: topic.topicName || topic.courseCode || `Objective ${topicIndex + 1}`,
-        marks: displayMarks,
-        totalMarks: totalMarks != null ? totalMarks : '—',
+        objective:
+          (topic.description && String(topic.description).trim()) ||
+          topic.topicName ||
+          topic.courseCode ||
+          `Objective ${topicIndex + 1}`,
+        percentage: percentage != null ? `${Number(percentage).toFixed(2)}%` : '—',
+        grade,
       };
     }),
   }));

@@ -131,6 +131,7 @@ const CreateCourseMarks = () => {
     const topics = resolvedTopics.map((t) => ({
       courseCode: t.courseCode,
       topicName: t.topicName,
+      description: t.description ?? '',
       marks: topicMarks[t.topicKey] ?? 0,
       grade: t.grade,
     }));
