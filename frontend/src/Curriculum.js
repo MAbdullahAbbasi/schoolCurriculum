@@ -952,8 +952,8 @@ const Curriculum = () => {
                         <th>Grade</th>
                         <th>Subject</th>
                         <th>Code</th>
+                        <th>Objective (Description)</th>
                         <th>Title</th>
-                        <th>Description</th>
                         <th>Action</th>
                       </tr>
                     </thead>
@@ -1005,18 +1005,18 @@ const Curriculum = () => {
                                   <input
                                     type="text"
                                     className="objectives-edit-input"
-                                    value={editObjectiveForm.title}
-                                    onChange={(e) => handleEditObjectiveFormChange('title', e.target.value)}
-                                    placeholder="Title"
+                                    value={editObjectiveForm.description}
+                                    onChange={(e) => handleEditObjectiveFormChange('description', e.target.value)}
+                                    placeholder="Objective (Description)"
                                   />
                                 </td>
                                 <td>
                                   <input
                                     type="text"
                                     className="objectives-edit-input"
-                                    value={editObjectiveForm.description}
-                                    onChange={(e) => handleEditObjectiveFormChange('description', e.target.value)}
-                                    placeholder="Description"
+                                    value={editObjectiveForm.title}
+                                    onChange={(e) => handleEditObjectiveFormChange('title', e.target.value)}
+                                    placeholder="Title"
                                   />
                                 </td>
                                 <td>
@@ -1040,8 +1040,8 @@ const Curriculum = () => {
                               </>
                             ) : (
                               <>
-                                <td>{topic.title || '-'}</td>
                                 <td className="objectives-desc-cell">{topic.description || '-'}</td>
+                                <td>{topic.title || '-'}</td>
                                 <td className="objectives-action-cell">
                                   <button
                                     type="button"

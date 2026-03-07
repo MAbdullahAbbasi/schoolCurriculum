@@ -580,8 +580,7 @@ const StudentReportDetail = () => {
                   <td className="student-report-marksheet-td" colSpan={2} />
                 </tr>
                 <tr className="student-report-marksheet-summary-row">
-                  <td className="student-report-marksheet-td"><strong>Attendance</strong></td>
-                  <td className="student-report-marksheet-td" colSpan={2} />
+                  <td className="student-report-marksheet-td" colSpan={3} />
                   <td className="student-report-marksheet-td"><strong>Percentage</strong></td>
                   <td className="student-report-marksheet-td student-report-marksheet-td-num" colSpan={2}>
                     {(() => {
@@ -600,10 +599,6 @@ const StudentReportDetail = () => {
                 </tr>
               </tfoot>
             </table>
-          </div>
-          <div className="student-report-marksheet-footer">
-            <span className="student-report-marksheet-date">Date: _____________</span>
-            <span className="student-report-marksheet-sign">Teacher&apos;s Sign _____________</span>
           </div>
         </section>
 
