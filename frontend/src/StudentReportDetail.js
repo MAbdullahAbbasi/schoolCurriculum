@@ -10,26 +10,22 @@ import './StudentReportDetail.css';
 
 const GRADING_SCHEME_STORAGE_KEY = 'curriculum_grading_scheme';
 
-// Report marksheet order: Urdu, Eng, Math, Sci, S.St, Comp, T.Q, Islamiat, Nazra, A.A (then others)
-const MARKSHEET_TEMPLATE_ROWS = [
-  { label: 'Urdu (Oral)', key: 'urdu_oral' },
-  { label: 'Urdu (Written)', key: 'urdu_written' },
-  { label: 'English (Oral)', key: 'english_oral' },
-  { label: 'English (Written)', key: 'english_written' },
-  { label: "Math's (Oral)", key: 'math_oral' },
-  { label: "Math's (Written)", key: 'math_written' },
-  { label: 'Science', key: 'science' },
-  { label: 'Social Studies', key: 'social_studies' },
-  { label: 'Computer', key: 'computer' },
-  { label: 'Tarjuma Tul Quran (T.Q)', key: 'tarjuma_tul_quran' },
-  { label: 'Islamiat (Oral)', key: 'islamiat_oral' },
-  { label: 'Islamiat (Written)', key: 'islamiat_written' },
-  { label: 'Nazra', key: 'nazra' },
-  { label: 'Art', key: 'art' },
-  { label: 'General Knowledge', key: 'general_knowledge' },
-  { label: 'Physics', key: 'physics' },
-  { label: 'Chemistry', key: 'chemistry' },
-  { label: 'Biology', key: 'biology' },
+// Subject groups: only show subjects that have courses; merge Oral/Written into one row per subject.
+const MARKSHEET_SUBJECT_GROUPS = [
+  { label: 'Urdu', keys: ['urdu_oral', 'urdu_written'] },
+  { label: 'English', keys: ['english_oral', 'english_written'] },
+  { label: "Math's", keys: ['math_oral', 'math_written'] },
+  { label: 'Science', keys: ['science'] },
+  { label: 'Social Studies', keys: ['social_studies'] },
+  { label: 'Computer', keys: ['computer'] },
+  { label: 'Tarjuma Tul Quran (T.Q)', keys: ['tarjuma_tul_quran'] },
+  { label: 'Islamiat', keys: ['islamiat_oral', 'islamiat_written'] },
+  { label: 'Nazra', keys: ['nazra'] },
+  { label: 'Art', keys: ['art'] },
+  { label: 'General Knowledge', keys: ['general_knowledge'] },
+  { label: 'Physics', keys: ['physics'] },
+  { label: 'Chemistry', keys: ['chemistry'] },
+  { label: 'Biology', keys: ['biology'] },
 ];
 
 // Map course subject (from DB) to template row key – first matching row gets the marks (we don't have Oral/Written split in data)
@@ -273,10 +269,10 @@ const StudentReportDetail = () => {
     return byKey;
   }, [enrolledCoursesWithMarks, decodedRegNo]);
 
-  const highestMarksByTemplateKey = useMemo(() => {
-    const byKeyByStudent = {};
+  const byKeyByStudent = useMemo(() => {
+    const out = {};
     const currentStudentGrade = normalizeGradeForMatch(student?.grade);
-    if (!currentStudentGrade) return {};
+    if (!currentStudentGrade) return out;
 
     const gradeByRegistration = new Map(
       (allStudents || []).map((s) => [String(s.registrationNumber), normalizeGradeForMatch(s.grade)])
@@ -299,15 +295,18 @@ const StudentReportDetail = () => {
           : null;
         if (percentage == null) return;
 
-        if (!byKeyByStudent[templateKey]) byKeyByStudent[templateKey] = {};
-        if (!byKeyByStudent[templateKey][registrationNumber]) {
-          byKeyByStudent[templateKey][registrationNumber] = { maxTotal: 0, obtainedTotal: 0 };
+        if (!out[templateKey]) out[templateKey] = {};
+        if (!out[templateKey][registrationNumber]) {
+          out[templateKey][registrationNumber] = { maxTotal: 0, obtainedTotal: 0 };
         }
-        byKeyByStudent[templateKey][registrationNumber].maxTotal += 100;
-        byKeyByStudent[templateKey][registrationNumber].obtainedTotal += percentage;
+        out[templateKey][registrationNumber].maxTotal += 100;
+        out[templateKey][registrationNumber].obtainedTotal += percentage;
       });
     });
+    return out;
+  }, [allStudents, enrolledCoursesWithMarks, student]);
 
+  const highestMarksByTemplateKey = useMemo(() => {
     const highestByKey = {};
     Object.keys(byKeyByStudent).forEach((templateKey) => {
       const highest = Math.max(
@@ -316,7 +315,65 @@ const StudentReportDetail = () => {
       highestByKey[templateKey] = highest;
     });
     return highestByKey;
-  }, [allStudents, enrolledCoursesWithMarks, student]);
+  }, [byKeyByStudent]);
+
+  // Consolidated marksheet rows: only subjects with courses; Oral/Written merged into one row per subject.
+  const marksheetDisplayRows = useMemo(() => {
+    const scheme = latestGradingSchemeRows;
+    const getGrade = (percentage) => {
+      if (!scheme || scheme.length === 0) return '—';
+      const num = Number(percentage);
+      if (!Number.isFinite(num)) return '—';
+      const sorted = [...scheme]
+        .filter((r) => r.percentage !== undefined && r.percentage !== null && String(r.percentage).trim() !== '')
+        .map((r) => ({ ...r, percentageNum: Number(r.percentage) }))
+        .filter((r) => Number.isFinite(r.percentageNum))
+        .sort((a, b) => b.percentageNum - a.percentageNum);
+      const row = sorted.find((r) => r.percentageNum <= num);
+      return row && row.grade != null ? String(row.grade) : '—';
+    };
+
+    const rows = [];
+    MARKSHEET_SUBJECT_GROUPS.forEach((group) => {
+      let groupMaxTotal = 0;
+      let groupObtainedTotal = 0;
+      group.keys.forEach((templateKey) => {
+        const data = marksByTemplateKey[templateKey];
+        if (data && data.maxTotal > 0) {
+          groupMaxTotal += data.maxTotal;
+          groupObtainedTotal += data.obtainedTotal;
+        }
+      });
+      if (groupMaxTotal === 0) return;
+
+      const groupPercentage = groupMaxTotal > 0 ? (groupObtainedTotal / groupMaxTotal) * 100 : 0;
+      const allRegNos = new Set();
+      group.keys.forEach((templateKey) => {
+        if (byKeyByStudent[templateKey]) {
+          Object.keys(byKeyByStudent[templateKey]).forEach((reg) => allRegNos.add(reg));
+        }
+      });
+      let groupHighestInClass = 0;
+      allRegNos.forEach((reg) => {
+        let studentTotal = 0;
+        group.keys.forEach((templateKey) => {
+          const studentData = byKeyByStudent[templateKey]?.[reg];
+          if (studentData) studentTotal += Number(studentData.obtainedTotal) || 0;
+        });
+        if (studentTotal > groupHighestInClass) groupHighestInClass = studentTotal;
+      });
+
+      rows.push({
+        key: group.keys[0],
+        label: group.label,
+        maxTotal: groupMaxTotal,
+        obtainedTotal: Number(groupObtainedTotal).toFixed(2),
+        grade: getGrade(groupPercentage),
+        highestInClass: groupHighestInClass > 0 ? Number(groupHighestInClass).toFixed(2) : '',
+      });
+    });
+    return rows;
+  }, [marksByTemplateKey, byKeyByStudent, latestGradingSchemeRows]);
 
   const classPosition = useMemo(() => {
     const currentStudentGrade = normalizeGradeForMatch(student?.grade);
@@ -532,45 +589,28 @@ const StudentReportDetail = () => {
                 </tr>
               </thead>
               <tbody>
-                {MARKSHEET_TEMPLATE_ROWS.map((row) => {
-                  const data = marksByTemplateKey[row.key];
-                  const hasData = data && data.maxTotal > 0;
-                  return (
-                    <tr key={row.key}>
-                      <td className="student-report-marksheet-td">{row.label}</td>
-                      <td className="student-report-marksheet-td student-report-marksheet-td-num">
-                        {hasData ? data.maxTotal : ''}
-                      </td>
-                      <td className="student-report-marksheet-td student-report-marksheet-td-num">
-                        {hasData ? Number(data.obtainedTotal).toFixed(2) : ''}
-                      </td>
-                      <td className="student-report-marksheet-td">
-                        {hasData ? getGradeFromPercentage(data.percentage) : ''}
-                      </td>
-                      <td className="student-report-marksheet-td student-report-marksheet-td-num">
-                        {hasData && highestMarksByTemplateKey[row.key] != null
-                          ? Number(highestMarksByTemplateKey[row.key]).toFixed(2)
-                          : ''}
-                      </td>
-                    </tr>
-                  );
-                })}
+                {marksheetDisplayRows.map((row) => (
+                  <tr key={row.key}>
+                    <td className="student-report-marksheet-td">{row.label}</td>
+                    <td className="student-report-marksheet-td student-report-marksheet-td-num">{row.maxTotal}</td>
+                    <td className="student-report-marksheet-td student-report-marksheet-td-num">{row.obtainedTotal}</td>
+                    <td className="student-report-marksheet-td">{row.grade}</td>
+                    <td className="student-report-marksheet-td student-report-marksheet-td-num">{row.highestInClass}</td>
+                  </tr>
+                ))}
               </tbody>
               <tfoot>
                 <tr className="student-report-marksheet-total-row">
                   <td className="student-report-marksheet-td"><strong>Total</strong></td>
                   <td className="student-report-marksheet-td student-report-marksheet-td-num">
-                    {(() => {
-                      const totalMax = Object.values(marksByTemplateKey).reduce((s, r) => s + r.maxTotal, 0);
-                      return totalMax > 0 ? totalMax : '';
-                    })()}
+                    {marksheetDisplayRows.length > 0
+                      ? marksheetDisplayRows.reduce((s, r) => s + r.maxTotal, 0)
+                      : ''}
                   </td>
                   <td className="student-report-marksheet-td student-report-marksheet-td-num">
-                    {(() => {
-                      const totalMax = Object.values(marksByTemplateKey).reduce((s, r) => s + r.maxTotal, 0);
-                      const totalObtained = Object.values(marksByTemplateKey).reduce((s, r) => s + r.obtainedTotal, 0);
-                      return totalMax > 0 ? Number(totalObtained).toFixed(2) : '';
-                    })()}
+                    {marksheetDisplayRows.length > 0
+                      ? marksheetDisplayRows.reduce((s, r) => s + Number(r.obtainedTotal), 0).toFixed(2)
+                      : ''}
                   </td>
                   <td className="student-report-marksheet-td" colSpan={2} />
                 </tr>
@@ -579,8 +619,8 @@ const StudentReportDetail = () => {
                   <td className="student-report-marksheet-td"><strong>Percentage</strong></td>
                   <td className="student-report-marksheet-td student-report-marksheet-td-num" colSpan={2}>
                     {(() => {
-                      const totalMax = Object.values(marksByTemplateKey).reduce((s, r) => s + r.maxTotal, 0);
-                      const totalObtained = Object.values(marksByTemplateKey).reduce((s, r) => s + r.obtainedTotal, 0);
+                      const totalMax = marksheetDisplayRows.reduce((s, r) => s + r.maxTotal, 0);
+                      const totalObtained = marksheetDisplayRows.reduce((s, r) => s + Number(r.obtainedTotal), 0);
                       return totalMax > 0 ? `${((totalObtained / totalMax) * 100).toFixed(2)}%` : '';
                     })()}
                   </td>

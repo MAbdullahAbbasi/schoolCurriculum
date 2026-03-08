@@ -49,6 +49,24 @@ export const SUBJECT_TO_TEMPLATE_KEY = {
   biology: 'biology',
 };
 
+// Subject groups: merge Oral/Written into one row per subject; only rows with data are shown.
+export const MARKSHEET_SUBJECT_GROUPS = [
+  { label: 'Urdu', keys: ['urdu_oral', 'urdu_written'] },
+  { label: 'English', keys: ['english_oral', 'english_written'] },
+  { label: "Math's", keys: ['math_oral', 'math_written'] },
+  { label: 'Science', keys: ['science'] },
+  { label: 'Social Studies', keys: ['social_studies'] },
+  { label: 'Computer', keys: ['computer'] },
+  { label: 'Tarjuma Tul Quran (T.Q)', keys: ['tarjuma_tul_quran'] },
+  { label: 'Islamiat', keys: ['islamiat_oral', 'islamiat_written'] },
+  { label: 'Nazra', keys: ['nazra'] },
+  { label: 'Art', keys: ['art'] },
+  { label: 'General Knowledge', keys: ['general_knowledge'] },
+  { label: 'Physics', keys: ['physics'] },
+  { label: 'Chemistry', keys: ['chemistry'] },
+  { label: 'Biology', keys: ['biology'] },
+];
+
 export const normalizeGradeForMatch = (grade) => {
   if (grade == null || grade === '') return '';
   let s = String(grade).trim();
@@ -212,24 +230,49 @@ export const buildStudentReportData = ({
     );
   });
 
-  const marksheetRows = MARKSHEET_TEMPLATE_ROWS.map((row) => {
-    const data = marksByTemplateKey[row.key];
-    const hasData = data && data.maxTotal > 0;
-    return {
-      key: row.key,
-      label: row.label,
-      maxTotal: hasData ? data.maxTotal : null,
-      obtainedTotal: hasData ? Number(data.obtainedTotal).toFixed(2) : null,
-      grade: hasData ? getGradeFromPercentageWithScheme(data.percentage, effectiveSchemeRows) : '',
-      highestInClass:
-        hasData && highestMarksByTemplateKey[row.key] != null
-          ? Number(highestMarksByTemplateKey[row.key]).toFixed(2)
-          : null,
-    };
+  // Build marksheet rows: only subjects that have courses (data); merge Oral/Written into one row per subject.
+  const marksheetRows = [];
+  MARKSHEET_SUBJECT_GROUPS.forEach((group) => {
+    let groupMaxTotal = 0;
+    let groupObtainedTotal = 0;
+    group.keys.forEach((templateKey) => {
+      const data = marksByTemplateKey[templateKey];
+      if (data && data.maxTotal > 0) {
+        groupMaxTotal += data.maxTotal;
+        groupObtainedTotal += data.obtainedTotal;
+      }
+    });
+    if (groupMaxTotal === 0) return;
+
+    const groupPercentage = groupMaxTotal > 0 ? (groupObtainedTotal / groupMaxTotal) * 100 : 0;
+    const allRegNos = new Set();
+    group.keys.forEach((templateKey) => {
+      if (byKeyByStudent[templateKey]) {
+        Object.keys(byKeyByStudent[templateKey]).forEach((reg) => allRegNos.add(reg));
+      }
+    });
+    let groupHighestInClass = 0;
+    allRegNos.forEach((reg) => {
+      let studentTotal = 0;
+      group.keys.forEach((templateKey) => {
+        const studentData = byKeyByStudent[templateKey]?.[reg];
+        if (studentData) studentTotal += Number(studentData.obtainedTotal) || 0;
+      });
+      if (studentTotal > groupHighestInClass) groupHighestInClass = studentTotal;
+    });
+
+    marksheetRows.push({
+      key: group.keys[0],
+      label: group.label,
+      maxTotal: groupMaxTotal,
+      obtainedTotal: Number(groupObtainedTotal).toFixed(2),
+      grade: getGradeFromPercentageWithScheme(groupPercentage, effectiveSchemeRows),
+      highestInClass: groupHighestInClass > 0 ? Number(groupHighestInClass).toFixed(2) : null,
+    });
   });
 
-  const totalMax = Object.values(marksByTemplateKey).reduce((s, r) => s + r.maxTotal, 0);
-  const totalObtained = Object.values(marksByTemplateKey).reduce((s, r) => s + r.obtainedTotal, 0);
+  const totalMax = marksheetRows.reduce((s, r) => s + r.maxTotal, 0);
+  const totalObtained = marksheetRows.reduce((s, r) => s + Number(r.obtainedTotal), 0);
   const totalPercentage = totalMax > 0 ? `${((totalObtained / totalMax) * 100).toFixed(2)}%` : '';
 
   const totalByStudent = {};
