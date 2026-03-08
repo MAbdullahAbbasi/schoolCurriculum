@@ -478,6 +478,7 @@ const Reports = () => {
             <table className="reports-table">
               <thead>
                 <tr>
+                  <th className="reports-th">Sr. No</th>
                   <th className="reports-th">Registration Number</th>
                   <th className="reports-th">Name</th>
                   <th className="reports-th reports-th-action">Action</th>
@@ -487,13 +488,14 @@ const Reports = () => {
               <tbody>
                 {studentsInGrade.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="reports-empty-cell">
+                    <td colSpan={5} className="reports-empty-cell">
                       No students in Grade {selectedGrade}.
                     </td>
                   </tr>
                 ) : (
-                  studentsInGrade.map((student) => (
+                  studentsInGrade.map((student, index) => (
                     <tr key={student.registrationNumber}>
+                      <td className="reports-td">{index + 1}</td>
                       <td className="reports-td">{student.registrationNumber}</td>
                       <td className="reports-td">{student.studentName}</td>
                       <td className="reports-td reports-td-action">
