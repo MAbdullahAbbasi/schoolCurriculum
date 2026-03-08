@@ -388,11 +388,11 @@ export const buildStudentReportData = ({
           percentage != null && Number.isFinite(percentage)
             ? getGradeFromPercentageWithScheme(percentage, effectiveSchemeRows)
             : '—';
+        const byIndex = curriculumObjectives[topicIndex];
         const byCode = curriculumObjectives.find(
           (obj) => String(obj.code || '').trim() === String(topic.courseCode || '').trim()
         );
-        const byIndex = curriculumObjectives[topicIndex];
-        const curriculumDesc = (byCode?.description || byIndex?.description || '').trim();
+        const curriculumDesc = (byIndex?.description || byCode?.description || '').trim();
         const objective =
           curriculumDesc ||
           (topic.description && String(topic.description).trim()) ||

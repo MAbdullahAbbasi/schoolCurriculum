@@ -567,11 +567,11 @@ const StudentReportDetail = () => {
                           normalizeGradeForMatch(student?.grade),
                           course.subject
                         );
+                        const byIndex = curriculumObjectives[topicIndex];
                         const byCode = curriculumObjectives.find(
                           (obj) => String(obj.code || '').trim() === String(topic.courseCode || '').trim()
                         );
-                        const byIndex = curriculumObjectives[topicIndex];
-                        const curriculumDesc = (byCode?.description || byIndex?.description || '').trim();
+                        const curriculumDesc = (byIndex?.description || byCode?.description || '').trim();
                         const objectiveText =
                           curriculumDesc ||
                           (topic.description && String(topic.description).trim()) ||
