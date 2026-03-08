@@ -522,7 +522,7 @@ const StudentReportDetail = () => {
           <div className="student-report-cover-top">
             <img src={logoLeft} alt="School logo" className="student-report-cover-logo student-report-cover-logo-left" />
             <div className="student-report-cover-title-block">
-              <h2 className="student-report-cover-school-title">Sapling High School <span className="student-report-cover-registered">(Registered)</span></h2>
+              <h2 className="student-report-cover-school-title"><span className="student-report-cover-title-first">S</span>APLING <span className="student-report-cover-title-first">H</span>IGH <span className="student-report-cover-title-first">S</span>CHOOL <span className="student-report-cover-registered">(Registered)</span></h2>
               <p className="student-report-cover-school-subtitle">(Boys/ Girls)</p>
               <h3 className="student-report-cover-term-title">Annual Examination {reportMonthYear}</h3>
             </div>

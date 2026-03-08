@@ -151,10 +151,17 @@
 
 .student-report-cover-school-title {
   margin: 0;
-  font-size: 1.85rem;
-  font-weight: 800;
+  font-size: 1.15rem;
+  font-weight: 700;
   color: #111;
   letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.student-report-cover-title-first {
+  font-size: 1.85em;
+  font-weight: 800;
+  vertical-align: baseline;
 }
 
 .student-report-cover-registered {
@@ -452,7 +459,11 @@
   }
 
   .student-report-cover-school-title {
-    font-size: 1.5rem;
+    font-size: 1rem;
+  }
+
+  .student-report-cover-title-first {
+    font-size: 1.85em;
   }
 
   .student-report-cover-row {
