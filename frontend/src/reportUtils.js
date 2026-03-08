@@ -129,6 +129,47 @@ export const normalizeGradingSchemeRows = (rows) =>
       }))
     : [];
 
+// Default remarks for report grading scheme display (Grade -> Remark)
+export const GRADE_REMARKS = {
+  'A++': 'Fantastic',
+  'A+': 'Brilliant',
+  'A': 'Well Done',
+  'B+': 'Good achievement',
+  'B': 'Has room to improve',
+  'C': 'Try to improve',
+  'D': 'Needs to work hard',
+  'U': 'Must work hard',
+};
+
+/** Sort by percentage descending and format for display: Grade | X% and above / Less than X | Remark */
+export const formatGradingSchemeForDisplay = (rows) => {
+  if (!Array.isArray(rows) || rows.length === 0) return [];
+  const normalized = rows
+    .map((r) => ({
+      percentage: r?.percentage ?? r?.marks ?? '',
+      grade: String(r?.grade ?? '').trim(),
+    }))
+    .filter((r) => r.percentage !== '' && r.grade !== '');
+  const sorted = [...normalized].sort((a, b) => {
+    const numA = Number(a.percentage);
+    const numB = Number(b.percentage);
+    if (!Number.isFinite(numA) && !Number.isFinite(numB)) return 0;
+    if (!Number.isFinite(numA)) return 1;
+    if (!Number.isFinite(numB)) return -1;
+    return numB - numA; // descending
+  });
+  return sorted.map((row, idx) => {
+    const pctNum = Number(String(row.percentage).replace(/%/g, ''));
+    const isLast = idx === sorted.length - 1;
+    const pctDisplay = Number.isFinite(pctNum) ? pctNum : row.percentage;
+    const percentageLabel = isLast
+      ? `Less than ${pctDisplay}`
+      : `${pctDisplay}% and above`;
+    const remark = GRADE_REMARKS[row.grade] ?? '';
+    return { grade: row.grade, percentageLabel, remark };
+  });
+};
+
 export const getGradeFromPercentageWithScheme = (percentage, schemeRows) => {
   if (!schemeRows || schemeRows.length === 0) return '—';
   const num = Number(percentage);
@@ -291,9 +332,11 @@ export const buildStudentReportData = ({
     });
   });
   const currentStudentTotal = totalByStudent[decodedRegNo] || 0;
-  const classPosition = currentStudentTotal > 0
+  const position = currentStudentTotal > 0
     ? Object.values(totalByStudent).filter((value) => Number(value) > currentStudentTotal).length + 1
     : null;
+  // Only show position on report card when it is 1–5; otherwise leave blank.
+  const classPosition = position != null && position >= 1 && position <= 5 ? position : null;
 
   const objectiveSections = enrolledCoursesWithMarks.map(({ course, objectiveMarks }) => ({
     title: course.courseName || course.code,

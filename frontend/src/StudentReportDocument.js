@@ -1,6 +1,7 @@
 import React from 'react';
 import logoLeft from './assets/logoleft.jpg';
 import logoRight from './assets/logoright.jpg';
+import { formatGradingSchemeForDisplay } from './reportUtils';
 import './StudentReportDetail.css';
 
 export const StudentReportCover = ({ reportData }) => (
@@ -127,29 +128,20 @@ export const StudentReportMarksheet = ({ reportData }) => (
 
 export const StudentReportGradingScheme = ({ reportData }) => (
   <section className="student-report-grading-scheme-section">
-    <h3 className="student-report-grading-scheme-heading">Grading Scheme</h3>
+    <h3 className="student-report-grading-scheme-heading">GRADING SCHEME</h3>
     {reportData.gradingSchemeRows.length === 0 ? (
       <p className="student-report-grading-scheme-empty">
         No grading scheme defined. You can define one from the Grading Scheme page in the menu.
       </p>
     ) : (
-      <div className="student-report-grading-scheme-table-wrapper">
-        <table className="student-report-grading-scheme-table">
-          <thead>
-            <tr>
-              <th className="student-report-th">Percentage</th>
-              <th className="student-report-th">Grade</th>
-            </tr>
-          </thead>
-          <tbody>
-            {reportData.gradingSchemeRows.map((row, idx) => (
-              <tr key={idx}>
-                <td className="student-report-td">{row.percentage !== undefined && row.percentage !== null ? String(row.percentage) : '—'}</td>
-                <td className="student-report-td">{row.grade !== undefined && row.grade !== null ? String(row.grade) : '—'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="student-report-grading-scheme-list">
+        {formatGradingSchemeForDisplay(reportData.gradingSchemeRows).map((row, idx) => (
+          <div key={idx} className="student-report-grading-scheme-row">
+            <span className="student-report-grading-scheme-grade">{row.grade}</span>
+            <span className="student-report-grading-scheme-pct">{row.percentageLabel}</span>
+            <span className="student-report-grading-scheme-remark">{row.remark}</span>
+          </div>
+        ))}
       </div>
     )}
   </section>

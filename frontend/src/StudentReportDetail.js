@@ -4,6 +4,7 @@ import axios from 'axios';
 import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
 import { IconBack } from './ButtonIcons';
+import { formatGradingSchemeForDisplay } from './reportUtils';
 import logoLeft from './assets/logoleft.jpg';
 import logoRight from './assets/logoright.jpg';
 import './StudentReportDetail.css';
@@ -618,7 +619,7 @@ const StudentReportDetail = () => {
                   <td className="student-report-marksheet-td" colSpan={3} />
                   <td className="student-report-marksheet-td"><strong>Position</strong></td>
                   <td className="student-report-marksheet-td student-report-marksheet-td-num" colSpan={2}>
-                    {classPosition != null ? classPosition : ''}
+                    {classPosition != null && classPosition >= 1 && classPosition <= 5 ? classPosition : ''}
                   </td>
                 </tr>
               </tfoot>
@@ -627,29 +628,20 @@ const StudentReportDetail = () => {
         </section>
 
         <section className="student-report-grading-scheme-section">
-          <h3 className="student-report-grading-scheme-heading">Grading Scheme</h3>
+          <h3 className="student-report-grading-scheme-heading">GRADING SCHEME</h3>
           {gradingSchemeRows.length === 0 ? (
             <p className="student-report-grading-scheme-empty">
               No grading scheme defined. You can define one from the Grading Scheme page in the menu.
             </p>
           ) : (
-            <div className="student-report-grading-scheme-table-wrapper">
-              <table className="student-report-grading-scheme-table">
-                <thead>
-                  <tr>
-                    <th className="student-report-th">Percentage</th>
-                    <th className="student-report-th">Grade</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {gradingSchemeRows.map((row, idx) => (
-                    <tr key={idx}>
-                      <td className="student-report-td">{row.percentage !== undefined && row.percentage !== null ? String(row.percentage) : '—'}</td>
-                      <td className="student-report-td">{row.grade !== undefined && row.grade !== null ? String(row.grade) : '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="student-report-grading-scheme-list">
+              {formatGradingSchemeForDisplay(gradingSchemeRows).map((row, idx) => (
+                <div key={idx} className="student-report-grading-scheme-row">
+                  <span className="student-report-grading-scheme-grade">{row.grade}</span>
+                  <span className="student-report-grading-scheme-pct">{row.percentageLabel}</span>
+                  <span className="student-report-grading-scheme-remark">{row.remark}</span>
+                </div>
+              ))}
             </div>
           )}
         </section>
