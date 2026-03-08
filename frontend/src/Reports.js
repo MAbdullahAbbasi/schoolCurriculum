@@ -221,6 +221,20 @@ const Reports = () => {
     return () => { cancelled = true; };
   }, [selectedGrade, courseCodesForGrade]);
 
+  // Fetch all course records sequentially (for Download All) to avoid partial failures from parallel requests
+  const fetchAllRecordsForGrade = async (courseCodes) => {
+    const byCourse = {};
+    for (const code of courseCodes) {
+      try {
+        const res = await axios.get(`${API_URL}/api/records/course/${encodeURIComponent(code)}`);
+        if (res.data?.success && res.data.data) byCourse[code] = res.data.data;
+      } catch (e) {
+        console.warn(`Failed to fetch record for course ${code}:`, e?.message || e);
+      }
+    }
+    return byCourse;
+  };
+
   const triggerBlobDownload = (filename, blob) => {
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -254,15 +268,16 @@ const Reports = () => {
     );
   };
 
-  const createPdfBlobForStudent = async (student) => {
+  const createPdfBlobForStudent = async (student, dataOverride = null) => {
+    const records = dataOverride?.recordsByCourse ?? recordsByCourse;
     const reportData = buildStudentReportData({
       student,
-      allStudents: students,
-      courses,
-      recordsByCourse,
-      gradingSchemeRows: latestGradingSchemeRows,
+      allStudents: dataOverride?.allStudents ?? students,
+      courses: dataOverride?.courses ?? courses,
+      recordsByCourse: records,
+      gradingSchemeRows: dataOverride?.gradingSchemeRows ?? latestGradingSchemeRows,
       registrationNumber: student.registrationNumber,
-      curriculumList,
+      curriculumList: dataOverride?.curriculumList ?? curriculumList,
     });
 
     const renderComponentToCanvas = async (element) => {
@@ -402,11 +417,24 @@ const Reports = () => {
 
   const handleDownloadAllReports = async () => {
     if (!selectedGrade || studentsInGrade.length === 0) return;
+    if (courseCodesForGrade.length === 0) {
+      setError('No courses found for this grade.');
+      return;
+    }
     try {
       setDownloadingAll(true);
+      setError(null);
+      const recordsByCourseForZip = await fetchAllRecordsForGrade(courseCodesForGrade);
+      const dataOverride = {
+        recordsByCourse: recordsByCourseForZip,
+        allStudents: students,
+        courses,
+        gradingSchemeRows: latestGradingSchemeRows,
+        curriculumList,
+      };
       const zip = new JSZip();
       for (const student of studentsInGrade) {
-        const blob = await createPdfBlobForStudent(student);
+        const blob = await createPdfBlobForStudent(student, dataOverride);
         zip.file(getStudentPdfFileName(student), blob);
       }
       const zipBlob = await zip.generateAsync({ type: 'blob' });
