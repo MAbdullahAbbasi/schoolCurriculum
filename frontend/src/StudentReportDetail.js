@@ -615,13 +615,15 @@ const StudentReportDetail = () => {
                     })()}
                   </td>
                 </tr>
-                <tr className="student-report-marksheet-summary-row">
-                  <td className="student-report-marksheet-td" colSpan={3} />
-                  <td className="student-report-marksheet-td"><strong>Position</strong></td>
-                  <td className="student-report-marksheet-td student-report-marksheet-td-num" colSpan={2}>
-                    {classPosition != null && classPosition >= 1 && classPosition <= 5 ? classPosition : ''}
-                  </td>
-                </tr>
+                {classPosition != null && classPosition >= 1 && classPosition <= 5 && (
+                  <tr className="student-report-marksheet-summary-row">
+                    <td className="student-report-marksheet-td" colSpan={3} />
+                    <td className="student-report-marksheet-td"><strong>Position</strong></td>
+                    <td className="student-report-marksheet-td student-report-marksheet-td-num" colSpan={2}>
+                      {classPosition}
+                    </td>
+                  </tr>
+                )}
               </tfoot>
             </table>
           </div>

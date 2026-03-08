@@ -170,7 +170,7 @@ export const formatGradingSchemeForDisplay = (rows) => {
     const isLast = idx === sorted.length - 1;
     const pctDisplay = Number.isFinite(pctNum) ? pctNum : row.percentage;
     const percentageLabel = isLast
-      ? `Less than ${pctDisplay}`
+      ? (String(row.grade).trim().toUpperCase() === 'U' ? 'Less than 40' : `Less than ${pctDisplay}`)
       : `${pctDisplay}% and above`;
     const remark = GRADE_REMARKS[row.grade] ?? '';
     const group = GRADING_SCHEME_GROUP[row.grade] ?? 3;

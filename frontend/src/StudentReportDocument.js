@@ -113,13 +113,15 @@ export const StudentReportMarksheet = ({ reportData }) => (
               {reportData.totalPercentage}
             </td>
           </tr>
-          <tr className="student-report-marksheet-summary-row">
-            <td className="student-report-marksheet-td" colSpan={3} />
-            <td className="student-report-marksheet-td"><strong>Position</strong></td>
-            <td className="student-report-marksheet-td student-report-marksheet-td-num" colSpan={2}>
-              {reportData.classPosition != null ? reportData.classPosition : ''}
-            </td>
-          </tr>
+          {reportData.classPosition != null && (
+            <tr className="student-report-marksheet-summary-row">
+              <td className="student-report-marksheet-td" colSpan={3} />
+              <td className="student-report-marksheet-td"><strong>Position</strong></td>
+              <td className="student-report-marksheet-td student-report-marksheet-td-num" colSpan={2}>
+                {reportData.classPosition}
+              </td>
+            </tr>
+          )}
         </tfoot>
       </table>
     </div>
