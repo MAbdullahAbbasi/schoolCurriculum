@@ -319,6 +319,10 @@
   margin-top: 2.5rem;
   padding-top: 1.5rem;
   border-top: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 
 .student-report-grading-scheme-heading {
@@ -341,6 +345,9 @@
   gap: 0.35rem;
   font-size: 0.95rem;
   color: #333;
+  text-align: left;
+  width: 100%;
+  max-width: 420px;
 }
 
 .student-report-grading-scheme-row {
@@ -363,6 +370,11 @@
 .student-report-grading-scheme-remark {
   text-align: right;
   color: #555;
+}
+
+.student-report-grading-scheme-group-gap {
+  height: 1.25rem;
+  flex-shrink: 0;
 }
 
 @media (max-width: 768px) {

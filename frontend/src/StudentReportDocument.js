@@ -136,11 +136,14 @@ export const StudentReportGradingScheme = ({ reportData }) => (
     ) : (
       <div className="student-report-grading-scheme-list">
         {formatGradingSchemeForDisplay(reportData.gradingSchemeRows).map((row, idx) => (
-          <div key={idx} className="student-report-grading-scheme-row">
-            <span className="student-report-grading-scheme-grade">{row.grade}</span>
-            <span className="student-report-grading-scheme-pct">{row.percentageLabel}</span>
-            <span className="student-report-grading-scheme-remark">{row.remark}</span>
-          </div>
+          <React.Fragment key={idx}>
+            <div className="student-report-grading-scheme-row">
+              <span className="student-report-grading-scheme-grade">{row.grade}</span>
+              <span className="student-report-grading-scheme-pct">{row.percentageLabel}</span>
+              <span className="student-report-grading-scheme-remark">{row.remark}</span>
+            </div>
+            {row.showGapAfter && <div className="student-report-grading-scheme-group-gap" aria-hidden="true" />}
+          </React.Fragment>
         ))}
       </div>
     )}

@@ -141,7 +141,14 @@ export const GRADE_REMARKS = {
   'U': 'Must work hard',
 };
 
-/** Sort by percentage descending and format for display: Grade | X% and above / Less than X | Remark */
+// Group 1: A++, A+, A; Group 2: B+, B; Group 3: C, D, U (for visual spacing on report)
+const GRADING_SCHEME_GROUP = {
+  'A++': 1, 'A+': 1, 'A': 1,
+  'B+': 2, 'B': 2,
+  'C': 3, 'D': 3, 'U': 3,
+};
+
+/** Sort by percentage descending and format for display: Grade | X% and above / Less than X | Remark. Adds group (1,2,3) and showGapAfter for layout. */
 export const formatGradingSchemeForDisplay = (rows) => {
   if (!Array.isArray(rows) || rows.length === 0) return [];
   const normalized = rows
@@ -166,7 +173,10 @@ export const formatGradingSchemeForDisplay = (rows) => {
       ? `Less than ${pctDisplay}`
       : `${pctDisplay}% and above`;
     const remark = GRADE_REMARKS[row.grade] ?? '';
-    return { grade: row.grade, percentageLabel, remark };
+    const group = GRADING_SCHEME_GROUP[row.grade] ?? 3;
+    const nextGroup = sorted[idx + 1] ? (GRADING_SCHEME_GROUP[String(sorted[idx + 1].grade).trim()] ?? 3) : null;
+    const showGapAfter = nextGroup != null && group !== nextGroup;
+    return { grade: row.grade, percentageLabel, remark, group, showGapAfter };
   });
 };
 
