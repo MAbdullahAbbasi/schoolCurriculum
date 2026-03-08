@@ -15,7 +15,25 @@ import {
   StudentReportObjectiveSection,
 } from './StudentReportDocument';
 import { buildStudentReportData, normalizeGradingSchemeRows } from './reportUtils';
+import logoLeft from './assets/logoleft.jpg';
 import './Reports.css';
+
+const getWatermarkDataUrl = () =>
+  new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = img.naturalWidth;
+      c.height = img.naturalHeight;
+      const ctx = c.getContext('2d');
+      ctx.globalAlpha = 0.06;
+      ctx.drawImage(img, 0, 0);
+      resolve(c.toDataURL('image/png'));
+    };
+    img.onerror = reject;
+    img.src = logoLeft;
+  });
 
 // Normalize grade for matching (e.g. K.G-II, KG-2 -> same)
 const normalizeGradeForMatch = (grade) => {
@@ -272,63 +290,92 @@ const Reports = () => {
       return canvas;
     };
 
-    const addCanvasToPdf = (pdf, canvas, addNewPage = false) => {
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const marginX = 10;
-      const marginY = 10;
-      const usableWidth = pageWidth - marginX * 2;
-      const usableHeight = pageHeight - marginY * 2;
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const marginX = 10;
+    const marginY = 10;
+    const footerY = pageHeight - 12;
+    const usableWidth = pageWidth - marginX * 2;
+    const usableHeight = pageHeight - marginY * 2 - 14;
+
+    const getCanvasPageCount = (canvas) => {
       const imgWidth = usableWidth;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      const imgData = canvas.toDataURL('image/png');
-
-      if (addNewPage) pdf.addPage();
-      let heightLeft = imgHeight;
-      let position = marginY;
-
-      pdf.addImage(imgData, 'PNG', marginX, position, imgWidth, imgHeight);
-      heightLeft -= usableHeight;
-
-      while (heightLeft > 0) {
-        position = marginY + (heightLeft - imgHeight);
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', marginX, position, imgWidth, imgHeight);
-        heightLeft -= usableHeight;
-      }
+      return Math.ceil(imgHeight / usableHeight) || 1;
     };
-
-    const pdf = new jsPDF('p', 'mm', 'a4');
 
     const coverCanvas = await renderComponentToCanvas(
       <div className="student-report-detail-content student-report-pdf-content">
         <StudentReportCover reportData={reportData} />
       </div>
     );
-    addCanvasToPdf(pdf, coverCanvas, false);
-
-    for (const section of reportData.objectiveSections) {
-      const sectionCanvas = await renderComponentToCanvas(
-        <div className="student-report-detail-content student-report-pdf-content">
-          <StudentReportObjectiveSection section={section} />
-        </div>
-      );
-      addCanvasToPdf(pdf, sectionCanvas, true);
-    }
-
+    const sectionCanvases = await Promise.all(
+      reportData.objectiveSections.map((section) =>
+        renderComponentToCanvas(
+          <div className="student-report-detail-content student-report-pdf-content">
+            <StudentReportObjectiveSection section={section} />
+          </div>
+        )
+      )
+    );
     const marksheetCanvas = await renderComponentToCanvas(
       <div className="student-report-detail-content student-report-pdf-content">
         <StudentReportMarksheet reportData={reportData} />
       </div>
     );
-    addCanvasToPdf(pdf, marksheetCanvas, true);
-
     const gradingCanvas = await renderComponentToCanvas(
       <div className="student-report-detail-content student-report-pdf-content">
         <StudentReportGradingScheme reportData={reportData} />
       </div>
     );
-    addCanvasToPdf(pdf, gradingCanvas, true);
+
+    const allCanvases = [coverCanvas, ...sectionCanvases, marksheetCanvas, gradingCanvas];
+    const totalPages = allCanvases.reduce((sum, c) => sum + getCanvasPageCount(c), 0);
+    const watermarkDataUrl = await getWatermarkDataUrl();
+
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    let currentPage = 0;
+
+    const addCanvasToPdf = (canvas, addNewPage) => {
+      const imgWidth = usableWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const imgData = canvas.toDataURL('image/png');
+      let heightLeft = imgHeight;
+      let position = marginY;
+
+      const addOnePage = (contentY, contentH) => {
+        if (addNewPage || currentPage > 0) pdf.addPage();
+        currentPage += 1;
+        pdf.setPage(currentPage);
+        const wmSize = 80;
+        pdf.addImage(watermarkDataUrl, 'PNG', (pageWidth - wmSize) / 2, (pageHeight - wmSize) / 2, wmSize, wmSize);
+        pdf.addImage(imgData, 'PNG', marginX, contentY, imgWidth, imgHeight);
+        pdf.setFontSize(9);
+        pdf.setTextColor(100, 100, 100);
+        pdf.text(`-- ${currentPage} of ${totalPages} --`, pageWidth / 2, footerY, { align: 'center' });
+      };
+
+      addOnePage(position, imgHeight);
+      heightLeft -= usableHeight;
+
+      while (heightLeft > 0) {
+        position = marginY + (heightLeft - imgHeight);
+        pdf.addPage();
+        currentPage += 1;
+        pdf.setPage(currentPage);
+        pdf.addImage(watermarkDataUrl, 'PNG', (pageWidth - 80) / 2, (pageHeight - 80) / 2, 80, 80);
+        pdf.addImage(imgData, 'PNG', marginX, position, imgWidth, imgHeight);
+        pdf.setFontSize(9);
+        pdf.setTextColor(100, 100, 100);
+        pdf.text(`-- ${currentPage} of ${totalPages} --`, pageWidth / 2, footerY, { align: 'center' });
+        heightLeft -= usableHeight;
+      }
+    };
+
+    addCanvasToPdf(coverCanvas, false);
+    for (const sectionCanvas of sectionCanvases) addCanvasToPdf(sectionCanvas, true);
+    addCanvasToPdf(marksheetCanvas, true);
+    addCanvasToPdf(gradingCanvas, true);
 
     return pdf.output('blob');
 
