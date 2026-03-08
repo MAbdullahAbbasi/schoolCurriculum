@@ -306,17 +306,6 @@ const StudentReportDetail = () => {
     return out;
   }, [allStudents, enrolledCoursesWithMarks, student]);
 
-  const highestMarksByTemplateKey = useMemo(() => {
-    const highestByKey = {};
-    Object.keys(byKeyByStudent).forEach((templateKey) => {
-      const highest = Math.max(
-        ...Object.values(byKeyByStudent[templateKey]).map((row) => Number(row.obtainedTotal) || 0)
-      );
-      highestByKey[templateKey] = highest;
-    });
-    return highestByKey;
-  }, [byKeyByStudent]);
-
   // Consolidated marksheet rows: only subjects with courses; Oral/Written merged into one row per subject.
   const marksheetDisplayRows = useMemo(() => {
     const scheme = latestGradingSchemeRows;
