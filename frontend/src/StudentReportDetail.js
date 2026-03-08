@@ -547,6 +547,7 @@ const StudentReportDetail = () => {
                   <table className="student-report-objectives-table">
                     <thead>
                       <tr>
+                        <th className="student-report-th">S. No.</th>
                         <th className="student-report-th">Objective</th>
                         <th className="student-report-th">Grade</th>
                       </tr>
@@ -580,6 +581,7 @@ const StudentReportDetail = () => {
                           `Objective ${topicIndex + 1}`;
                         return (
                           <tr key={topicIndex}>
+                            <td className="student-report-td student-report-td-num">{topicIndex + 1}</td>
                             <td className="student-report-td student-report-td-objective">
                               {objectiveText}
                             </td>

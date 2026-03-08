@@ -56,6 +56,7 @@ export const StudentReportObjectiveSection = ({ section }) => (
       <table className="student-report-objectives-table">
         <thead>
           <tr>
+            <th className="student-report-th">S. No.</th>
             <th className="student-report-th">Objective</th>
             <th className="student-report-th">Grade</th>
           </tr>
@@ -63,6 +64,7 @@ export const StudentReportObjectiveSection = ({ section }) => (
         <tbody>
           {section.rows.map((row, rowIdx) => (
             <tr key={rowIdx}>
+              <td className="student-report-td student-report-td-num">{rowIdx + 1}</td>
               <td className="student-report-td student-report-td-objective">{row.objective}</td>
               <td className="student-report-td student-report-td-grade">{row.grade}</td>
             </tr>
