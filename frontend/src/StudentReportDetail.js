@@ -4,29 +4,29 @@ import axios from 'axios';
 import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
 import { IconBack } from './ButtonIcons';
-import { formatGradingSchemeForDisplay } from './reportUtils';
+import { formatGradingSchemeForDisplay, SUBJECT_DISPLAY_ORDER } from './reportUtils';
 import logoLeft from './assets/logoleft.jpg';
 import logoRight from './assets/logoright.jpg';
 import './StudentReportDetail.css';
 
 const GRADING_SCHEME_STORAGE_KEY = 'curriculum_grading_scheme';
 
-// Subject groups: only show subjects that have courses; merge Oral/Written into one row per subject.
+// Subject groups: only show subjects that have courses; merge Oral/Written into one row. Order matches reportUtils SUBJECT_DISPLAY_ORDER.
 const MARKSHEET_SUBJECT_GROUPS = [
   { label: 'Urdu', keys: ['urdu_oral', 'urdu_written'] },
   { label: 'English', keys: ['english_oral', 'english_written'] },
-  { label: "Math's", keys: ['math_oral', 'math_written'] },
+  { label: 'Mathematics', keys: ['math_oral', 'math_written'] },
+  { label: 'Tarjuma Tul Quran (T.Q)', keys: ['tarjuma_tul_quran'] },
+  { label: 'Nazra', keys: ['nazra'] },
+  { label: 'Islamiat', keys: ['islamiat_oral', 'islamiat_written'] },
   { label: 'Science', keys: ['science'] },
   { label: 'Social Studies', keys: ['social_studies'] },
-  { label: 'Computer', keys: ['computer'] },
-  { label: 'Tarjuma Tul Quran (T.Q)', keys: ['tarjuma_tul_quran'] },
-  { label: 'Islamiat', keys: ['islamiat_oral', 'islamiat_written'] },
-  { label: 'Nazra', keys: ['nazra'] },
-  { label: 'Art', keys: ['art'] },
   { label: 'General Knowledge', keys: ['general_knowledge'] },
   { label: 'Physics', keys: ['physics'] },
   { label: 'Chemistry', keys: ['chemistry'] },
   { label: 'Biology', keys: ['biology'] },
+  { label: 'Computer', keys: ['computer'] },
+  { label: 'Art', keys: ['art'] },
 ];
 
 // Map course subject (from DB) to template row key – first matching row gets the marks (we don't have Oral/Written split in data)
@@ -265,12 +265,12 @@ const StudentReportDetail = () => {
     fetchData();
   }, [decodedRegNo]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Enrolled courses: course has topics with grades that include this student's grade (normalize KG-II / KG-2 etc.)
+  // Enrolled courses: course has topics with grades that include this student's grade (normalize KG-II / KG-2 etc.). Sorted by SUBJECT_DISPLAY_ORDER.
   const enrolledCoursesWithMarks = useMemo(() => {
     const normalizedStudentGrade = normalizeGradeForMatch(student?.grade);
     if (!normalizedStudentGrade || !Array.isArray(courses)) return [];
 
-    return courses
+    const list = courses
       .filter((course) => {
         const topics = course.topics || [];
         const courseGrades = new Set();
@@ -290,6 +290,18 @@ const StudentReportDetail = () => {
         const objectiveMarks = studentEntry?.objectiveMarks || {};
         return { course, record, objectiveMarks };
       });
+
+    return [...list].sort((a, b) => {
+      const rawA = (a.course.subject && String(a.course.subject).trim()) || '';
+      const rawB = (b.course.subject && String(b.course.subject).trim()) || '';
+      const keyA = SUBJECT_TO_TEMPLATE_KEY[rawA.toLowerCase()] || '';
+      const keyB = SUBJECT_TO_TEMPLATE_KEY[rawB.toLowerCase()] || '';
+      const idxA = SUBJECT_DISPLAY_ORDER.indexOf(keyA);
+      const idxB = SUBJECT_DISPLAY_ORDER.indexOf(keyB);
+      const orderA = idxA === -1 ? 999 : idxA;
+      const orderB = idxB === -1 ? 999 : idxB;
+      return orderA - orderB;
+    });
   }, [courses, recordsByCourse, student, decodedRegNo]);
 
   // Aggregate marks by template row key (course subject -> first matching template row; 100% per course)

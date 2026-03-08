@@ -49,22 +49,40 @@ export const SUBJECT_TO_TEMPLATE_KEY = {
   biology: 'biology',
 };
 
-// Subject groups: merge Oral/Written into one row per subject; only rows with data are shown.
+// Display order for subjects: Urdu, English, Mathematics, T.Q/Nazra/Islamiat, Science, Social Studies, General Knowledge, Physics, Chemistry, Biology/Computer, Art
+export const SUBJECT_DISPLAY_ORDER = [
+  'urdu_oral',
+  'english_oral',
+  'math_oral',
+  'tarjuma_tul_quran',
+  'nazra',
+  'islamiat_oral',
+  'science',
+  'social_studies',
+  'general_knowledge',
+  'physics',
+  'chemistry',
+  'biology',
+  'computer',
+  'art',
+];
+
+// Subject groups: merge Oral/Written into one row per subject; only rows with data are shown. Order matches SUBJECT_DISPLAY_ORDER.
 export const MARKSHEET_SUBJECT_GROUPS = [
   { label: 'Urdu', keys: ['urdu_oral', 'urdu_written'] },
   { label: 'English', keys: ['english_oral', 'english_written'] },
-  { label: "Math's", keys: ['math_oral', 'math_written'] },
+  { label: "Mathematics", keys: ['math_oral', 'math_written'] },
+  { label: 'Tarjuma Tul Quran (T.Q)', keys: ['tarjuma_tul_quran'] },
+  { label: 'Nazra', keys: ['nazra'] },
+  { label: 'Islamiat', keys: ['islamiat_oral', 'islamiat_written'] },
   { label: 'Science', keys: ['science'] },
   { label: 'Social Studies', keys: ['social_studies'] },
-  { label: 'Computer', keys: ['computer'] },
-  { label: 'Tarjuma Tul Quran (T.Q)', keys: ['tarjuma_tul_quran'] },
-  { label: 'Islamiat', keys: ['islamiat_oral', 'islamiat_written'] },
-  { label: 'Nazra', keys: ['nazra'] },
-  { label: 'Art', keys: ['art'] },
   { label: 'General Knowledge', keys: ['general_knowledge'] },
   { label: 'Physics', keys: ['physics'] },
   { label: 'Chemistry', keys: ['chemistry'] },
   { label: 'Biology', keys: ['biology'] },
+  { label: 'Computer', keys: ['computer'] },
+  { label: 'Art', keys: ['art'] },
 ];
 
 export const normalizeGradeForMatch = (grade) => {
@@ -247,7 +265,7 @@ export const buildStudentReportData = ({
   const effectiveSchemeRows = latestGradingSchemeRows.length > 0 ? latestGradingSchemeRows : getGradingSchemeFromStorage();
 
   const normalizedStudentGrade = normalizeGradeForMatch(student?.grade);
-  const enrolledCoursesWithMarks = (!normalizedStudentGrade || !Array.isArray(courses))
+  let enrolledCoursesWithMarks = (!normalizedStudentGrade || !Array.isArray(courses))
     ? []
     : courses
         .filter((course) => {
@@ -269,6 +287,18 @@ export const buildStudentReportData = ({
           const objectiveMarks = studentEntry?.objectiveMarks || {};
           return { course, record, objectiveMarks };
         });
+
+  enrolledCoursesWithMarks = [...enrolledCoursesWithMarks].sort((a, b) => {
+    const rawA = (a.course.subject && String(a.course.subject).trim()) || '';
+    const rawB = (b.course.subject && String(b.course.subject).trim()) || '';
+    const keyA = SUBJECT_TO_TEMPLATE_KEY[rawA.toLowerCase()] || '';
+    const keyB = SUBJECT_TO_TEMPLATE_KEY[rawB.toLowerCase()] || '';
+    const idxA = SUBJECT_DISPLAY_ORDER.indexOf(keyA);
+    const idxB = SUBJECT_DISPLAY_ORDER.indexOf(keyB);
+    const orderA = idxA === -1 ? 999 : idxA;
+    const orderB = idxB === -1 ? 999 : idxB;
+    return orderA - orderB;
+  });
 
   const marksByTemplateKey = {};
   enrolledCoursesWithMarks.forEach(({ course, record }) => {
