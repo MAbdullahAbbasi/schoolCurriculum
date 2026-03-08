@@ -539,10 +539,7 @@ const StudentReportDetail = () => {
                         const displayGrade =
                           percentage != null && Number.isFinite(percentage) ? getGradeFromPercentage(percentage) : '—';
                         const objectiveText =
-                          (topic.description && String(topic.description).trim()) ||
-                          topic.topicName ||
-                          topic.courseCode ||
-                          `Objective ${topicIndex + 1}`;
+                          (topic.description && String(topic.description).trim()) || '—';
                         return (
                           <tr key={topicIndex}>
                             <td className="student-report-td student-report-td-objective">

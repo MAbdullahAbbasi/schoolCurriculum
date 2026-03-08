@@ -364,10 +364,7 @@ export const buildStudentReportData = ({
           : '—';
       return {
         objective:
-          (topic.description && String(topic.description).trim()) ||
-          topic.topicName ||
-          topic.courseCode ||
-          `Objective ${topicIndex + 1}`,
+          (topic.description && String(topic.description).trim()) || '—',
         percentage: percentage != null ? `${Number(percentage).toFixed(2)}%` : '—',
         grade,
       };
