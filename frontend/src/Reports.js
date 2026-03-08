@@ -304,13 +304,23 @@ const Reports = () => {
       return Math.ceil(imgHeight / usableHeight) || 1;
     };
 
-    const coverAndObjectivesCanvas = await renderComponentToCanvas(
+    const firstSection = reportData.objectiveSections[0];
+    const restSections = reportData.objectiveSections.slice(1);
+
+    const coverAndFirstSectionCanvas = await renderComponentToCanvas(
       <div className="student-report-detail-content student-report-pdf-content">
         <StudentReportCover reportData={reportData} />
-        {reportData.objectiveSections.map((section, idx) => (
-          <StudentReportObjectiveSection key={idx} section={section} />
-        ))}
+        {firstSection && <StudentReportObjectiveSection section={firstSection} />}
       </div>
+    );
+    const restSectionCanvases = await Promise.all(
+      restSections.map((section) =>
+        renderComponentToCanvas(
+          <div className="student-report-detail-content student-report-pdf-content">
+            <StudentReportObjectiveSection section={section} />
+          </div>
+        )
+      )
     );
     const marksheetCanvas = await renderComponentToCanvas(
       <div className="student-report-detail-content student-report-pdf-content">
@@ -323,7 +333,7 @@ const Reports = () => {
       </div>
     );
 
-    const allCanvases = [coverAndObjectivesCanvas, marksheetCanvas, gradingCanvas];
+    const allCanvases = [coverAndFirstSectionCanvas, ...restSectionCanvases, marksheetCanvas, gradingCanvas];
     const totalPages = allCanvases.reduce((sum, c) => sum + getCanvasPageCount(c), 0);
     const watermarkDataUrl = await getWatermarkDataUrl();
 
@@ -360,7 +370,8 @@ const Reports = () => {
       }
     };
 
-    addCanvasToPdf(coverAndObjectivesCanvas, false);
+    addCanvasToPdf(coverAndFirstSectionCanvas, false);
+    for (const sectionCanvas of restSectionCanvases) addCanvasToPdf(sectionCanvas, true);
     addCanvasToPdf(marksheetCanvas, true);
     addCanvasToPdf(gradingCanvas, true);
 
