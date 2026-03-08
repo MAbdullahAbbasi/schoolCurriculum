@@ -68,6 +68,27 @@
   border-radius: 10px;
   background: #fff;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  position: relative;
+}
+
+.student-report-cover-watermark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 4rem;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.04);
+  white-space: nowrap;
+  letter-spacing: 0.15em;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.student-report-cover-section .student-report-cover-top,
+.student-report-cover-section .student-report-cover-details-grid {
+  position: relative;
+  z-index: 1;
 }
 
 .student-report-cover-top {
@@ -100,7 +121,7 @@
 
 .student-report-cover-school-title {
   margin: 0;
-  font-size: 2rem;
+  font-size: 1.85rem;
   font-weight: 800;
   color: #111;
   text-transform: uppercase;
@@ -129,9 +150,26 @@
 }
 
 .student-report-cover-details-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.student-report-cover-row {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem 2rem;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: baseline;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.student-report-cover-row:last-child {
+  border-bottom: none;
+}
+
+.student-report-cover-row-three {
+  grid-template-columns: 1fr 1fr 1fr;
 }
 
 .student-report-cover-detail {
@@ -139,13 +177,9 @@
   align-items: baseline;
   gap: 0.5rem;
   flex-wrap: wrap;
-  border-bottom: 1px solid #ececec;
   padding-bottom: 0.35rem;
 }
 
-.student-report-cover-detail-wide {
-  grid-column: 1 / -1;
-}
 
 .student-report-cover-label {
   font-size: 0.98rem;
@@ -392,7 +426,11 @@
     font-size: 1.5rem;
   }
 
-  .student-report-cover-details-grid {
+  .student-report-cover-row {
+    grid-template-columns: 1fr;
+  }
+
+  .student-report-cover-row-three {
     grid-template-columns: 1fr;
   }
 }

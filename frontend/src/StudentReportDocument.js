@@ -6,10 +6,11 @@ import './StudentReportDetail.css';
 
 export const StudentReportCover = ({ reportData }) => (
   <section className="student-report-cover-section">
+    <div className="student-report-cover-watermark" aria-hidden="true">SAPLING HIGH SCHOOL</div>
     <div className="student-report-cover-top">
       <img src={logoLeft} alt="School logo" className="student-report-cover-logo student-report-cover-logo-left" />
       <div className="student-report-cover-title-block">
-        <h2 className="student-report-cover-school-title">Sapling High School <span className="student-report-cover-registered">(Registered)</span></h2>
+        <h2 className="student-report-cover-school-title">SAPLING HIGH SCHOOL <span className="student-report-cover-registered">(Registered)</span></h2>
         <p className="student-report-cover-school-subtitle">(Boys/ Girls)</p>
         <h3 className="student-report-cover-term-title">Term Exam {reportData.reportMonthYear}</h3>
       </div>
@@ -17,33 +18,39 @@ export const StudentReportCover = ({ reportData }) => (
     </div>
 
     <div className="student-report-cover-details-grid">
-      <div className="student-report-cover-detail">
-        <span className="student-report-cover-label">Name:</span>
-        <span className="student-report-cover-value">{reportData.displayName}</span>
+      <div className="student-report-cover-row">
+        <div className="student-report-cover-detail">
+          <span className="student-report-cover-label">Name:</span>
+          <span className="student-report-cover-value">{reportData.displayName}</span>
+        </div>
+        <div className="student-report-cover-detail">
+          <span className="student-report-cover-label">Class:</span>
+          <span className="student-report-cover-value">{reportData.displayClass}</span>
+        </div>
       </div>
-      <div className="student-report-cover-detail">
-        <span className="student-report-cover-label">Class:</span>
-        <span className="student-report-cover-value">{reportData.displayClass}</span>
+      <div className="student-report-cover-row">
+        <div className="student-report-cover-detail">
+          <span className="student-report-cover-label">Father&apos;s Name:</span>
+          <span className="student-report-cover-value">{reportData.displayFatherName}</span>
+        </div>
+        <div className="student-report-cover-detail">
+          <span className="student-report-cover-label">Registration #:</span>
+          <span className="student-report-cover-value">{reportData.displayRegNo}</span>
+        </div>
       </div>
-      <div className="student-report-cover-detail">
-        <span className="student-report-cover-label">Father&apos;s Name:</span>
-        <span className="student-report-cover-value">{reportData.displayFatherName}</span>
-      </div>
-      <div className="student-report-cover-detail">
-        <span className="student-report-cover-label">Registration #:</span>
-        <span className="student-report-cover-value">{reportData.displayRegNo}</span>
-      </div>
-      <div className="student-report-cover-detail">
-        <span className="student-report-cover-label">D.o.Birth:</span>
-        <span className="student-report-cover-value">{reportData.displayDob}</span>
-      </div>
-      <div className="student-report-cover-detail">
-        <span className="student-report-cover-label">Age:</span>
-        <span className="student-report-cover-value">{reportData.studentAge}</span>
-      </div>
-      <div className="student-report-cover-detail student-report-cover-detail-wide">
-        <span className="student-report-cover-label">Average age in class:</span>
-        <span className="student-report-cover-value">{reportData.averageAgeInClass}</span>
+      <div className="student-report-cover-row student-report-cover-row-three">
+        <div className="student-report-cover-detail">
+          <span className="student-report-cover-label">D.o.Birth:</span>
+          <span className="student-report-cover-value">{reportData.displayDob}</span>
+        </div>
+        <div className="student-report-cover-detail">
+          <span className="student-report-cover-label">Age (yrs. month):</span>
+          <span className="student-report-cover-value">{reportData.studentAge}</span>
+        </div>
+        <div className="student-report-cover-detail">
+          <span className="student-report-cover-label">Average age in class (yrs. month):</span>
+          <span className="student-report-cover-value">{reportData.averageAgeInClass}</span>
+        </div>
       </div>
     </div>
   </section>
