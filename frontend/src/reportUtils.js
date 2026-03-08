@@ -193,6 +193,26 @@ export const getGradeFromPercentageWithScheme = (percentage, schemeRows) => {
   return row && row.grade != null ? String(row.grade) : '—';
 };
 
+const SUBJECT_MATCH_ALIASES = {
+  maths: ['maths', 'math', 'mathematics'],
+  math: ['maths', 'math', 'mathematics'],
+  mathematics: ['maths', 'math', 'mathematics'],
+  sci: ['sci', 'science'],
+  science: ['sci', 'science'],
+  'social studies': ['social studies', 's.st', 's.st.'],
+  's.st': ['social studies', 's.st', 's.st.'],
+  computer: ['computer', 'comp'],
+  comp: ['computer', 'comp'],
+  nazra: ['nazra', 'nazars'],
+  nazars: ['nazra', 'nazars'],
+};
+
+const subjectMatches = (courseSubjectLower, objectiveSubjectLower) => {
+  if (courseSubjectLower === objectiveSubjectLower) return true;
+  const aliases = SUBJECT_MATCH_ALIASES[courseSubjectLower];
+  return aliases ? aliases.includes(objectiveSubjectLower) : false;
+};
+
 const getCurriculumObjectivesBySubject = (curriculumList, studentGradeNormalized, courseSubject) => {
   if (!Array.isArray(curriculumList) || !courseSubject) return [];
   const subjectLower = String(courseSubject).trim().toLowerCase();
@@ -207,9 +227,10 @@ const getCurriculumObjectivesBySubject = (curriculumList, studentGradeNormalized
     return String(g).trim() === studentGradeNormalized;
   });
   const objectives = doc?.objectives || [];
-  return objectives.filter(
-    (obj) => (String(obj.subject || '').trim().toLowerCase()) === subjectLower
-  );
+  return objectives.filter((obj) => {
+    const objSubject = String(obj.subject || '').trim().toLowerCase();
+    return subjectMatches(subjectLower, objSubject);
+  });
 };
 
 export const buildStudentReportData = ({
@@ -395,8 +416,8 @@ export const buildStudentReportData = ({
         const curriculumDesc = (byIndex?.description || byCode?.description || '').trim();
         const objective =
           curriculumDesc ||
-          (topic.description && String(topic.description).trim()) ||
           topic.topicName ||
+          (topic.description && String(topic.description).trim()) ||
           topic.courseCode ||
           `Objective ${topicIndex + 1}`;
         return {
