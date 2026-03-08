@@ -62,7 +62,6 @@ const Reports = () => {
   const [courses, setCourses] = useState([]);
   const [recordsByCourse, setRecordsByCourse] = useState({});
   const [latestGradingSchemeRows, setLatestGradingSchemeRows] = useState([]);
-  const [curriculumList, setCurriculumList] = useState([]);
   const [selectedGrade, setSelectedGrade] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -157,17 +156,15 @@ const Reports = () => {
       try {
         setLoading(true);
         setError(null);
-        const [studentsRes, coursesRes, gradingSchemesRes, curriculumRes] = await Promise.all([
+        const [studentsRes, coursesRes, gradingSchemesRes] = await Promise.all([
           axios.get(`${API_URL}/api/students-data`),
           axios.get(`${API_URL}/api/courses`),
           axios.get(`${API_URL}/api/grading-schemes`),
-          axios.get(`${API_URL}/api/curriculum`).catch(() => ({ data: [] })),
         ]);
         setStudents(Array.isArray(studentsRes.data) ? studentsRes.data : (studentsRes.data?.data || []));
         setCourses(coursesRes.data?.success ? (coursesRes.data.data || []) : []);
         const gradingSchemesList = gradingSchemesRes.data?.success ? gradingSchemesRes.data.data || [] : [];
         setLatestGradingSchemeRows(normalizeGradingSchemeRows(gradingSchemesList[0]?.rows || []));
-        setCurriculumList(Array.isArray(curriculumRes.data) ? curriculumRes.data : []);
       } catch (err) {
         console.error('Error fetching data:', err);
         setError('Failed to load students.');
@@ -244,7 +241,6 @@ const Reports = () => {
       recordsByCourse,
       gradingSchemeRows: latestGradingSchemeRows,
       registrationNumber: student.registrationNumber,
-      curriculumList,
     });
 
     const renderComponentToCanvas = async (element) => {
