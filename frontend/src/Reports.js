@@ -304,19 +304,13 @@ const Reports = () => {
       return Math.ceil(imgHeight / usableHeight) || 1;
     };
 
-    const coverCanvas = await renderComponentToCanvas(
+    const coverAndObjectivesCanvas = await renderComponentToCanvas(
       <div className="student-report-detail-content student-report-pdf-content">
         <StudentReportCover reportData={reportData} />
+        {reportData.objectiveSections.map((section, idx) => (
+          <StudentReportObjectiveSection key={idx} section={section} />
+        ))}
       </div>
-    );
-    const sectionCanvases = await Promise.all(
-      reportData.objectiveSections.map((section) =>
-        renderComponentToCanvas(
-          <div className="student-report-detail-content student-report-pdf-content">
-            <StudentReportObjectiveSection section={section} />
-          </div>
-        )
-      )
     );
     const marksheetCanvas = await renderComponentToCanvas(
       <div className="student-report-detail-content student-report-pdf-content">
@@ -329,7 +323,7 @@ const Reports = () => {
       </div>
     );
 
-    const allCanvases = [coverCanvas, ...sectionCanvases, marksheetCanvas, gradingCanvas];
+    const allCanvases = [coverAndObjectivesCanvas, marksheetCanvas, gradingCanvas];
     const totalPages = allCanvases.reduce((sum, c) => sum + getCanvasPageCount(c), 0);
     const watermarkDataUrl = await getWatermarkDataUrl();
 
@@ -338,42 +332,35 @@ const Reports = () => {
 
     const addCanvasToPdf = (canvas, addNewPage) => {
       const imgWidth = usableWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      const imgData = canvas.toDataURL('image/png');
-      let heightLeft = imgHeight;
-      let position = marginY;
+      const imgHeightMm = (canvas.height * imgWidth) / canvas.width;
+      const numPages = Math.ceil(imgHeightMm / usableHeight) || 1;
 
-      const addOnePage = (contentY, contentH) => {
+      for (let p = 0; p < numPages; p++) {
+        const sliceTopMm = p * usableHeight;
+        const sliceBottomMm = Math.min(sliceTopMm + usableHeight, imgHeightMm);
+        const sliceHeightMm = sliceBottomMm - sliceTopMm;
+        const sliceTopPx = (sliceTopMm / imgHeightMm) * canvas.height;
+        const sliceHeightPx = (sliceHeightMm / imgHeightMm) * canvas.height;
+
+        const sliceCanvas = document.createElement('canvas');
+        sliceCanvas.width = canvas.width;
+        sliceCanvas.height = Math.round(sliceHeightPx);
+        const ctx = sliceCanvas.getContext('2d');
+        ctx.drawImage(canvas, 0, sliceTopPx, canvas.width, sliceHeightPx, 0, 0, canvas.width, sliceHeightPx);
+        const sliceData = sliceCanvas.toDataURL('image/png');
+
         if (addNewPage || currentPage > 0) pdf.addPage();
         currentPage += 1;
         pdf.setPage(currentPage);
-        const wmSize = 80;
-        pdf.addImage(watermarkDataUrl, 'PNG', (pageWidth - wmSize) / 2, (pageHeight - wmSize) / 2, wmSize, wmSize);
-        pdf.addImage(imgData, 'PNG', marginX, contentY, imgWidth, imgHeight);
+        pdf.addImage(sliceData, 'PNG', marginX, marginY, imgWidth, sliceHeightMm);
+        pdf.addImage(watermarkDataUrl, 'PNG', 0, 0, pageWidth, pageHeight);
         pdf.setFontSize(9);
         pdf.setTextColor(100, 100, 100);
         pdf.text(`-- ${currentPage} of ${totalPages} --`, pageWidth / 2, footerY, { align: 'center' });
-      };
-
-      addOnePage(position, imgHeight);
-      heightLeft -= usableHeight;
-
-      while (heightLeft > 0) {
-        position = marginY + (heightLeft - imgHeight);
-        pdf.addPage();
-        currentPage += 1;
-        pdf.setPage(currentPage);
-        pdf.addImage(watermarkDataUrl, 'PNG', (pageWidth - 80) / 2, (pageHeight - 80) / 2, 80, 80);
-        pdf.addImage(imgData, 'PNG', marginX, position, imgWidth, imgHeight);
-        pdf.setFontSize(9);
-        pdf.setTextColor(100, 100, 100);
-        pdf.text(`-- ${currentPage} of ${totalPages} --`, pageWidth / 2, footerY, { align: 'center' });
-        heightLeft -= usableHeight;
       }
     };
 
-    addCanvasToPdf(coverCanvas, false);
-    for (const sectionCanvas of sectionCanvases) addCanvasToPdf(sectionCanvas, true);
+    addCanvasToPdf(coverAndObjectivesCanvas, false);
     addCanvasToPdf(marksheetCanvas, true);
     addCanvasToPdf(gradingCanvas, true);
 
