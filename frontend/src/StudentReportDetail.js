@@ -88,6 +88,26 @@ const normalizeGradeForMatch = (grade) => {
   return s;
 };
 
+/** Get curriculum objectives for a grade and subject (from Curriculum page data) for fallback descriptions. */
+const getCurriculumObjectivesBySubject = (curriculumList, studentGradeNormalized, courseSubject) => {
+  if (!Array.isArray(curriculumList) || !courseSubject) return [];
+  const subjectLower = String(courseSubject).trim().toLowerCase();
+  const doc = curriculumList.find((d) => {
+    const g = d.grade;
+    const id = d.id;
+    if (studentGradeNormalized === 'KG-1' || studentGradeNormalized === 'KG-2' || studentGradeNormalized === 'KG-3') {
+      return String(g).trim() === studentGradeNormalized;
+    }
+    const num = parseInt(studentGradeNormalized, 10);
+    if (!Number.isNaN(num)) return g === num || String(g) === studentGradeNormalized || id === num;
+    return String(g).trim() === studentGradeNormalized;
+  });
+  const objectives = doc?.objectives || [];
+  return objectives.filter(
+    (obj) => (String(obj.subject || '').trim().toLowerCase()) === subjectLower
+  );
+};
+
 const formatDateDisplay = (value) => {
   if (!value) return '—';
   const date = new Date(value);
@@ -124,6 +144,7 @@ const StudentReportDetail = () => {
   const [courses, setCourses] = useState([]);
   const [recordsByCourse, setRecordsByCourse] = useState({});
   const [latestGradingSchemeRows, setLatestGradingSchemeRows] = useState([]);
+  const [curriculumList, setCurriculumList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -141,15 +162,17 @@ const StudentReportDetail = () => {
         setLoading(true);
         setError(null);
 
-        const [coursesRes, studentsRes, gradingSchemesRes] = await Promise.all([
+        const [coursesRes, studentsRes, gradingSchemesRes, curriculumRes] = await Promise.all([
           axios.get(`${API_URL}/api/courses`),
           axios.get(`${API_URL}/api/students-data`),
           axios.get(`${API_URL}/api/grading-schemes`),
+          axios.get(`${API_URL}/api/curriculum`).catch(() => ({ data: [] })),
         ]);
 
         const coursesList = coursesRes.data?.success ? coursesRes.data.data || [] : [];
         const studentsList = Array.isArray(studentsRes.data) ? studentsRes.data : [];
         const gradingSchemesList = gradingSchemesRes.data?.success ? gradingSchemesRes.data.data || [] : [];
+        const curriculumList = Array.isArray(curriculumRes.data) ? curriculumRes.data : [];
         const latestScheme = gradingSchemesList[0] || null;
         const normalizedLatestSchemeRows = Array.isArray(latestScheme?.rows)
           ? latestScheme.rows.map((row) => ({
@@ -161,6 +184,7 @@ const StudentReportDetail = () => {
         setCourses(coursesList);
         setAllStudents(studentsList);
         setLatestGradingSchemeRows(normalizedLatestSchemeRows);
+        setCurriculumList(curriculumList);
 
         let currentStudent = studentFromState && String(studentFromState.registrationNumber) === decodedRegNo
           ? studentFromState
@@ -538,8 +562,18 @@ const StudentReportDetail = () => {
                             : null;
                         const displayGrade =
                           percentage != null && Number.isFinite(percentage) ? getGradeFromPercentage(percentage) : '—';
+                        const curriculumObjectives = getCurriculumObjectivesBySubject(
+                          curriculumList,
+                          normalizeGradeForMatch(student?.grade),
+                          course.subject
+                        );
+                        const byCode = curriculumObjectives.find(
+                          (obj) => String(obj.code || '').trim() === String(topic.courseCode || '').trim()
+                        );
+                        const byIndex = curriculumObjectives[topicIndex];
+                        const curriculumDesc = (byCode?.description || byIndex?.description || '').trim();
                         const objectiveText =
-                          (topic.description && String(topic.description).trim()) || '—';
+                          (topic.description && String(topic.description).trim()) || (curriculumDesc || '—');
                         return (
                           <tr key={topicIndex}>
                             <td className="student-report-td student-report-td-objective">

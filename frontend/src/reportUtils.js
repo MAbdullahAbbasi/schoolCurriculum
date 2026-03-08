@@ -193,6 +193,26 @@ export const getGradeFromPercentageWithScheme = (percentage, schemeRows) => {
   return row && row.grade != null ? String(row.grade) : '—';
 };
 
+/** Get curriculum objectives for a grade and subject (for fallback descriptions on report). */
+const getCurriculumObjectivesBySubject = (curriculumList, studentGradeNormalized, courseSubject) => {
+  if (!Array.isArray(curriculumList) || !courseSubject) return [];
+  const subjectLower = String(courseSubject).trim().toLowerCase();
+  const doc = curriculumList.find((d) => {
+    const g = d.grade;
+    const id = d.id;
+    if (studentGradeNormalized === 'KG-1' || studentGradeNormalized === 'KG-2' || studentGradeNormalized === 'KG-3') {
+      return String(g).trim() === studentGradeNormalized;
+    }
+    const num = parseInt(studentGradeNormalized, 10);
+    if (!Number.isNaN(num)) return g === num || String(g) === studentGradeNormalized || id === num;
+    return String(g).trim() === studentGradeNormalized;
+  });
+  const objectives = doc?.objectives || [];
+  return objectives.filter(
+    (obj) => (String(obj.subject || '').trim().toLowerCase()) === subjectLower
+  );
+};
+
 export const buildStudentReportData = ({
   student,
   allStudents,
@@ -200,6 +220,7 @@ export const buildStudentReportData = ({
   recordsByCourse,
   gradingSchemeRows,
   registrationNumber,
+  curriculumList = [],
 }) => {
   const decodedRegNo = String(registrationNumber || student?.registrationNumber || '');
   const latestGradingSchemeRows = normalizeGradingSchemeRows(gradingSchemeRows);
@@ -348,28 +369,41 @@ export const buildStudentReportData = ({
   // Only show position on report card when it is 1–5; otherwise leave blank.
   const classPosition = position != null && position >= 1 && position <= 5 ? position : null;
 
-  const objectiveSections = enrolledCoursesWithMarks.map(({ course, objectiveMarks }) => ({
-    title: course.courseName || course.code,
-    rows: (course.topics || []).map((topic, topicIndex) => {
-      const marks = objectiveMarks[String(topicIndex)];
-      const obtained = marks !== undefined && marks !== null ? Number(marks) : null;
-      const totalMarks = topic.marks != null && topic.marks !== '' ? Number(topic.marks) : null;
-      const percentage =
-        totalMarks != null && totalMarks > 0 && obtained != null && Number.isFinite(obtained)
-          ? (obtained / totalMarks) * 100
-          : null;
-      const grade =
-        percentage != null && Number.isFinite(percentage)
-          ? getGradeFromPercentageWithScheme(percentage, effectiveSchemeRows)
-          : '—';
-      return {
-        objective:
-          (topic.description && String(topic.description).trim()) || '—',
-        percentage: percentage != null ? `${Number(percentage).toFixed(2)}%` : '—',
-        grade,
-      };
-    }),
-  }));
+  const objectiveSections = enrolledCoursesWithMarks.map(({ course, objectiveMarks }) => {
+    const curriculumObjectives = getCurriculumObjectivesBySubject(
+      curriculumList,
+      normalizedStudentGrade,
+      course.subject
+    );
+    return {
+      title: course.courseName || course.code,
+      rows: (course.topics || []).map((topic, topicIndex) => {
+        const marks = objectiveMarks[String(topicIndex)];
+        const obtained = marks !== undefined && marks !== null ? Number(marks) : null;
+        const totalMarks = topic.marks != null && topic.marks !== '' ? Number(topic.marks) : null;
+        const percentage =
+          totalMarks != null && totalMarks > 0 && obtained != null && Number.isFinite(obtained)
+            ? (obtained / totalMarks) * 100
+            : null;
+        const grade =
+          percentage != null && Number.isFinite(percentage)
+            ? getGradeFromPercentageWithScheme(percentage, effectiveSchemeRows)
+            : '—';
+        const byCode = curriculumObjectives.find(
+          (obj) => String(obj.code || '').trim() === String(topic.courseCode || '').trim()
+        );
+        const byIndex = curriculumObjectives[topicIndex];
+        const curriculumDesc = (byCode?.description || byIndex?.description || '').trim();
+        const objective =
+          (topic.description && String(topic.description).trim()) || curriculumDesc || '—';
+        return {
+          objective,
+          percentage: percentage != null ? `${Number(percentage).toFixed(2)}%` : '—',
+          grade,
+        };
+      }),
+    };
+  });
 
   const classmatesWithDob = (allStudents || []).filter(
     (s) =>
