@@ -448,7 +448,7 @@ export const buildStudentReportData = ({
     displayDob: formatDateDisplay(student?.dateOfBirth),
     studentAge: formatAgeFromMonths(getAgeInMonths(student?.dateOfBirth)),
     averageAgeInClass: formatAgeFromMonths(averageAgeMonths),
-    reportMonthYear: new Date().toLocaleDateString(undefined, { month: 'short', year: 'numeric' }),
+    reportMonthYear: new Date().toLocaleDateString(undefined, { month: 'long', year: 'numeric' }),
     objectiveSections,
     marksheetRows,
     totalMax: totalMax > 0 ? totalMax : '',

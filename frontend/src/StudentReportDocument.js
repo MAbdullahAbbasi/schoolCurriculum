@@ -10,9 +10,9 @@ export const StudentReportCover = ({ reportData }) => (
     <div className="student-report-cover-top">
       <img src={logoLeft} alt="School logo" className="student-report-cover-logo student-report-cover-logo-left" />
       <div className="student-report-cover-title-block">
-        <h2 className="student-report-cover-school-title">SAPLING HIGH SCHOOL <span className="student-report-cover-registered">(Registered)</span></h2>
+        <h2 className="student-report-cover-school-title">Sapling High School <span className="student-report-cover-registered">(Registered)</span></h2>
         <p className="student-report-cover-school-subtitle">(Boys/ Girls)</p>
-        <h3 className="student-report-cover-term-title">Term Exam {reportData.reportMonthYear}</h3>
+        <h3 className="student-report-cover-term-title">Annual Examination {reportData.reportMonthYear}</h3>
       </div>
       <img src={logoRight} alt="SHS logo" className="student-report-cover-logo student-report-cover-logo-right" />
     </div>

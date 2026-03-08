@@ -497,7 +497,7 @@ const StudentReportDetail = () => {
         classmatesWithDob.reduce((sum, s) => sum + getAgeInMonths(s.dateOfBirth), 0) / classmatesWithDob.length
       )
     : null;
-  const reportMonthYear = new Date().toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+  const reportMonthYear = new Date().toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 
   return (
     <div className="student-report-detail-container">
@@ -517,9 +517,9 @@ const StudentReportDetail = () => {
           <div className="student-report-cover-top">
             <img src={logoLeft} alt="School logo" className="student-report-cover-logo student-report-cover-logo-left" />
             <div className="student-report-cover-title-block">
-              <h2 className="student-report-cover-school-title">SAPLING HIGH SCHOOL <span className="student-report-cover-registered">(Registered)</span></h2>
+              <h2 className="student-report-cover-school-title">Sapling High School <span className="student-report-cover-registered">(Registered)</span></h2>
               <p className="student-report-cover-school-subtitle">(Boys/ Girls)</p>
-              <h3 className="student-report-cover-term-title">Term Exam {reportMonthYear}</h3>
+              <h3 className="student-report-cover-term-title">Annual Examination {reportMonthYear}</h3>
             </div>
             <img src={logoRight} alt="SHS logo" className="student-report-cover-logo student-report-cover-logo-right" />
           </div>
