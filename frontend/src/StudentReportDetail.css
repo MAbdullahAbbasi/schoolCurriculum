@@ -6,6 +6,7 @@
 }
 
 .student-report-detail-content {
+  position: relative;
   max-width: 900px;
   margin: 0 auto;
 }
@@ -76,13 +77,41 @@
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  font-size: 4rem;
-  font-weight: 700;
-  color: rgba(0, 0, 0, 0.04);
-  white-space: nowrap;
-  letter-spacing: 0.15em;
   pointer-events: none;
   z-index: 0;
+}
+
+.student-report-cover-watermark-img {
+  width: 180px;
+  height: auto;
+  opacity: 0.06;
+  display: block;
+}
+
+.student-report-page-watermark {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.student-report-page-watermark-img {
+  max-width: 320px;
+  width: 50%;
+  height: auto;
+  opacity: 0.06;
+  object-fit: contain;
+}
+
+.student-report-detail-content > *:not(.student-report-page-watermark) {
+  position: relative;
+  z-index: 1;
 }
 
 .student-report-cover-section .student-report-cover-top,
@@ -432,5 +461,20 @@
 
   .student-report-cover-row-three {
     grid-template-columns: 1fr;
+  }
+}
+
+@media print {
+  .student-report-page-watermark {
+    position: fixed;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 0;
+  }
+
+  .student-report-detail-content > *:not(.student-report-page-watermark) {
+    z-index: 1;
   }
 }

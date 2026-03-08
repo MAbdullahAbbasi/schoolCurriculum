@@ -6,7 +6,9 @@ import './StudentReportDetail.css';
 
 export const StudentReportCover = ({ reportData }) => (
   <section className="student-report-cover-section">
-    <div className="student-report-cover-watermark" aria-hidden="true">SAPLING HIGH SCHOOL</div>
+    <div className="student-report-cover-watermark" aria-hidden="true">
+      <img src={logoLeft} alt="" className="student-report-cover-watermark-img" />
+    </div>
     <div className="student-report-cover-top">
       <img src={logoLeft} alt="School logo" className="student-report-cover-logo student-report-cover-logo-left" />
       <div className="student-report-cover-title-block">
@@ -165,6 +167,9 @@ const StudentReportDocument = ({ reportData }) => {
   if (!reportData) return null;
   return (
     <div className="student-report-detail-content student-report-pdf-content">
+      <div className="student-report-page-watermark" aria-hidden="true">
+        <img src={logoLeft} alt="" className="student-report-page-watermark-img" />
+      </div>
       <StudentReportCover reportData={reportData} />
 
       {reportData.objectiveSections.length === 0 ? (

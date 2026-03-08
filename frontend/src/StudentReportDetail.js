@@ -503,6 +503,9 @@ const StudentReportDetail = () => {
     <div className="student-report-detail-container">
       <CurriculumHeader />
       <div className="student-report-detail-content">
+        <div className="student-report-page-watermark" aria-hidden="true">
+          <img src={logoLeft} alt="" className="student-report-page-watermark-img" />
+        </div>
         <div className="student-report-detail-header">
           <h2 className="student-report-detail-title">
             Report: {displayName} ({displayRegNo})
@@ -513,7 +516,9 @@ const StudentReportDetail = () => {
         </div>
 
         <section className="student-report-cover-section">
-          <div className="student-report-cover-watermark" aria-hidden="true">SAPLING HIGH SCHOOL</div>
+          <div className="student-report-cover-watermark" aria-hidden="true">
+            <img src={logoLeft} alt="" className="student-report-cover-watermark-img" />
+          </div>
           <div className="student-report-cover-top">
             <img src={logoLeft} alt="School logo" className="student-report-cover-logo student-report-cover-logo-left" />
             <div className="student-report-cover-title-block">
