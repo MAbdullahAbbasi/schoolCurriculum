@@ -85,6 +85,14 @@ export const MARKSHEET_SUBJECT_GROUPS = [
   { label: 'Art', keys: ['art'] },
 ];
 
+export const getCourseTotalMarks = (course) => {
+  if (!course) return 0;
+  const qpm = course.questionPartMarks || [];
+  if (qpm.length > 0) return qpm.reduce((s, m) => s + (Number(m.marks) || 0), 0);
+  const topics = course.topics || [];
+  return topics.reduce((s, t) => s + (Number(t.marks) || 0), 0);
+};
+
 export const normalizeGradeForMatch = (grade) => {
   if (grade == null || grade === '') return '';
   let s = String(grade).trim();
@@ -306,14 +314,17 @@ export const buildStudentReportData = ({
     const normalized = rawSubject.toLowerCase().trim();
     const templateKey = SUBJECT_TO_TEMPLATE_KEY[normalized] || null;
     if (!templateKey) return;
+    const courseTotal = getCourseTotalMarks(course);
+    if (courseTotal <= 0) return;
     const studentEntry = record?.students?.find((s) => String(s.registrationNumber) === decodedRegNo);
     const overallPercentage = studentEntry?.overallPercentage;
     const percentage = overallPercentage != null && Number.isFinite(Number(overallPercentage)) ? Number(overallPercentage) : null;
+    const obtainedMarks = percentage != null ? (percentage / 100) * courseTotal : 0;
     if (!marksByTemplateKey[templateKey]) {
       marksByTemplateKey[templateKey] = { maxTotal: 0, obtainedTotal: 0 };
     }
-    marksByTemplateKey[templateKey].maxTotal += 100;
-    marksByTemplateKey[templateKey].obtainedTotal += percentage != null ? percentage : 0;
+    marksByTemplateKey[templateKey].maxTotal += courseTotal;
+    marksByTemplateKey[templateKey].obtainedTotal += obtainedMarks;
   });
   Object.keys(marksByTemplateKey).forEach((k) => {
     const row = marksByTemplateKey[k];
@@ -330,6 +341,8 @@ export const buildStudentReportData = ({
     const normalized = rawSubject.toLowerCase().trim();
     const templateKey = SUBJECT_TO_TEMPLATE_KEY[normalized] || null;
     if (!templateKey || !record?.students?.length) return;
+    const courseTotal = getCourseTotalMarks(course);
+    if (courseTotal <= 0) return;
 
     record.students.forEach((studentEntry) => {
       const reg = String(studentEntry.registrationNumber || '');
@@ -340,16 +353,16 @@ export const buildStudentReportData = ({
         ? Number(overallPercentage)
         : null;
       if (percentage == null) return;
+      const obtainedMarks = (percentage / 100) * courseTotal;
       if (!byKeyByStudent[templateKey]) byKeyByStudent[templateKey] = {};
       if (!byKeyByStudent[templateKey][reg]) byKeyByStudent[templateKey][reg] = { obtainedTotal: 0 };
-      byKeyByStudent[templateKey][reg].obtainedTotal += percentage;
+      byKeyByStudent[templateKey][reg].obtainedTotal += obtainedMarks;
     });
   });
   const highestMarksByTemplateKey = {};
   Object.keys(byKeyByStudent).forEach((templateKey) => {
-    highestMarksByTemplateKey[templateKey] = Math.max(
-      ...Object.values(byKeyByStudent[templateKey]).map((row) => Number(row.obtainedTotal) || 0)
-    );
+    const values = Object.values(byKeyByStudent[templateKey]).map((row) => Number(row.obtainedTotal) || 0);
+    highestMarksByTemplateKey[templateKey] = values.length > 0 ? Math.max(...values) : 0;
   });
 
   // Build marksheet rows: only subjects that have courses (data); merge Oral/Written into one row per subject.

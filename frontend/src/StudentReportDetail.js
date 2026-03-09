@@ -4,7 +4,7 @@ import axios from 'axios';
 import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
 import { IconBack } from './ButtonIcons';
-import { formatGradingSchemeForDisplay, SUBJECT_DISPLAY_ORDER } from './reportUtils';
+import { formatGradingSchemeForDisplay, getCourseTotalMarks, SUBJECT_DISPLAY_ORDER } from './reportUtils';
 import logoLeft from './assets/logoleft.jpg';
 import logoRight from './assets/logoright.jpg';
 import './StudentReportDetail.css';
@@ -304,7 +304,7 @@ const StudentReportDetail = () => {
     });
   }, [courses, recordsByCourse, student, decodedRegNo]);
 
-  // Aggregate marks by template row key (course subject -> first matching template row; 100% per course)
+  // Aggregate marks by template row key: use actual course total marks and obtained marks (not percentage)
   const marksByTemplateKey = useMemo(() => {
     const byKey = {};
     enrolledCoursesWithMarks.forEach(({ course, record }) => {
@@ -312,14 +312,17 @@ const StudentReportDetail = () => {
       const normalized = rawSubject.toLowerCase().trim();
       const templateKey = SUBJECT_TO_TEMPLATE_KEY[normalized] || null;
       if (!templateKey) return;
+      const courseTotal = getCourseTotalMarks(course);
+      if (courseTotal <= 0) return;
       const studentEntry = record?.students?.find((s) => String(s.registrationNumber) === decodedRegNo);
       const overallPercentage = studentEntry?.overallPercentage;
       const percentage = overallPercentage != null && Number.isFinite(Number(overallPercentage)) ? Number(overallPercentage) : null;
+      const obtainedMarks = percentage != null ? (percentage / 100) * courseTotal : 0;
       if (!byKey[templateKey]) {
         byKey[templateKey] = { maxTotal: 0, obtainedTotal: 0 };
       }
-      byKey[templateKey].maxTotal += 100;
-      byKey[templateKey].obtainedTotal += percentage != null ? percentage : 0;
+      byKey[templateKey].maxTotal += courseTotal;
+      byKey[templateKey].obtainedTotal += obtainedMarks;
     });
     Object.keys(byKey).forEach((k) => {
       const row = byKey[k];
@@ -342,6 +345,8 @@ const StudentReportDetail = () => {
       const normalized = rawSubject.toLowerCase().trim();
       const templateKey = SUBJECT_TO_TEMPLATE_KEY[normalized] || null;
       if (!templateKey || !record?.students?.length) return;
+      const courseTotal = getCourseTotalMarks(course);
+      if (courseTotal <= 0) return;
 
       record.students.forEach((studentEntry) => {
         const registrationNumber = String(studentEntry.registrationNumber || '');
@@ -353,13 +358,14 @@ const StudentReportDetail = () => {
           ? Number(overallPercentage)
           : null;
         if (percentage == null) return;
+        const obtainedMarks = (percentage / 100) * courseTotal;
 
         if (!out[templateKey]) out[templateKey] = {};
         if (!out[templateKey][registrationNumber]) {
           out[templateKey][registrationNumber] = { maxTotal: 0, obtainedTotal: 0 };
         }
-        out[templateKey][registrationNumber].maxTotal += 100;
-        out[templateKey][registrationNumber].obtainedTotal += percentage;
+        out[templateKey][registrationNumber].maxTotal += courseTotal;
+        out[templateKey][registrationNumber].obtainedTotal += obtainedMarks;
       });
     });
     return out;
