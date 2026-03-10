@@ -4,7 +4,7 @@ import axios from 'axios';
 import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
 import { IconBack } from './ButtonIcons';
-import { formatGradingSchemeForDisplay, getCourseTotalMarks, getSubjectSortIndex, SUBJECT_DISPLAY_ORDER } from './reportUtils';
+import { formatGradingSchemeForDisplay, getCourseTotalMarks, getSubjectSortIndex } from './reportUtils';
 import logoLeft from './assets/logoleft.jpg';
 import logoRight from './assets/logoright.jpg';
 import './StudentReportDetail.css';

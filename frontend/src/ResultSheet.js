@@ -35,11 +35,6 @@ const getSerialFromRegistration = (regNo) => {
   return parts.length >= 2 ? parts[1].trim() : '—';
 };
 
-// Subject order for result sheet and reports (from school specification): Urdu, Eng, Math, Sci, S.St, Comp, T.Q, Islamiat, Nazra, A.A
-const SUBJECT_ORDER = [
-  'urdu', 'english', 'math', 'science', 'social studies', 'computer',
-  'tarjuma tul quran', 'tq', 'islamiat', 'nazra', 'art',
-];
 const getSubjectSortIndex = (subjectName) => {
   if (!subjectName || typeof subjectName !== 'string') return 999;
   const n = subjectName.toLowerCase().trim().replace(/\s+/g, ' ');
