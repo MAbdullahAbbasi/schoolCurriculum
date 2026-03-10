@@ -109,6 +109,27 @@ export const getCourseTotalMarks = (course) => {
   return topics.reduce((s, t) => s + (Number(t.marks) || 0), 0);
 };
 
+// Same order as result sheet so report card shows same subjects in same order
+export const getSubjectSortIndex = (subjectName) => {
+  if (!subjectName || typeof subjectName !== 'string') return 999;
+  const n = subjectName.toLowerCase().trim().replace(/\s+/g, ' ');
+  if (n.startsWith('urdu')) return 0;
+  if (n.startsWith('eng')) return 1;
+  if (/\bmath|maths\b/.test(n) || n === 'mathematics') return 2;
+  if (n.startsWith('sci') || n === 'science') return 3;
+  if (n.includes('social') || n === 's.st' || n === 's.st.') return 4;
+  if (n.startsWith('comp') || n === 'computer') return 5;
+  if (n.includes('tarjuma') || n.includes('t.q') || n === 'tq') return 6;
+  if (n.includes('islamiat') || n.startsWith('isl') || n.startsWith('del')) return 7;
+  if (n.startsWith('nazar') || n === 'nazra') return 8;
+  if (n.startsWith('art') || n === 'a.a' || n === 'a.a.') return 9;
+  if (n === 'g.k' || n === 'g.k.' || n === 'gk' || n.includes('general knowledge')) return 10;
+  if (n.startsWith('phys') || n === 'physics') return 11;
+  if (n.startsWith('chem') || n === 'chemistry') return 12;
+  if (n.startsWith('bio') || n === 'biology') return 13;
+  return 999;
+};
+
 export const normalizeGradeForMatch = (grade) => {
   if (grade == null || grade === '') return '';
   let s = String(grade).trim();
@@ -313,115 +334,49 @@ export const buildStudentReportData = ({
         });
 
   enrolledCoursesWithMarks = [...enrolledCoursesWithMarks].sort((a, b) => {
-    const rawA = (a.course.subject && String(a.course.subject).trim()) || '';
-    const rawB = (b.course.subject && String(b.course.subject).trim()) || '';
-    const keyA = SUBJECT_TO_TEMPLATE_KEY[rawA.toLowerCase()] || '';
-    const keyB = SUBJECT_TO_TEMPLATE_KEY[rawB.toLowerCase()] || '';
-    const idxA = SUBJECT_DISPLAY_ORDER.indexOf(keyA);
-    const idxB = SUBJECT_DISPLAY_ORDER.indexOf(keyB);
-    const orderA = idxA === -1 ? 999 : idxA;
-    const orderB = idxB === -1 ? 999 : idxB;
-    return orderA - orderB;
+    const labelA = (a.course.subject && String(a.course.subject).trim()) || a.course.courseName || a.course.code || '';
+    const labelB = (b.course.subject && String(b.course.subject).trim()) || b.course.courseName || b.course.code || '';
+    return getSubjectSortIndex(labelA) - getSubjectSortIndex(labelB);
   });
 
-  const marksByTemplateKey = {};
-  enrolledCoursesWithMarks.forEach(({ course, record }) => {
-    const rawSubject = (course.subject && String(course.subject).trim()) || '';
-    const normalized = rawSubject.toLowerCase().trim();
-    const templateKey = SUBJECT_TO_TEMPLATE_KEY[normalized] || null;
-    if (!templateKey) return;
-    const courseTotal = getCourseTotalMarks(course);
-    if (courseTotal <= 0) return;
-    const studentEntry = record?.students?.find((s) => String(s.registrationNumber) === decodedRegNo);
-    const overallPercentage = studentEntry?.overallPercentage;
-    const percentage = overallPercentage != null && Number.isFinite(Number(overallPercentage)) ? Number(overallPercentage) : null;
-    // Same formula as result sheet: marks = (pct/100)*courseTotal rounded to 2 decimals
-    const obtainedMarks = percentage != null ? Math.round((percentage / 100) * courseTotal * 100) / 100 : 0;
-    if (!marksByTemplateKey[templateKey]) {
-      marksByTemplateKey[templateKey] = { maxTotal: 0, obtainedTotal: 0 };
-    }
-    marksByTemplateKey[templateKey].maxTotal += courseTotal;
-    marksByTemplateKey[templateKey].obtainedTotal += obtainedMarks;
-  });
-  Object.keys(marksByTemplateKey).forEach((k) => {
-    const row = marksByTemplateKey[k];
-    row.percentage = row.maxTotal > 0 ? (row.obtainedTotal / row.maxTotal) * 100 : 0;
-  });
-
-  const byKeyByStudent = {};
   const currentStudentGrade = normalizeGradeForMatch(student?.grade);
   const gradeByRegistration = new Map(
     (allStudents || []).map((s) => [String(s.registrationNumber), normalizeGradeForMatch(s.grade)])
   );
-  enrolledCoursesWithMarks.forEach(({ course, record }) => {
-    const rawSubject = (course.subject && String(course.subject).trim()) || '';
-    const normalized = rawSubject.toLowerCase().trim();
-    const templateKey = SUBJECT_TO_TEMPLATE_KEY[normalized] || null;
-    if (!templateKey || !record?.students?.length) return;
-    const courseTotal = getCourseTotalMarks(course);
-    if (courseTotal <= 0) return;
 
-    record.students.forEach((studentEntry) => {
-      const reg = String(studentEntry.registrationNumber || '');
-      if (!reg) return;
-      if (gradeByRegistration.get(reg) !== currentStudentGrade) return;
-      const overallPercentage = studentEntry?.overallPercentage;
-      const percentage = overallPercentage != null && Number.isFinite(Number(overallPercentage))
-        ? Number(overallPercentage)
+  // Build marksheet from same course list as result sheet: one row per course, same formula
+  const marksheetRows = enrolledCoursesWithMarks
+    .map(({ course, record, objectiveMarks }) => {
+      const courseTotal = getCourseTotalMarks(course);
+      if (courseTotal <= 0) return null;
+      const studentEntry = record?.students?.find((s) => String(s.registrationNumber) === decodedRegNo);
+      const pct = studentEntry?.overallPercentage != null && Number.isFinite(Number(studentEntry.overallPercentage))
+        ? Number(studentEntry.overallPercentage)
         : null;
-      if (percentage == null) return;
-      const obtainedMarks = Math.round((percentage / 100) * courseTotal * 100) / 100;
-      if (!byKeyByStudent[templateKey]) byKeyByStudent[templateKey] = {};
-      if (!byKeyByStudent[templateKey][reg]) byKeyByStudent[templateKey][reg] = { obtainedTotal: 0 };
-      byKeyByStudent[templateKey][reg].obtainedTotal += obtainedMarks;
-    });
-  });
-  const highestMarksByTemplateKey = {};
-  Object.keys(byKeyByStudent).forEach((templateKey) => {
-    const values = Object.values(byKeyByStudent[templateKey]).map((row) => Number(row.obtainedTotal) || 0);
-    highestMarksByTemplateKey[templateKey] = values.length > 0 ? Math.max(...values) : 0;
-  });
-
-  // Build marksheet rows: only subjects that have courses (data); merge Oral/Written into one row per subject.
-  const marksheetRows = [];
-  MARKSHEET_SUBJECT_GROUPS.forEach((group) => {
-    let groupMaxTotal = 0;
-    let groupObtainedTotal = 0;
-    group.keys.forEach((templateKey) => {
-      const data = marksByTemplateKey[templateKey];
-      if (data && data.maxTotal > 0) {
-        groupMaxTotal += data.maxTotal;
-        groupObtainedTotal += data.obtainedTotal;
+      const obtainedMarks = pct != null ? Math.round((pct / 100) * courseTotal * 100) / 100 : 0;
+      const percentage = pct != null ? (obtainedMarks / courseTotal) * 100 : 0;
+      let highestInClass = 0;
+      if (record?.students?.length) {
+        record.students.forEach((se) => {
+          if (gradeByRegistration.get(String(se.registrationNumber)) !== currentStudentGrade) return;
+          const pc = se.overallPercentage != null && Number.isFinite(Number(se.overallPercentage)) ? Number(se.overallPercentage) : null;
+          if (pc == null) return;
+          const m = Math.round((pc / 100) * courseTotal * 100) / 100;
+          if (m > highestInClass) highestInClass = m;
+        });
       }
-    });
-    if (groupMaxTotal === 0) return;
-
-    const groupPercentage = groupMaxTotal > 0 ? (groupObtainedTotal / groupMaxTotal) * 100 : 0;
-    const allRegNos = new Set();
-    group.keys.forEach((templateKey) => {
-      if (byKeyByStudent[templateKey]) {
-        Object.keys(byKeyByStudent[templateKey]).forEach((reg) => allRegNos.add(reg));
-      }
-    });
-    let groupHighestInClass = 0;
-    allRegNos.forEach((reg) => {
-      let studentTotal = 0;
-      group.keys.forEach((templateKey) => {
-        const studentData = byKeyByStudent[templateKey]?.[reg];
-        if (studentData) studentTotal += Number(studentData.obtainedTotal) || 0;
-      });
-      if (studentTotal > groupHighestInClass) groupHighestInClass = studentTotal;
-    });
-
-    marksheetRows.push({
-      key: group.keys[0],
-      label: group.label,
-      maxTotal: groupMaxTotal,
-      obtainedTotal: Number(groupObtainedTotal).toFixed(2),
-      grade: getGradeFromPercentageWithScheme(groupPercentage, effectiveSchemeRows),
-      highestInClass: groupHighestInClass > 0 ? Number(groupHighestInClass).toFixed(2) : null,
-    });
-  });
+      const label = (course.subject && String(course.subject).trim()) || course.courseName || course.code || '—';
+      return {
+        key: course.code,
+        label,
+        maxTotal: courseTotal,
+        obtainedTotal: Number(obtainedMarks).toFixed(2),
+        grade: getGradeFromPercentageWithScheme(percentage, effectiveSchemeRows),
+        highestInClass: highestInClass > 0 ? Number(highestInClass).toFixed(2) : null,
+      };
+    })
+    .filter(Boolean);
+  marksheetRows.sort((a, b) => getSubjectSortIndex(a.label) - getSubjectSortIndex(b.label));
 
   const totalMax = marksheetRows.reduce((s, r) => s + r.maxTotal, 0);
   const totalObtained = marksheetRows.reduce((s, r) => s + Number(r.obtainedTotal), 0);

@@ -41,7 +41,7 @@ const SUBJECT_ORDER = [
   'tarjuma tul quran', 'tq', 'islamiat', 'nazra', 'art',
 ];
 const getSubjectSortIndex = (subjectName) => {
-  if (!subjectName || typeof subjectName !== 'string') return SUBJECT_ORDER.length;
+  if (!subjectName || typeof subjectName !== 'string') return 999;
   const n = subjectName.toLowerCase().trim().replace(/\s+/g, ' ');
   if (n.startsWith('urdu')) return 0;
   if (n.startsWith('eng')) return 1;
@@ -53,7 +53,11 @@ const getSubjectSortIndex = (subjectName) => {
   if (n.includes('islamiat') || n.startsWith('isl') || n.startsWith('del')) return 7;
   if (n.startsWith('nazar') || n === 'nazra') return 8;
   if (n.startsWith('art') || n === 'a.a' || n === 'a.a.') return 9;
-  return SUBJECT_ORDER.length;
+  if (n === 'g.k' || n === 'g.k.' || n === 'gk' || n.includes('general knowledge')) return 10;
+  if (n.startsWith('phys') || n === 'physics') return 11;
+  if (n.startsWith('chem') || n === 'chemistry') return 12;
+  if (n.startsWith('bio') || n === 'biology') return 13;
+  return 999;
 };
 
 const ResultSheet = () => {
