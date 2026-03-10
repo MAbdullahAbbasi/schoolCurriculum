@@ -21,14 +21,25 @@ export const MARKSHEET_TEMPLATE_ROWS = [
   { label: 'Biology', key: 'biology' },
 ];
 
+// Map course subject to template key. Include variants (e.g. "Urdu Oral") so every course matches and report card matches result sheet.
 export const SUBJECT_TO_TEMPLATE_KEY = {
   urdu: 'urdu_oral',
+  'urdu oral': 'urdu_oral',
+  'urdu written': 'urdu_written',
   english: 'english_oral',
   eng: 'english_oral',
+  'english oral': 'english_oral',
+  'english written': 'english_written',
   math: 'math_oral',
   maths: 'math_oral',
   mathematics: 'math_oral',
   "math's": 'math_oral',
+  'math oral': 'math_oral',
+  'math written': 'math_written',
+  'maths oral': 'math_oral',
+  'maths written': 'math_written',
+  "math's oral": 'math_oral',
+  "math's written": 'math_written',
   science: 'science',
   sci: 'science',
   'social studies': 'social_studies',
@@ -39,6 +50,8 @@ export const SUBJECT_TO_TEMPLATE_KEY = {
   't.q': 'tarjuma_tul_quran',
   tq: 'tarjuma_tul_quran',
   islamiat: 'islamiat_oral',
+  'islamiat oral': 'islamiat_oral',
+  'islamiat written': 'islamiat_written',
   nazra: 'nazra',
   nazars: 'nazra',
   art: 'art',
@@ -319,7 +332,8 @@ export const buildStudentReportData = ({
     const studentEntry = record?.students?.find((s) => String(s.registrationNumber) === decodedRegNo);
     const overallPercentage = studentEntry?.overallPercentage;
     const percentage = overallPercentage != null && Number.isFinite(Number(overallPercentage)) ? Number(overallPercentage) : null;
-    const obtainedMarks = percentage != null ? (percentage / 100) * courseTotal : 0;
+    // Same formula as result sheet: marks = (pct/100)*courseTotal rounded to 2 decimals
+    const obtainedMarks = percentage != null ? Math.round((percentage / 100) * courseTotal * 100) / 100 : 0;
     if (!marksByTemplateKey[templateKey]) {
       marksByTemplateKey[templateKey] = { maxTotal: 0, obtainedTotal: 0 };
     }
@@ -353,7 +367,7 @@ export const buildStudentReportData = ({
         ? Number(overallPercentage)
         : null;
       if (percentage == null) return;
-      const obtainedMarks = (percentage / 100) * courseTotal;
+      const obtainedMarks = Math.round((percentage / 100) * courseTotal * 100) / 100;
       if (!byKeyByStudent[templateKey]) byKeyByStudent[templateKey] = {};
       if (!byKeyByStudent[templateKey][reg]) byKeyByStudent[templateKey][reg] = { obtainedTotal: 0 };
       byKeyByStudent[templateKey][reg].obtainedTotal += obtainedMarks;
