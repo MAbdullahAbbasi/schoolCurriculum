@@ -11,68 +11,6 @@ import './StudentReportDetail.css';
 
 const GRADING_SCHEME_STORAGE_KEY = 'curriculum_grading_scheme';
 
-// Subject groups: only show subjects that have courses; merge Oral/Written into one row. Order matches reportUtils SUBJECT_DISPLAY_ORDER.
-const MARKSHEET_SUBJECT_GROUPS = [
-  { label: 'Urdu', keys: ['urdu_oral', 'urdu_written'] },
-  { label: 'English', keys: ['english_oral', 'english_written'] },
-  { label: 'Mathematics', keys: ['math_oral', 'math_written'] },
-  { label: 'Tarjuma Tul Quran (T.Q)', keys: ['tarjuma_tul_quran'] },
-  { label: 'Nazra', keys: ['nazra'] },
-  { label: 'Islamiat', keys: ['islamiat_oral', 'islamiat_written'] },
-  { label: 'Science', keys: ['science'] },
-  { label: 'Social Studies', keys: ['social_studies'] },
-  { label: 'General Knowledge', keys: ['general_knowledge'] },
-  { label: 'Physics', keys: ['physics'] },
-  { label: 'Chemistry', keys: ['chemistry'] },
-  { label: 'Biology', keys: ['biology'] },
-  { label: 'Computer', keys: ['computer'] },
-  { label: 'Art', keys: ['art'] },
-];
-
-// Map course subject to template key (same as reportUtils so report card matches result sheet)
-const SUBJECT_TO_TEMPLATE_KEY = {
-  urdu: 'urdu_oral',
-  'urdu oral': 'urdu_oral',
-  'urdu written': 'urdu_written',
-  english: 'english_oral',
-  eng: 'english_oral',
-  'english oral': 'english_oral',
-  'english written': 'english_written',
-  math: 'math_oral',
-  maths: 'math_oral',
-  mathematics: 'math_oral',
-  "math's": 'math_oral',
-  'math oral': 'math_oral',
-  'math written': 'math_written',
-  'maths oral': 'math_oral',
-  'maths written': 'math_written',
-  "math's oral": 'math_oral',
-  "math's written": 'math_written',
-  science: 'science',
-  sci: 'science',
-  'social studies': 'social_studies',
-  's.st': 'social_studies',
-  computer: 'computer',
-  comp: 'computer',
-  'tarjuma tul quran': 'tarjuma_tul_quran',
-  't.q': 'tarjuma_tul_quran',
-  tq: 'tarjuma_tul_quran',
-  islamiat: 'islamiat_oral',
-  'islamiat oral': 'islamiat_oral',
-  'islamiat written': 'islamiat_written',
-  nazra: 'nazra',
-  nazars: 'nazra',
-  art: 'art',
-  'a.a': 'art',
-  'general knowledge': 'general_knowledge',
-  'g.k': 'general_knowledge',
-  'g.k.': 'general_knowledge',
-  gk: 'general_knowledge',
-  physics: 'physics',
-  chemistry: 'chemistry',
-  biology: 'biology',
-};
-
 const getGradingSchemeFromStorage = () => {
   try {
     const raw = localStorage.getItem(GRADING_SCHEME_STORAGE_KEY);
