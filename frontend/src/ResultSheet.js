@@ -35,8 +35,13 @@ const getSerialFromRegistration = (regNo) => {
   return parts.length >= 2 ? parts[1].trim() : '—';
 };
 
+// Subject order for result sheet (original – do not change; result sheet is source of truth)
+const SUBJECT_ORDER = [
+  'urdu', 'english', 'math', 'science', 'social studies', 'computer',
+  'tarjuma tul quran', 'tq', 'islamiat', 'nazra', 'art',
+];
 const getSubjectSortIndex = (subjectName) => {
-  if (!subjectName || typeof subjectName !== 'string') return 999;
+  if (!subjectName || typeof subjectName !== 'string') return SUBJECT_ORDER.length;
   const n = subjectName.toLowerCase().trim().replace(/\s+/g, ' ');
   if (n.startsWith('urdu')) return 0;
   if (n.startsWith('eng')) return 1;
@@ -48,11 +53,7 @@ const getSubjectSortIndex = (subjectName) => {
   if (n.includes('islamiat') || n.startsWith('isl') || n.startsWith('del')) return 7;
   if (n.startsWith('nazar') || n === 'nazra') return 8;
   if (n.startsWith('art') || n === 'a.a' || n === 'a.a.') return 9;
-  if (n === 'g.k' || n === 'g.k.' || n === 'gk' || n.includes('general knowledge')) return 10;
-  if (n.startsWith('phys') || n === 'physics') return 11;
-  if (n.startsWith('chem') || n === 'chemistry') return 12;
-  if (n.startsWith('bio') || n === 'biology') return 13;
-  return 999;
+  return SUBJECT_ORDER.length;
 };
 
 const ResultSheet = () => {
