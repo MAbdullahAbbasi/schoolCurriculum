@@ -278,7 +278,8 @@ const StudentReportDetail = () => {
         const courseTotal = getCourseTotalMarks(course);
         if (courseTotal <= 0) return null;
         const studentEntry = record?.students?.find((s) => String(s.registrationNumber) === decodedRegNo);
-        const pct = studentEntry?.overallPercentage != null && Number.isFinite(Number(studentEntry.overallPercentage))
+        if (!studentEntry) return null; // not enrolled in this course (e.g. Bio/Comp choice) — do not show or count
+        const pct = studentEntry.overallPercentage != null && Number.isFinite(Number(studentEntry.overallPercentage))
           ? Number(studentEntry.overallPercentage)
           : null;
         const obtainedMarks = pct != null ? Math.round((pct / 100) * courseTotal * 100) / 100 : 0;
