@@ -165,15 +165,23 @@ const ResultSheet = () => {
     });
     rows.sort((a, b) => getSubjectSortIndex(a.subjectName) - getSubjectSortIndex(b.subjectName));
 
-    const totalMaxGrade = rows.reduce((sum, r) => sum + r.courseTotal, 0);
+    // Total obtained per student (only from subjects they're enrolled in — cell non-null)
     const studentTotals = studentsInGrade.map((_, studentIdx) =>
       rows.reduce((sum, r) => {
         const cell = r.marksPerStudent[studentIdx];
         return sum + (cell ? cell.marks : 0);
       }, 0)
     );
-    const studentPercentages = studentTotals.map((total) =>
-      totalMaxGrade > 0 ? Math.round((total / totalMaxGrade) * 10000) / 100 : 0
+    // Total max per student: only sum course totals for courses where this student has a cell (enrolled).
+    // So Bio/Comp choice: Biology students don't include Computer max, and vice versa.
+    const studentTotalMaxes = studentsInGrade.map((_, studentIdx) =>
+      rows.reduce((sum, r) => {
+        const cell = r.marksPerStudent[studentIdx];
+        return sum + (cell ? r.courseTotal : 0);
+      }, 0)
+    );
+    const studentPercentages = studentTotals.map((total, i) =>
+      studentTotalMaxes[i] > 0 ? Math.round((total / studentTotalMaxes[i]) * 10000) / 100 : 0
     );
 
     return { subjectRows: rows, studentTotals, studentPercentages };
