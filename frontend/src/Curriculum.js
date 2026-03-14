@@ -796,7 +796,7 @@ const Curriculum = () => {
             className="create-course-page-btn"
             onClick={handleCreateCourseClick}
           >
-            <span className="btn-icon-wrap"><IconCreate />+ Create Courses</span>
+            <span className="btn-icon-wrap"><IconCreate />Create Course</span>
           </button>
         </div>
 

@@ -234,17 +234,37 @@
   width: 160px;
 }
 
-.course-row-edit-btn {
+.courses-record-table .courses-table-td-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.course-row-edit-btn,
+.course-row-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 0.4rem 0.75rem;
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: 600;
   color: #fff;
-  background: #3498db;
   border: none;
   border-radius: 6px;
   cursor: pointer;
   transition: background 0.2s ease;
-  margin-right: 0.5rem;
+}
+
+.course-row-edit-btn .btn-icon-wrap,
+.course-row-delete-btn .btn-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.course-row-edit-btn {
+  background: #3498db;
 }
 
 .course-row-edit-btn:hover:not(:disabled) {
@@ -252,15 +272,7 @@
 }
 
 .course-row-delete-btn {
-  padding: 0.4rem 0.75rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #fff;
   background: #e74c3c;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.2s ease;
 }
 
 .course-row-delete-btn:hover:not(:disabled) {
