@@ -556,6 +556,7 @@ const StudentData = () => {
                   <th>Student Name</th>
                   <th>Fathers Name</th>
                   <th>Grade</th>
+                  <th>Subject</th>
                   <th>Date of Birth</th>
                   <th>Actions</th>
                 </tr>
