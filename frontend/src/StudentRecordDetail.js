@@ -97,13 +97,27 @@ const StudentRecordDetail = () => {
     return grades;
   }, [topics]);
 
+  // Class 8 only: course subject (Biology or Computer) – enroll only students with matching subject
+  const courseSubjectForGrade8 = useMemo(() => {
+    if (!courseGrades.has('8')) return null;
+    const sub = (course?.subject && String(course.subject).trim()) || '';
+    if (sub === 'Biology' || sub === 'Computer') return sub;
+    return null;
+  }, [course, courseGrades]);
+
   const enrolledStudents = useMemo(() => {
     if (courseGrades.size === 0) return students;
     return students.filter((s) => {
       const normalized = normalizeGradeForMatch(s.grade);
-      return normalized !== '' && courseGrades.has(normalized);
+      if (normalized === '' || !courseGrades.has(normalized)) return false;
+      // Class 8 Biology/Computer: only include students whose subject matches the course
+      if (courseSubjectForGrade8 && normalized === '8') {
+        const studentSub = (s.subject && String(s.subject).trim()) || '';
+        return studentSub === courseSubjectForGrade8;
+      }
+      return true;
     });
-  }, [students, courseGrades]);
+  }, [students, courseGrades, courseSubjectForGrade8]);
 
   const fetchData = useCallback(async () => {
     try {

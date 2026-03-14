@@ -185,10 +185,17 @@ const CreateCourseMarks = () => {
               courseGrades.add(normalizeGradeForMatch(t.grade));
             }
           });
+          const sub = (coursePayload?.subject && String(coursePayload.subject).trim()) || '';
+          const courseSubjectForGrade8 = courseGrades.has('8') && (sub === 'Biology' || sub === 'Computer') ? sub : null;
           if (courseGrades.size > 0) {
             enrolledCount = studentsList.filter((s) => {
               const normalized = normalizeGradeForMatch(s.grade);
-              return normalized !== '' && courseGrades.has(normalized);
+              if (normalized === '' || !courseGrades.has(normalized)) return false;
+              if (courseSubjectForGrade8 && normalized === '8') {
+                const studentSub = (s.subject && String(s.subject).trim()) || '';
+                return studentSub === courseSubjectForGrade8;
+              }
+              return true;
             }).length;
           } else {
             enrolledCount = studentsList.length;
