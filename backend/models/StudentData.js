@@ -26,6 +26,13 @@ const studentDataSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
+    // Class 8 only: "Biology" or "Computer" (student choice). Omitted or empty for other grades.
+    subject: {
+      type: String,
+      trim: true,
+      default: '',
+      enum: ['', 'Biology', 'Computer'], // Class 8 only: Biology or Computer
+    },
   },
   {
     collection: 'studentsData',

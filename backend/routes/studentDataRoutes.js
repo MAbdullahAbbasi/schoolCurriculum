@@ -6,6 +6,21 @@ import StudentData from '../models/StudentData.js';
 
 const router = express.Router();
 
+// Class 8 subject choice: normalize input to "Biology" or "Computer", or null if invalid
+function normalizeSubject(value) {
+  if (value == null || String(value).trim() === '') return null;
+  const s = String(value).trim().toLowerCase();
+  if (['biology', 'bio'].includes(s)) return 'Biology';
+  if (['computer', 'comp', 'compute'].includes(s)) return 'Computer';
+  return null;
+}
+
+function isGradeEight(grade) {
+  if (grade == null) return false;
+  const g = String(grade).trim();
+  return g === '8' || g === 'VIII' || g.toUpperCase() === 'VIII';
+}
+
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
 const upload = multer({
@@ -92,7 +107,7 @@ router.post('/', async (req, res) => {
       });
     }
 
-    const { registrationNumber, studentName, fathersName, grade, dateOfBirth } = req.body;
+    const { registrationNumber, studentName, fathersName, grade, dateOfBirth, subject } = req.body;
 
     if (!registrationNumber || String(registrationNumber).trim() === '') {
       return res.status(400).json({
@@ -148,12 +163,28 @@ router.post('/', async (req, res) => {
       });
     }
 
+    const gradeStr = String(grade).trim();
+    let subjectValue = '';
+    if (isGradeEight(gradeStr)) {
+      const normalized = normalizeSubject(subject);
+      if (!normalized) {
+        return res.status(400).json({
+          success: false,
+          error: 'Validation failed',
+          message: 'For Grade 8, Subject is required and must be Biology or Computer.',
+          solution: 'Select Biology or Computer for Class 8 students.',
+        });
+      }
+      subjectValue = normalized;
+    }
+
     const newStudent = new StudentData({
       registrationNumber: regNum,
       studentName: String(studentName).trim(),
       fathersName: (fathersName != null) ? String(fathersName).trim() : '',
-      grade: String(grade).trim(),
+      grade: gradeStr,
       dateOfBirth: dob,
+      subject: subjectValue,
     });
     await newStudent.save();
 
@@ -192,7 +223,7 @@ const updateStudentHandler = async (req, res) => {
       });
     }
 
-    const { registrationNumber, studentName, fathersName, grade, dateOfBirth } = req.body;
+    const { registrationNumber, studentName, fathersName, grade, dateOfBirth, subject } = req.body;
 
     if (!registrationNumber || !registrationNumber.toString().trim()) {
       return res.status(400).json({
@@ -205,6 +236,18 @@ const updateStudentHandler = async (req, res) => {
     if (studentName !== undefined) updateFields.studentName = String(studentName).trim();
     if (fathersName !== undefined) updateFields.fathersName = String(fathersName).trim();
     if (grade !== undefined) updateFields.grade = String(grade).trim();
+    if (grade !== undefined && !isGradeEight(grade)) {
+      updateFields.subject = '';
+    } else if (grade !== undefined && isGradeEight(grade) && subject !== undefined) {
+      updateFields.subject = normalizeSubject(subject) || '';
+    } else if (subject !== undefined) {
+      const current = await StudentData.findOne({ registrationNumber: String(registrationNumber).trim() }).select('grade').lean();
+      if (current && isGradeEight(current.grade)) {
+        updateFields.subject = normalizeSubject(subject) || '';
+      } else {
+        updateFields.subject = '';
+      }
+    }
     if (dateOfBirth !== undefined) {
       const d = new Date(dateOfBirth);
       if (isNaN(d.getTime())) {
@@ -438,13 +481,14 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       { key: findColumn(firstRow, ['grade', 'class', 'level', 'standard']), name: 'Grade' },
       { key: findColumn(firstRow, ['date of birth', 'dob', 'birth date', 'birthdate', 'date']), name: 'Date of Birth' },
     ];
+    const subjectColumnKey = findColumn(firstRow, ['subject']);
     const missing = requiredColumns.filter(c => !c.key).map(c => c.name);
     if (missing.length > 0) {
       return res.status(400).json({
         success: false,
         error: 'Missing required columns',
         message: `Your file is missing the following required column(s): ${missing.join(', ')}. Please add these columns to your Excel file in the correct order.`,
-        solution: 'Strictly follow the column order: Registration Number, Student Name, Fathers Name, Grade, Date of Birth. Use the exact column headers (or common variations like "Father\'s Name", "DOB" for Date of Birth).',
+        solution: 'Strictly follow the column order: Registration Number, Student Name, Fathers Name, Grade, Date of Birth. For Class 8 rows also include a Subject column (Biology or Computer).',
       });
     }
 
@@ -472,6 +516,20 @@ router.post('/upload', upload.single('file'), async (req, res) => {
         throw new Error(`Row ${index + 2}: Grade is required`);
       }
       mapped.grade = String(row[gradeKey]).trim();
+
+      // Class 8: Subject column is required and must be Biology or Computer
+      if (isGradeEight(mapped.grade)) {
+        if (!subjectColumnKey || row[subjectColumnKey] == null || String(row[subjectColumnKey]).trim() === '') {
+          throw new Error(`Row ${index + 2}: For Grade 8, Subject is required (Biology or Computer)`);
+        }
+        const normalized = normalizeSubject(row[subjectColumnKey]);
+        if (!normalized) {
+          throw new Error(`Row ${index + 2}: Subject must be Biology or Computer (e.g. bio, comp, computer)`);
+        }
+        mapped.subject = normalized;
+      } else {
+        mapped.subject = '';
+      }
 
       const dobKey = requiredColumns[4].key;
       if (!row[dobKey] || String(row[dobKey]).trim() === '') {
