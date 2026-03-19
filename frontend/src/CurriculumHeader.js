@@ -67,6 +67,15 @@ const iconGradingScheme = (
   </svg>
 );
 
+const iconRoles = (
+  <svg {...svgProps}>
+    <rect x="3" y="3" width="7" height="7" rx="1" ry="1" />
+    <rect x="14" y="3" width="7" height="7" rx="1" ry="1" />
+    <rect x="3" y="14" width="7" height="7" rx="1" ry="1" />
+    <rect x="14" y="14" width="7" height="7" rx="1" ry="1" />
+  </svg>
+);
+
 const iconLogout = (
   <svg {...svgProps}>
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -92,6 +101,7 @@ const CurriculumHeader = () => {
   })();
 
   const canManageSystem = role !== 'EDUCATOR';
+  const isSuperAdmin = role === 'ADMIN';
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -155,6 +165,19 @@ const CurriculumHeader = () => {
             >
               <span className="nav-btn-icon">{iconObjectives}</span>
               Objectives
+            </button>
+          )}
+          {isSuperAdmin && (
+            <button
+              type="button"
+              className={`nav-btn ${path === '/roles' ? 'active' : ''}`}
+              onClick={() => {
+                navigate('/roles');
+                closeMenu();
+              }}
+            >
+              <span className="nav-btn-icon">{iconRoles}</span>
+              Roles
             </button>
           )}
           <button
@@ -238,6 +261,19 @@ const CurriculumHeader = () => {
             >
               <span className="nav-btn-icon">{iconObjectives}</span>
               Objectives
+            </button>
+          )}
+          {isSuperAdmin && (
+            <button
+              type="button"
+              className={`nav-drawer-btn ${path === '/roles' ? 'active' : ''}`}
+              onClick={() => {
+                navigate('/roles');
+                closeMenu();
+              }}
+            >
+              <span className="nav-btn-icon">{iconRoles}</span>
+              Roles
             </button>
           )}
           <button

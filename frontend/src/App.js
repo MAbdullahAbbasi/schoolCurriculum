@@ -14,6 +14,8 @@ import StudentReportDetail from './StudentReportDetail';
 import GradingScheme from './GradingScheme';
 import Login from './Login';
 import { API_URL } from './config/api';
+import RolesDashboard from './RolesDashboard';
+import CourseAdmins from './CourseAdmins';
 
 const AUTH_KEY = 'curriculum_auth';
 const INACTIVITY_MS = 20 * 60 * 1000;   // 20 minutes
@@ -171,6 +173,22 @@ function App() {
           <Route path="/students-data" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <StudentData />} />
           <Route path="/record" element={<StudentsRecord />} />
           <Route path="/studentRecord/:courseCode" element={<StudentRecordDetail />} />
+          <Route
+            path="/roles"
+            element={
+              userRole === 'ADMIN' ? (
+                <RolesDashboard />
+              ) : userRole === 'COURSE_ADMIN' ? (
+                <Navigate to="/create-course" replace />
+              ) : (
+                <Navigate to="/record" replace />
+              )
+            }
+          />
+          <Route
+            path="/course-admins"
+            element={userRole === 'ADMIN' ? <CourseAdmins /> : <Navigate to="/" replace />}
+          />
           <Route path="/reports" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <Reports />} />
           <Route path="/reports/result-sheet" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <ResultSheet />} />
           <Route
