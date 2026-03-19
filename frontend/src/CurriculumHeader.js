@@ -100,8 +100,14 @@ const CurriculumHeader = () => {
     }
   })();
 
-  const canManageSystem = role !== 'EDUCATOR';
-  const isSuperAdmin = role === 'ADMIN';
+  const isAdmin = role === 'ADMIN';
+  const isCourseAdmin = role === 'COURSE_ADMIN';
+  const isSuperAdmin = isAdmin;
+
+  // System-level controls: only Admin
+  const canManageSystem = isAdmin;
+  // Reports are visible to Admin + Course Admin
+  const canViewReports = isAdmin || isCourseAdmin;
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -188,7 +194,7 @@ const CurriculumHeader = () => {
             <span className="nav-btn-icon">{iconRecord}</span>
             Record
           </button>
-          {canManageSystem && (
+          {canViewReports && (
             <button
               type="button"
               className={`nav-btn ${path === '/reports' ? 'active' : ''}`}
@@ -284,7 +290,7 @@ const CurriculumHeader = () => {
             <span className="nav-btn-icon">{iconRecord}</span>
             Record
           </button>
-          {canManageSystem && (
+          {canViewReports && (
             <button
               type="button"
               className={`nav-drawer-btn ${path === '/reports' ? 'active' : ''}`}

@@ -166,25 +166,26 @@ function App() {
     <Router>
       <div className="App">
         <Routes>
-          <Route path="/" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <Curriculum />} />
-          <Route path="/create-course" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <CreateCourse />} />
-          <Route path="/create-course/marks" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <CreateCourseMarks />} />
-          <Route path="/create-course/map-questions" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <MapCourseQuestions />} />
-          <Route path="/students-data" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <StudentData />} />
-          <Route path="/record" element={<StudentsRecord />} />
-          <Route path="/studentRecord/:courseCode" element={<StudentRecordDetail />} />
           <Route
-            path="/roles"
+            path="/"
             element={
-              userRole === 'ADMIN' ? (
-                <RolesDashboard />
-              ) : userRole === 'COURSE_ADMIN' ? (
-                <Navigate to="/create-course" replace />
-              ) : (
+              userRole === 'EDUCATOR' || userRole === 'COURSE_ADMIN' ? (
                 <Navigate to="/record" replace />
+              ) : (
+                <Curriculum />
               )
             }
           />
+          <Route path="/create-course" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <CreateCourse />} />
+          <Route path="/create-course/marks" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <CreateCourseMarks />} />
+          <Route path="/create-course/map-questions" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <MapCourseQuestions />} />
+          <Route
+            path="/students-data"
+            element={userRole === 'ADMIN' ? <StudentData /> : <Navigate to="/record" replace />}
+          />
+          <Route path="/record" element={<StudentsRecord />} />
+          <Route path="/studentRecord/:courseCode" element={<StudentRecordDetail />} />
+          <Route path="/roles" element={userRole === 'ADMIN' ? <RolesDashboard /> : <Navigate to="/record" replace />} />
           <Route
             path="/course-admins"
             element={userRole === 'ADMIN' ? <CourseAdmins /> : <Navigate to="/" replace />}
@@ -195,7 +196,7 @@ function App() {
             path="/reports/student/:registrationNumber"
             element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <StudentReportDetail />}
           />
-          <Route path="/grading-scheme" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <GradingScheme />} />
+          <Route path="/grading-scheme" element={userRole === 'ADMIN' ? <GradingScheme /> : <Navigate to="/record" replace />} />
           <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

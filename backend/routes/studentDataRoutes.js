@@ -176,7 +176,7 @@ router.get('/', async (req, res) => {
 });
 
 // POST add a single student
-router.post('/', requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), async (req, res) => {
+router.post('/', requireRoles([ROLE.ADMIN]), async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({
@@ -382,11 +382,11 @@ const updateStudentHandler = async (req, res) => {
   }
 };
 
-router.put('/', requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), updateStudentHandler);
-router.put('/update', requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), updateStudentHandler);
+router.put('/', requireRoles([ROLE.ADMIN]), updateStudentHandler);
+router.put('/update', requireRoles([ROLE.ADMIN]), updateStudentHandler);
 
 // DELETE all students data
-router.delete('/all', requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), async (req, res) => {
+router.delete('/all', requireRoles([ROLE.ADMIN]), async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({
@@ -411,7 +411,7 @@ router.delete('/all', requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), async (req,
 });
 
 // DELETE single student by registration number
-router.delete('/single', requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), async (req, res) => {
+router.delete('/single', requireRoles([ROLE.ADMIN]), async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({
@@ -449,7 +449,7 @@ router.delete('/single', requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), async (r
 });
 
 // DELETE multiple students by registration numbers
-router.delete('/selected', requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), async (req, res) => {
+router.delete('/selected', requireRoles([ROLE.ADMIN]), async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({
@@ -483,7 +483,7 @@ router.delete('/selected', requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), async 
 });
 
 // POST upload Excel file and save to database
-router.post('/upload', requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), upload.single('file'), async (req, res) => {
+router.post('/upload', requireRoles([ROLE.ADMIN]), upload.single('file'), async (req, res) => {
   try {
     // Check if MongoDB is connected
     if (mongoose.connection.readyState !== 1) {
