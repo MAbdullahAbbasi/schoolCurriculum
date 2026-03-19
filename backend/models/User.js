@@ -12,6 +12,17 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    // Educator metadata (used in admin educator table; not for authorization).
+    grade: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    subject: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     role: {
       type: String,
       enum: ['ADMIN', 'COURSE_ADMIN', 'EDUCATOR'],

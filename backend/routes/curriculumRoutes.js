@@ -48,7 +48,7 @@ router.get("/debug/collections", requireRoles([ROLE.ADMIN]), async (req, res) =>
 });
 
 // Get all grades; optional ?subject=English returns only objectives with that subject (case-insensitive)
-router.get("/", async (req, res) => {
+router.get("/", requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), async (req, res) => {
   try {
     const dbState = mongoose.connection.readyState;
     if (dbState !== 1) {
@@ -515,7 +515,7 @@ router.post("/objective", async (req, res) => {
 });
 
 // Get single grade by id (must be after /upload to avoid "upload" as id)
-router.get("/:id", async (req, res) => {
+router.get("/:id", requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), async (req, res) => {
   try {
     const gradeId = Number(req.params.id);
     console.log(`Fetching curriculum for grade ID: ${gradeId}`);

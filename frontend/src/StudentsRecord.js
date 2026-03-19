@@ -42,6 +42,9 @@ const StudentsRecord = () => {
   })();
 
   const canManageCourses = role === 'ADMIN' || role === 'COURSE_ADMIN';
+  const showSelectionCol = selectionMode && canManageCourses;
+  const showActionCol = canManageCourses;
+  const getColSpan = () => 7 + (showSelectionCol ? 1 : 0) + (showActionCol ? 1 : 0);
 
   useEffect(() => {
     fetchCourses();
@@ -263,6 +266,7 @@ const StudentsRecord = () => {
   };
 
   const toggleSelectionMode = () => {
+    if (!canManageCourses) return;
     setSelectionMode((prev) => !prev);
     if (selectionMode) setSelectedCourseCodes(new Set());
   };
@@ -386,7 +390,7 @@ const StudentsRecord = () => {
               <table className="courses-record-table">
 <thead>
                 <tr>
-                  {selectionMode && (
+                  {showSelectionCol && (
                     <th className="courses-record-th-checkbox">
                       <span className="courses-record-select-col-label">Select</span>
                       <input
@@ -404,13 +408,13 @@ const StudentsRecord = () => {
                     <th>Start Date</th>
                     <th>Topics</th>
                     <th>Weightage</th>
-                    <th className="courses-table-th-actions">Actions</th>
+                    {showActionCol && <th className="courses-table-th-actions">Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {filteredCourses.length === 0 && courseNameSearch.trim() ? (
                     <tr>
-                      <td colSpan={selectionMode ? 9 : 8} className="courses-record-empty-search">
+                      <td colSpan={getColSpan()} className="courses-record-empty-search">
                         No courses match &quot;{courseNameSearch.trim()}&quot;. Try a different search.
                       </td>
                     </tr>
@@ -421,7 +425,7 @@ const StudentsRecord = () => {
                       className="courses-record-row"
                       onClick={() => !selectionMode && handleCourseClick(course.code)}
                     >
-                      {selectionMode && (
+                      {showSelectionCol && (
                         <td className="courses-record-td-checkbox" onClick={(e) => e.stopPropagation()}>
                           <input
                             type="checkbox"
@@ -446,8 +450,8 @@ const StudentsRecord = () => {
                       </td>
                       <td>{course.topics?.length ?? 0}</td>
                       <td>{course.weightage?.map((w) => w.label).join(', ') || 'N/A'}</td>
-                      <td className="courses-table-td-actions" onClick={(e) => e.stopPropagation()}>
-                        {canManageCourses && (
+                      {showActionCol && (
+                        <td className="courses-table-td-actions" onClick={(e) => e.stopPropagation()}>
                           <>
                             <button
                               type="button"
@@ -469,8 +473,8 @@ const StudentsRecord = () => {
                               <span className="btn-icon-wrap"><IconDelete />{deletingCourseCode === course.code ? 'Deleting...' : 'Delete'}</span>
                             </button>
                           </>
-                        )}
-                      </td>
+                        </td>
+                      )}
                     </tr>
                   ))
                   )}

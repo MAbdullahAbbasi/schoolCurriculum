@@ -16,6 +16,7 @@ import Login from './Login';
 import { API_URL } from './config/api';
 import RolesDashboard from './RolesDashboard';
 import CourseAdmins from './CourseAdmins';
+import Educators from './Educators';
 
 const AUTH_KEY = 'curriculum_auth';
 const INACTIVITY_MS = 20 * 60 * 1000;   // 20 minutes
@@ -185,6 +186,10 @@ function App() {
           <Route
             path="/course-admins"
             element={userRole === 'ADMIN' ? <CourseAdmins /> : <Navigate to="/" replace />}
+          />
+          <Route
+            path="/educators"
+            element={userRole === 'ADMIN' ? <Educators /> : <Navigate to="/" replace />}
           />
           <Route path="/reports" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <Reports />} />
           <Route path="/reports/result-sheet" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <ResultSheet />} />

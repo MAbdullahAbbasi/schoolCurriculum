@@ -18,6 +18,8 @@ const COURSE_ADMIN_USERNAME = 'courseadmin';
 const COURSE_ADMIN_PASSWORD = 'CourseAdmin#1';
 const EDUCATOR_USERNAME = 'educator';
 const EDUCATOR_PASSWORD = 'Educator#1';
+const DEFAULT_EDUCATOR_GRADE = 'KG-II';
+const DEFAULT_EDUCATOR_SUBJECT = 'Computer';
 
 // Ensure sample user exists (username: sapling, password: $@pling)
 const ensureSampleUsers = async () => {
@@ -66,6 +68,8 @@ const ensureSampleUsers = async () => {
       username: EDUCATOR_USERNAME,
       passwordHash: hash,
       role: ROLE.EDUCATOR,
+      grade: DEFAULT_EDUCATOR_GRADE,
+      subject: DEFAULT_EDUCATOR_SUBJECT,
     });
     console.log(`Created sample user: ${EDUCATOR_USERNAME} / ${EDUCATOR_PASSWORD}`);
   }

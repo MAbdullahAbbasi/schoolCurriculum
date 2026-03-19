@@ -50,6 +50,10 @@ const RolesDashboard = () => {
     navigate('/course-admins');
   };
 
+  const goEducatorAdmin = () => {
+    navigate('/educators');
+  };
+
   return (
     <div className="roles-dashboard-container">
       <CurriculumHeader />
@@ -74,7 +78,16 @@ const RolesDashboard = () => {
             <div className="roles-card-label">Course Admin</div>
           </div>
 
-          <div className="roles-card" role="button" tabIndex={0} aria-label="Educator card">
+          <div
+            className="roles-card"
+            role="button"
+            tabIndex={0}
+            aria-label="Educator card"
+            onClick={goEducatorAdmin}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') goEducatorAdmin();
+            }}
+          >
             <div className="roles-card-icon">
               <IconEducator />
             </div>

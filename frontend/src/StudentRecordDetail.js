@@ -35,6 +35,16 @@ const StudentRecordDetail = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
 
+  const role = (() => {
+    try {
+      const raw = localStorage.getItem('curriculum_auth');
+      const auth = raw ? JSON.parse(raw) : null;
+      return auth?.role || null;
+    } catch (_) {
+      return null;
+    }
+  })();
+
   const topics = useMemo(() => course?.topics || [], [course]);
   const courseQuestions = useMemo(() => (course?.questions || []).sort((a, b) => a.questionIndex - b.questionIndex), [course]);
   const questionPartMarks = useMemo(() => course?.questionPartMarks || [], [course]);
@@ -152,7 +162,8 @@ const StudentRecordDetail = () => {
           });
           setQuestionMarks(qMarks);
           setNotAttempted(nAttempted);
-          setIsEditMode(false);
+          // Educators should enter marks immediately; admins/course admins can review first.
+          setIsEditMode(role === 'EDUCATOR');
         } else {
           setIsEditMode(true);
         }
@@ -165,7 +176,7 @@ const StudentRecordDetail = () => {
     } finally {
       setLoading(false);
     }
-  }, [courseCode]);
+  }, [courseCode, role]);
 
   useEffect(() => {
     fetchData();
