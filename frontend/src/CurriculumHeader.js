@@ -104,10 +104,10 @@ const CurriculumHeader = () => {
   const isCourseAdmin = role === 'COURSE_ADMIN';
   const isSuperAdmin = isAdmin;
 
-  // System-level controls: only Admin
-  const canManageSystem = isAdmin;
-  // Reports are visible to Admin + Course Admin
+  const canViewStudentsData = isAdmin;
+  const canViewObjectives = isAdmin || isCourseAdmin;
   const canViewReports = isAdmin || isCourseAdmin;
+  const canViewGradingScheme = isAdmin || isCourseAdmin;
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -153,7 +153,7 @@ const CurriculumHeader = () => {
           <p className="curriculum-subtitle">Explore courses and topics by grade level</p>
         </div>
         <div className="header-buttons-group">
-          {canManageSystem && (
+          {canViewStudentsData && (
             <button
               type="button"
               className={`nav-btn ${path === '/students-data' ? 'active' : ''}`}
@@ -163,7 +163,7 @@ const CurriculumHeader = () => {
               Students Data
             </button>
           )}
-          {canManageSystem && (
+          {canViewObjectives && (
             <button
               type="button"
               className={`nav-btn ${path === '/' ? 'active' : ''}`}
@@ -204,7 +204,7 @@ const CurriculumHeader = () => {
               Reports
             </button>
           )}
-          {canManageSystem && (
+          {canViewGradingScheme && (
             <button
               type="button"
               className={`nav-btn ${path === '/grading-scheme' ? 'active' : ''}`}
@@ -249,7 +249,7 @@ const CurriculumHeader = () => {
           </button>
         </div>
         <nav className="header-nav-drawer-nav">
-          {canManageSystem && (
+          {canViewStudentsData && (
             <button
               type="button"
               className={`nav-drawer-btn ${path === '/students-data' ? 'active' : ''}`}
@@ -259,7 +259,7 @@ const CurriculumHeader = () => {
               Students Data
             </button>
           )}
-          {canManageSystem && (
+          {canViewObjectives && (
             <button
               type="button"
               className={`nav-drawer-btn ${path === '/' ? 'active' : ''}`}
@@ -300,7 +300,7 @@ const CurriculumHeader = () => {
               Reports
             </button>
           )}
-          {canManageSystem && (
+          {canViewGradingScheme && (
             <button
               type="button"
               className={`nav-drawer-btn ${path === '/grading-scheme' ? 'active' : ''}`}

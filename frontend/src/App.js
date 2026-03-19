@@ -169,11 +169,7 @@ function App() {
           <Route
             path="/"
             element={
-              userRole === 'EDUCATOR' || userRole === 'COURSE_ADMIN' ? (
-                <Navigate to="/record" replace />
-              ) : (
-                <Curriculum />
-              )
+              userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <Curriculum />
             }
           />
           <Route path="/create-course" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <CreateCourse />} />
@@ -196,7 +192,10 @@ function App() {
             path="/reports/student/:registrationNumber"
             element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <StudentReportDetail />}
           />
-          <Route path="/grading-scheme" element={userRole === 'ADMIN' ? <GradingScheme /> : <Navigate to="/record" replace />} />
+          <Route
+            path="/grading-scheme"
+            element={userRole === 'ADMIN' || userRole === 'COURSE_ADMIN' ? <GradingScheme /> : <Navigate to="/record" replace />}
+          />
           <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
