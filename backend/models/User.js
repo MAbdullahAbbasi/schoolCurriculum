@@ -12,6 +12,12 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    role: {
+      type: String,
+      enum: ['ADMIN', 'COURSE_ADMIN', 'EDUCATOR'],
+      default: 'ADMIN',
+      required: true,
+    },
   },
   { collection: 'users', timestamps: true }
 );

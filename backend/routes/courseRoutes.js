@@ -2,6 +2,9 @@ import express from 'express';
 import mongoose from 'mongoose';
 import Course from '../models/Course.js';
 import Record from '../models/Record.js';
+import User from '../models/User.js';
+import { ROLE } from '../rbac/roles.js';
+import { requireRoles } from '../rbac/guards.js';
 
 const router = express.Router();
 
@@ -50,7 +53,7 @@ const generateCourseCode = async () => {
 };
 
 // POST create a new course
-router.post('/', async (req, res) => {
+router.post('/', requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), async (req, res) => {
   try {
     // Check if MongoDB is connected
     if (mongoose.connection.readyState !== 1) {
@@ -263,7 +266,11 @@ router.get('/', async (req, res) => {
       });
     }
 
-    const courses = await Course.find({}).sort({ createdAt: -1 }).limit(100);
+    const role = req.user?.role || ROLE.EDUCATOR;
+    const username = req.user?.username;
+    const query = role === ROLE.EDUCATOR && username ? { educatorUsernames: username } : {};
+
+    const courses = await Course.find(query).sort({ createdAt: -1 }).limit(100);
     
     const coursesData = courses.map(course => {
       const courseObj = course.toObject();
@@ -289,7 +296,7 @@ router.get('/', async (req, res) => {
 });
 
 // PUT update course details (code is immutable)
-router.put('/:code', async (req, res) => {
+router.put('/:code', requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({
@@ -453,7 +460,7 @@ router.put('/:code', async (req, res) => {
 });
 
 // DELETE all courses (and all records) – must be before /:code
-router.delete('/', async (req, res) => {
+router.delete('/', requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({
@@ -480,7 +487,7 @@ router.delete('/', async (req, res) => {
 });
 
 // DELETE a single course by code (and its record if any)
-router.delete('/:code', async (req, res) => {
+router.delete('/:code', requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({
@@ -517,6 +524,97 @@ router.delete('/:code', async (req, res) => {
       error: 'Server error',
       message: 'Failed to delete course',
     });
+  }
+});
+
+// Course educator assignments (Course Admin + Admin)
+// PUT /api/courses/:code/educators
+router.put('/:code/educators', requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        error: 'Database not connected',
+        message: 'Database connection failed',
+      });
+    }
+
+    const code = req.params.code?.trim();
+    if (!code) {
+      return res.status(400).json({ success: false, error: 'Course code required', message: 'Course code is required' });
+    }
+
+    const educatorUsernames = Array.isArray(req.body?.educatorUsernames) ? req.body.educatorUsernames : [];
+    const normalized = educatorUsernames.map((u) => String(u).trim()).filter(Boolean);
+    const unique = [...new Set(normalized)];
+
+    const course = await Course.findOne({ code });
+    if (!course) {
+      return res.status(404).json({ success: false, error: 'Not found', message: 'Course not found' });
+    }
+
+    // Validate educators exist and are role=EDUCATOR
+    const educators = await User.find({ username: { $in: unique } }).lean();
+    const educatorSet = new Set(educators.filter((u) => u.role === ROLE.EDUCATOR).map((u) => u.username));
+
+    const invalid = unique.filter((u) => !educatorSet.has(u));
+    if (invalid.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid educator(s)',
+        message: 'All assigned educators must exist and have role EDUCATOR.',
+        invalidUsernames: invalid,
+      });
+    }
+
+    course.educatorUsernames = unique;
+    await course.save();
+
+    res.json({
+      success: true,
+      message: 'Course educators updated successfully',
+      data: { code: course.code, educatorUsernames: course.educatorUsernames },
+    });
+  } catch (error) {
+    console.error('Error updating course educators:', error);
+    res.status(500).json({ success: false, error: 'Server error', message: 'Failed to update educators' });
+  }
+});
+
+// Admin-only: release final results for an entire course.
+// POST /api/courses/:code/release-results
+router.post('/:code/release-results', requireRoles([ROLE.ADMIN]), async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        error: 'Database not connected',
+        message: 'Database connection failed',
+      });
+    }
+
+    const code = req.params.code?.trim();
+    if (!code) {
+      return res.status(400).json({ success: false, error: 'Course code required', message: 'Course code is required' });
+    }
+
+    const course = await Course.findOne({ code });
+    if (!course) {
+      return res.status(404).json({ success: false, error: 'Not found', message: 'Course not found' });
+    }
+
+    course.finalResultsReleased = true;
+    course.finalResultsReleasedAt = new Date();
+    await course.save();
+
+    res.json({
+      success: true,
+      message: 'Final results released for this course.',
+      data: { code: course.code, finalResultsReleased: course.finalResultsReleased },
+    });
+  } catch (error) {
+    console.error('Error releasing results:', error);
+    res.status(500).json({ success: false, error: 'Server error', message: 'Failed to release results' });
   }
 });
 

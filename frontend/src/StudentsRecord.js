@@ -31,6 +31,18 @@ const StudentsRecord = () => {
   const [selectedCourseCodes, setSelectedCourseCodes] = useState(new Set());
   const [deletingSelected, setDeletingSelected] = useState(false);
 
+  const role = (() => {
+    try {
+      const raw = localStorage.getItem('curriculum_auth');
+      const auth = raw ? JSON.parse(raw) : null;
+      return auth?.role || null;
+    } catch (_) {
+      return null;
+    }
+  })();
+
+  const canManageCourses = role === 'ADMIN' || role === 'COURSE_ADMIN';
+
   useEffect(() => {
     fetchCourses();
   }, []);
@@ -339,32 +351,36 @@ const StudentsRecord = () => {
               )}
             </div>
             <div className="courses-record-actions">
-              <button
-                type="button"
-                className={`courses-record-select-btn ${selectionMode ? 'active' : ''}`}
-                onClick={toggleSelectionMode}
-                disabled={deletingAll || deletingSelected}
-              >
-                <span className="btn-icon-wrap"><IconSelectAll />{selectionMode ? 'Cancel' : 'Select'}</span>
-              </button>
-              {selectionMode && (
-                <button
-                  type="button"
-                  className="courses-record-delete-selected-btn"
-                  onClick={handleDeleteSelected}
-                  disabled={selectedCourseCodes.size === 0 || deletingSelected}
-                >
-                  <span className="btn-icon-wrap"><IconDelete />{deletingSelected ? 'Deleting...' : `Delete selected (${selectedCourseCodes.size})`}</span>
-                </button>
+              {canManageCourses && (
+                <>
+                  <button
+                    type="button"
+                    className={`courses-record-select-btn ${selectionMode ? 'active' : ''}`}
+                    onClick={toggleSelectionMode}
+                    disabled={deletingAll || deletingSelected}
+                  >
+                    <span className="btn-icon-wrap"><IconSelectAll />{selectionMode ? 'Cancel' : 'Select'}</span>
+                  </button>
+                  {selectionMode && (
+                    <button
+                      type="button"
+                      className="courses-record-delete-selected-btn"
+                      onClick={handleDeleteSelected}
+                      disabled={selectedCourseCodes.size === 0 || deletingSelected}
+                    >
+                      <span className="btn-icon-wrap"><IconDelete />{deletingSelected ? 'Deleting...' : `Delete selected (${selectedCourseCodes.size})`}</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="delete-all-courses-btn"
+                    onClick={handleDeleteAll}
+                    disabled={deletingAll || deletingSelected || selectionMode}
+                  >
+                    <span className="btn-icon-wrap"><IconDelete />{deletingAll ? 'Deleting...' : 'Delete all'}</span>
+                  </button>
+                </>
               )}
-              <button
-                type="button"
-                className="delete-all-courses-btn"
-                onClick={handleDeleteAll}
-                disabled={deletingAll || deletingSelected || selectionMode}
-              >
-                <span className="btn-icon-wrap"><IconDelete />{deletingAll ? 'Deleting...' : 'Delete all'}</span>
-              </button>
             </div>
             <div className="courses-table-wrapper">
               <table className="courses-record-table">
@@ -431,25 +447,29 @@ const StudentsRecord = () => {
                       <td>{course.topics?.length ?? 0}</td>
                       <td>{course.weightage?.map((w) => w.label).join(', ') || 'N/A'}</td>
                       <td className="courses-table-td-actions" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          type="button"
-                          className="course-row-edit-btn"
-                          onClick={(e) => openEdit(e, course)}
-                          title="Edit course"
-                          aria-label="Edit course"
-                        >
-                          <span className="btn-icon-wrap"><IconEdit />Edit</span>
-                        </button>
-                        <button
-                          type="button"
-                          className="course-row-delete-btn"
-                          onClick={(e) => handleDeleteCourse(e, course.code, course.courseName)}
-                          disabled={deletingCourseCode === course.code}
-                          title="Delete course"
-                          aria-label="Delete course"
-                        >
-                          <span className="btn-icon-wrap"><IconDelete />{deletingCourseCode === course.code ? 'Deleting...' : 'Delete'}</span>
-                        </button>
+                        {canManageCourses && (
+                          <>
+                            <button
+                              type="button"
+                              className="course-row-edit-btn"
+                              onClick={(e) => openEdit(e, course)}
+                              title="Edit course"
+                              aria-label="Edit course"
+                            >
+                              <span className="btn-icon-wrap"><IconEdit />Edit</span>
+                            </button>
+                            <button
+                              type="button"
+                              className="course-row-delete-btn"
+                              onClick={(e) => handleDeleteCourse(e, course.code, course.courseName)}
+                              disabled={deletingCourseCode === course.code}
+                              title="Delete course"
+                              aria-label="Delete course"
+                            >
+                              <span className="btn-icon-wrap"><IconDelete />{deletingCourseCode === course.code ? 'Deleting...' : 'Delete'}</span>
+                            </button>
+                          </>
+                        )}
                       </td>
                     </tr>
                   ))

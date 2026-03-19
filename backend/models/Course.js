@@ -114,6 +114,22 @@ const courseSchema = new mongoose.Schema(
         },
       },
     ],
+
+    // Educator isolation: only educators listed here can access this course.
+    educatorUsernames: {
+      type: [String],
+      default: [],
+    },
+
+    // Secret results release control.
+    finalResultsReleased: {
+      type: Boolean,
+      default: false,
+    },
+    finalResultsReleasedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     collection: 'courses',

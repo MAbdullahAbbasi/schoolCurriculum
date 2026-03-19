@@ -2,11 +2,13 @@ import express from 'express';
 import mongoose from 'mongoose';
 import Record from '../models/Record.js';
 import Course from '../models/Course.js';
+import { ROLE } from '../rbac/roles.js';
+import { requireCourseAccess, requireRoles } from '../rbac/guards.js';
 
 const router = express.Router();
 
 // GET all records
-router.get('/', async (req, res) => {
+router.get('/', requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({
@@ -35,7 +37,7 @@ router.get('/', async (req, res) => {
 });
 
 // GET record by course code
-router.get('/course/:courseCode', async (req, res) => {
+router.get('/course/:courseCode', requireCourseAccess, async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({
@@ -46,7 +48,11 @@ router.get('/course/:courseCode', async (req, res) => {
     }
 
     const { courseCode } = req.params;
-    const record = await Record.findOne({ courseCode });
+    const role = req.user?.role || ROLE.EDUCATOR;
+    const course = req.course;
+    const shouldHideFinalResults = role === ROLE.EDUCATOR && !course?.finalResultsReleased;
+
+    const record = await Record.findOne({ courseCode: String(courseCode).trim() });
 
     if (!record) {
       return res.status(404).json({
@@ -56,9 +62,23 @@ router.get('/course/:courseCode', async (req, res) => {
       });
     }
 
+    const data = record.toObject();
+
+    // Educators should not see objective marks / overall percentage / overall grade
+    // until an Admin releases final results.
+    if (shouldHideFinalResults) {
+      data.students = (data.students || []).map((s) => ({
+        registrationNumber: s.registrationNumber,
+        studentName: s.studentName,
+        questionMarks: s.questionMarks || {},
+        notAttemptedSlots: s.notAttemptedSlots || [],
+        leftOnChoiceSlots: s.leftOnChoiceSlots || [],
+      }));
+    }
+
     res.json({
       success: true,
-      data: record.toObject(),
+      data,
     });
   } catch (error) {
     console.error('Error fetching record:', error);
@@ -71,7 +91,7 @@ router.get('/course/:courseCode', async (req, res) => {
 });
 
 // POST create or update a record
-router.post('/', async (req, res) => {
+router.post('/', requireCourseAccess, async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({

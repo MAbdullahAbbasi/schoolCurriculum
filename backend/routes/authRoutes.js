@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 import { createToken } from '../middleware/authMiddleware.js';
+import { ROLE } from '../rbac/roles.js';
 
 const router = express.Router();
 
@@ -17,7 +18,11 @@ const ensureSampleUser = async () => {
   const existing = await User.findOne({ username: 'sapling' });
   if (!existing) {
     const hash = await bcrypt.hash(ADMIN_PASSWORD, SALT_ROUNDS);
-    await User.create({ username: 'sapling', passwordHash: hash });
+    await User.create({
+      username: 'sapling',
+      passwordHash: hash,
+      role: ROLE.ADMIN,
+    });
     console.log('Created sample user: sapling / $@pling');
   } else {
     const stillOldPassword = await bcrypt.compare(OLD_ADMIN_PASSWORD, existing.passwordHash);
@@ -25,6 +30,11 @@ const ensureSampleUser = async () => {
       const hash = await bcrypt.hash(ADMIN_PASSWORD, SALT_ROUNDS);
       await User.updateOne({ username: 'sapling' }, { passwordHash: hash });
       console.log('Updated admin password to $@pling');
+    }
+
+    // Backfill missing role for older DBs
+    if (!existing.role) {
+      await User.updateOne({ username: 'sapling' }, { $set: { role: ROLE.ADMIN } });
     }
   }
 };
@@ -69,7 +79,7 @@ router.post('/login', async (req, res) => {
     res.json({
       success: true,
       message: 'Login successful',
-      user: { username: user.username },
+      user: { username: user.username, role: user.role || ROLE.EDUCATOR },
       token,
     });
   } catch (err) {
@@ -79,6 +89,24 @@ router.post('/login', async (req, res) => {
       error: 'Login failed',
       message: err.message,
     });
+  }
+});
+
+// GET /api/auth/me - requires valid token (role-based dashboards)
+router.get('/me', (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, error: 'Not authenticated' });
+    }
+    res.json({
+      success: true,
+      user: {
+        username: req.user.username,
+          role: req.user.role || ROLE.EDUCATOR,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to load user', message: err.message });
   }
 });
 

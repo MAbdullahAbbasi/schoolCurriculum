@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import User from '../models/User.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'school-curriculum-secret-change-in-production';
 const JWT_EXPIRY = '20m';
@@ -24,7 +25,7 @@ export const verifyToken = (token) => {
  * On valid token: next(). Token expiry is 20m and is NOT extended on normal API calls.
  * Client uses inactivity timer and calls GET /api/auth/refresh when user is active to extend session.
  */
-export const authMiddleware = (req, res, next) => {
+export const authMiddleware = async (req, res, next) => {
   const url = req.originalUrl || req.url || '';
   const isLogin = (url === '/api/auth/login' || url.endsWith('/auth/login')) && req.method === 'POST';
   if (isLogin) {
@@ -51,6 +52,29 @@ export const authMiddleware = (req, res, next) => {
     });
   }
 
-  req.user = payload;
-  next();
+  const username = payload?.username;
+  if (!username) {
+    return res.status(401).json({
+      success: false,
+      error: 'Not authenticated',
+      message: 'Invalid token payload.',
+    });
+  }
+
+  const dbUser = await User.findOne({ username: String(username).trim() }).lean();
+  if (!dbUser) {
+    return res.status(401).json({
+      success: false,
+      error: 'Not authenticated',
+      message: 'User no longer exists.',
+    });
+  }
+
+  req.user = {
+    userId: dbUser._id?.toString?.() ?? String(dbUser._id),
+    username: dbUser.username,
+    // Security default: if a legacy user record is missing `role`, treat as the least-privileged role.
+    role: dbUser.role || 'EDUCATOR',
+  };
+  return next();
 };

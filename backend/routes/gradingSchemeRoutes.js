@@ -1,6 +1,8 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import GradingScheme from '../models/GradingScheme.js';
+import { ROLE } from '../rbac/roles.js';
+import { requireRoles } from '../rbac/guards.js';
 
 const router = express.Router();
 
@@ -31,7 +33,7 @@ router.get('/', async (req, res) => {
 });
 
 // POST create new grading scheme
-router.post('/', async (req, res) => {
+router.post('/', requireRoles([ROLE.ADMIN]), async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({
@@ -120,7 +122,7 @@ router.post('/', async (req, res) => {
 });
 
 // PUT update grading scheme
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireRoles([ROLE.ADMIN]), async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({
@@ -233,7 +235,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE a single grading scheme
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireRoles([ROLE.ADMIN]), async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({
@@ -273,7 +275,7 @@ router.delete('/:id', async (req, res) => {
 });
 
 // DELETE all grading schemes
-router.delete('/', async (req, res) => {
+router.delete('/', requireRoles([ROLE.ADMIN]), async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({

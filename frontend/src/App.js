@@ -22,6 +22,7 @@ const ACTIVITY_THRESHOLD_MS = 90 * 1000;     // consider "active" if activity in
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState(null);
   const [checking, setChecking] = useState(true);
   const lastActivityRef = useRef(Date.now());
 
@@ -29,12 +30,74 @@ function App() {
     try {
       const raw = localStorage.getItem(AUTH_KEY);
       const auth = raw ? JSON.parse(raw) : null;
-      setIsAuthenticated(!!auth?.token && !!auth?.username);
+      const authenticated = !!auth?.token && !!auth?.username;
+      setIsAuthenticated(authenticated);
+
+      if (!authenticated) {
+        setUserRole(null);
+        setChecking(false);
+        return;
+      }
+
+      // Role fetch is required for RBAC-aware UI.
+      axios
+        .get(`${API_URL}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${auth.token}` },
+        })
+        .then((res) => {
+          const role = res.data?.user?.role || 'ADMIN';
+          setUserRole(role);
+
+          auth.role = role;
+          localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
+        })
+        .catch(() => {
+          setIsAuthenticated(false);
+          setUserRole(null);
+          localStorage.removeItem(AUTH_KEY);
+        })
+        .finally(() => setChecking(false));
     } catch (_) {
       setIsAuthenticated(false);
+      setUserRole(null);
+      localStorage.removeItem(AUTH_KEY);
+      setChecking(false);
     }
-    setChecking(false);
   }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    if (userRole) return;
+
+    try {
+      const raw = localStorage.getItem(AUTH_KEY);
+      const auth = raw ? JSON.parse(raw) : null;
+      if (!auth?.token) return;
+
+      setChecking(true);
+      axios
+        .get(`${API_URL}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${auth.token}` },
+        })
+        .then((res) => {
+          const role = res.data?.user?.role || 'ADMIN';
+          setUserRole(role);
+          auth.role = role;
+          localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
+        })
+        .catch(() => {
+          setIsAuthenticated(false);
+          setUserRole(null);
+          localStorage.removeItem(AUTH_KEY);
+        })
+        .finally(() => setChecking(false));
+    } catch (_) {
+      setIsAuthenticated(false);
+      setUserRole(null);
+      localStorage.removeItem(AUTH_KEY);
+      setChecking(false);
+    }
+  }, [isAuthenticated, userRole]);
 
   // Inactivity logout and token refresh when user is active (only when authenticated)
   useEffect(() => {
@@ -101,17 +164,20 @@ function App() {
     <Router>
       <div className="App">
         <Routes>
-          <Route path="/" element={<Curriculum />} />
-          <Route path="/create-course" element={<CreateCourse />} />
-          <Route path="/create-course/marks" element={<CreateCourseMarks />} />
-          <Route path="/create-course/map-questions" element={<MapCourseQuestions />} />
-          <Route path="/students-data" element={<StudentData />} />
+          <Route path="/" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <Curriculum />} />
+          <Route path="/create-course" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <CreateCourse />} />
+          <Route path="/create-course/marks" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <CreateCourseMarks />} />
+          <Route path="/create-course/map-questions" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <MapCourseQuestions />} />
+          <Route path="/students-data" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <StudentData />} />
           <Route path="/record" element={<StudentsRecord />} />
           <Route path="/studentRecord/:courseCode" element={<StudentRecordDetail />} />
-          <Route path="/reports" element={<Reports />} />
-          <Route path="/reports/result-sheet" element={<ResultSheet />} />
-          <Route path="/reports/student/:registrationNumber" element={<StudentReportDetail />} />
-          <Route path="/grading-scheme" element={<GradingScheme />} />
+          <Route path="/reports" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <Reports />} />
+          <Route path="/reports/result-sheet" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <ResultSheet />} />
+          <Route
+            path="/reports/student/:registrationNumber"
+            element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <StudentReportDetail />}
+          />
+          <Route path="/grading-scheme" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <GradingScheme />} />
           <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -3,8 +3,19 @@ import multer from "multer";
 import XLSX from "xlsx";
 import Curriculum from "../models/Curriculum.js";
 import mongoose from "mongoose";
+import { ROLE } from '../rbac/roles.js';
+import { requireRoles } from '../rbac/guards.js';
 
 const router = express.Router();
+
+// System-level protection: only Admins can write curriculum data.
+router.use((req, res, next) => {
+  const writeMethods = ['POST', 'PUT', 'PATCH', 'DELETE'];
+  if (writeMethods.includes(req.method)) {
+    return requireRoles([ROLE.ADMIN])(req, res, next);
+  }
+  return next();
+});
 
 const storage = multer.memoryStorage();
 const upload = multer({
@@ -21,7 +32,7 @@ const upload = multer({
 });
 
 // Debug endpoint to check database collections
-router.get("/debug/collections", async (req, res) => {
+router.get("/debug/collections", requireRoles([ROLE.ADMIN]), async (req, res) => {
   try {
     const collections = await mongoose.connection.db.listCollections().toArray();
     const collectionNames = collections.map(col => col.name);

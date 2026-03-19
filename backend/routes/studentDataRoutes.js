@@ -3,6 +3,9 @@ import multer from 'multer';
 import XLSX from 'xlsx';
 import mongoose from 'mongoose';
 import StudentData from '../models/StudentData.js';
+import Course from '../models/Course.js';
+import { ROLE } from '../rbac/roles.js';
+import { requireRoles } from '../rbac/guards.js';
 
 const router = express.Router();
 
@@ -19,6 +22,25 @@ function isGradeEight(grade) {
   if (grade == null) return false;
   const g = String(grade).trim();
   return g === '8' || g === 'VIII' || g.toUpperCase() === 'VIII';
+}
+
+// Normalize grade for matching (mirrors the frontend logic for KG variants).
+// Examples: "KG II" / "K.G-II" -> "KG-2". Other grades are returned as trimmed strings.
+function normalizeGradeForMatch(grade) {
+  if (grade == null || grade === '') return '';
+  let s = String(grade).trim();
+  if (s === '') return '';
+  s = s.replace(/^(grade|class)\s+/i, '').trim();
+  if (s === '') return '';
+
+  const lower = s.toLowerCase().replace(/\s+/g, ' ');
+  const compact = lower.replace(/\s/g, '').replace(/k\.g\.?/g, 'kg');
+
+  if (/^kg[- ]?1$|^kg[- ]?i$|^k\.g\.?[- ]?1$|^k\.g\.?[- ]?i$/i.test(lower) || /^kg[-]?1$|^kg[-]?i$/.test(compact)) return 'KG-1';
+  if (/^kg[- ]?2$|^kg\s*ii$|^kg[- ]?ii$|^k\.g\.?[- ]?2$|^k\.g\.?[- ]?ii$/i.test(lower) || /^kg[-]?2$|^kg[-]?ii$/.test(compact)) return 'KG-2';
+  if (/^kg[- ]?3$|^kg[- ]?iii$|^k\.g\.?[- ]?3$|^k\.g\.?[- ]?iii$/i.test(lower) || /^kg[-]?3$|^kg[-]?iii$/.test(compact)) return 'KG-3';
+
+  return s;
 }
 
 // Configure multer for file uploads
@@ -58,11 +80,67 @@ router.get('/', async (req, res) => {
       });
     }
 
-    const students = await StudentData.find({}).limit(1000); // Limit to 1000 records for performance
-    
-    if (students.length === 0) {
-      return res.json([]);
+    let students = await StudentData.find({}).limit(1000); // Limit to 1000 records for performance
+
+    // Educator isolation: restrict visible students to those relevant to their assigned courses.
+    // This prevents educators from browsing student rosters outside their assigned courses/grades.
+    if (req.user?.role === ROLE.EDUCATOR) {
+      const username = req.user?.username;
+      if (!username) return res.json([]);
+
+      const assignedCourses = await Course.find({ educatorUsernames: username }).lean();
+      if (!assignedCourses || assignedCourses.length === 0) return res.json([]);
+
+      const allowedGrades = new Set();
+      const allowedGrade8Subjects = new Set();
+      let allowAllGrade8 = false;
+      let hasAssignedGradeEightTopic = false;
+
+      for (const course of assignedCourses) {
+        const topics = Array.isArray(course.topics) ? course.topics : [];
+        let hasGradeEight = false;
+        for (const t of topics) {
+          const n = normalizeGradeForMatch(t.grade);
+          if (n) allowedGrades.add(n);
+          if (n && isGradeEight(n)) {
+            hasGradeEight = true;
+            hasAssignedGradeEightTopic = true;
+          }
+        }
+
+        // Grade-8 subject isolation (Biology/Computer)
+        if (hasGradeEight && (course.subject === 'Biology' || course.subject === 'Computer')) {
+          allowedGrade8Subjects.add(course.subject);
+        } else if (course.subject === '' || course.subject == null) {
+          // Course doesn't declare a subject; keep grade-8 open.
+          allowAllGrade8 = true;
+        }
+      }
+
+      // If assigned courses include no topic grades, keep all students (mirrors frontend behavior).
+      if (allowedGrades.size > 0) {
+        students = students.filter((s) => {
+          const studentGradeNorm = normalizeGradeForMatch(s.grade);
+          const studentIsEight = isGradeEight(studentGradeNorm);
+
+          // Grade-8 needs special handling because students/courses may store "8" vs "VIII".
+          if (studentIsEight) {
+            if (!hasAssignedGradeEightTopic) return false;
+            if (!allowAllGrade8) {
+              if (allowedGrade8Subjects.size === 0) return true;
+              const subj = (s.subject || '').trim();
+              return allowedGrade8Subjects.has(subj);
+            }
+            return true;
+          }
+
+          if (!allowedGrades.has(studentGradeNorm)) return false;
+          return true;
+        });
+      }
     }
+
+    if (students.length === 0) return res.json([]);
 
     // Sort by class (grade) ascending (numeric order: 1, 2, 3, ... 10, 11, 12)
     students.sort((a, b) => {
@@ -98,7 +176,7 @@ router.get('/', async (req, res) => {
 });
 
 // POST add a single student
-router.post('/', async (req, res) => {
+router.post('/', requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({
@@ -304,11 +382,11 @@ const updateStudentHandler = async (req, res) => {
   }
 };
 
-router.put('/', updateStudentHandler);
-router.put('/update', updateStudentHandler);
+router.put('/', requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), updateStudentHandler);
+router.put('/update', requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), updateStudentHandler);
 
 // DELETE all students data
-router.delete('/all', async (req, res) => {
+router.delete('/all', requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({
@@ -333,7 +411,7 @@ router.delete('/all', async (req, res) => {
 });
 
 // DELETE single student by registration number
-router.delete('/single', async (req, res) => {
+router.delete('/single', requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({
@@ -371,7 +449,7 @@ router.delete('/single', async (req, res) => {
 });
 
 // DELETE multiple students by registration numbers
-router.delete('/selected', async (req, res) => {
+router.delete('/selected', requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({
@@ -405,7 +483,7 @@ router.delete('/selected', async (req, res) => {
 });
 
 // POST upload Excel file and save to database
-router.post('/upload', upload.single('file'), async (req, res) => {
+router.post('/upload', requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), upload.single('file'), async (req, res) => {
   try {
     // Check if MongoDB is connected
     if (mongoose.connection.readyState !== 1) {

@@ -81,6 +81,18 @@ const CurriculumHeader = () => {
   const path = location.pathname;
   const [menuOpen, setMenuOpen] = useState(false);
 
+  const role = (() => {
+    try {
+      const raw = localStorage.getItem('curriculum_auth');
+      const auth = raw ? JSON.parse(raw) : null;
+      return auth?.role || null;
+    } catch (_) {
+      return null;
+    }
+  })();
+
+  const canManageSystem = role !== 'EDUCATOR';
+
   const closeMenu = () => setMenuOpen(false);
 
   useEffect(() => {
@@ -125,22 +137,26 @@ const CurriculumHeader = () => {
           <p className="curriculum-subtitle">Explore courses and topics by grade level</p>
         </div>
         <div className="header-buttons-group">
-          <button
-            type="button"
-            className={`nav-btn ${path === '/students-data' ? 'active' : ''}`}
-            onClick={handleStudentsDataClick}
-          >
-            <span className="nav-btn-icon">{iconStudentsData}</span>
-            Students Data
-          </button>
-          <button
-            type="button"
-            className={`nav-btn ${path === '/' ? 'active' : ''}`}
-            onClick={handleObjectivesClick}
-          >
-            <span className="nav-btn-icon">{iconObjectives}</span>
-            Objectives
-          </button>
+          {canManageSystem && (
+            <button
+              type="button"
+              className={`nav-btn ${path === '/students-data' ? 'active' : ''}`}
+              onClick={handleStudentsDataClick}
+            >
+              <span className="nav-btn-icon">{iconStudentsData}</span>
+              Students Data
+            </button>
+          )}
+          {canManageSystem && (
+            <button
+              type="button"
+              className={`nav-btn ${path === '/' ? 'active' : ''}`}
+              onClick={handleObjectivesClick}
+            >
+              <span className="nav-btn-icon">{iconObjectives}</span>
+              Objectives
+            </button>
+          )}
           <button
             type="button"
             className={`nav-btn ${path === '/record' ? 'active' : ''}`}
@@ -149,22 +165,26 @@ const CurriculumHeader = () => {
             <span className="nav-btn-icon">{iconRecord}</span>
             Record
           </button>
-          <button
-            type="button"
-            className={`nav-btn ${path === '/reports' ? 'active' : ''}`}
-            onClick={handleReportsClick}
-          >
-            <span className="nav-btn-icon">{iconReports}</span>
-            Reports
-          </button>
-          <button
-            type="button"
-            className={`nav-btn ${path === '/grading-scheme' ? 'active' : ''}`}
-            onClick={handleGradingSchemeClick}
-          >
-            <span className="nav-btn-icon">{iconGradingScheme}</span>
-            Grading Scheme
-          </button>
+          {canManageSystem && (
+            <button
+              type="button"
+              className={`nav-btn ${path === '/reports' ? 'active' : ''}`}
+              onClick={handleReportsClick}
+            >
+              <span className="nav-btn-icon">{iconReports}</span>
+              Reports
+            </button>
+          )}
+          {canManageSystem && (
+            <button
+              type="button"
+              className={`nav-btn ${path === '/grading-scheme' ? 'active' : ''}`}
+              onClick={handleGradingSchemeClick}
+            >
+              <span className="nav-btn-icon">{iconGradingScheme}</span>
+              Grading Scheme
+            </button>
+          )}
           <button type="button" className="logout-button" onClick={handleLogout}>
             <span className="nav-btn-icon">{iconLogout}</span>
             Log out
@@ -200,22 +220,26 @@ const CurriculumHeader = () => {
           </button>
         </div>
         <nav className="header-nav-drawer-nav">
-          <button
-            type="button"
-            className={`nav-drawer-btn ${path === '/students-data' ? 'active' : ''}`}
-            onClick={handleStudentsDataClick}
-          >
-            <span className="nav-btn-icon">{iconStudentsData}</span>
-            Students Data
-          </button>
-          <button
-            type="button"
-            className={`nav-drawer-btn ${path === '/' ? 'active' : ''}`}
-            onClick={handleObjectivesClick}
-          >
-            <span className="nav-btn-icon">{iconObjectives}</span>
-            Objectives
-          </button>
+          {canManageSystem && (
+            <button
+              type="button"
+              className={`nav-drawer-btn ${path === '/students-data' ? 'active' : ''}`}
+              onClick={handleStudentsDataClick}
+            >
+              <span className="nav-btn-icon">{iconStudentsData}</span>
+              Students Data
+            </button>
+          )}
+          {canManageSystem && (
+            <button
+              type="button"
+              className={`nav-drawer-btn ${path === '/' ? 'active' : ''}`}
+              onClick={handleObjectivesClick}
+            >
+              <span className="nav-btn-icon">{iconObjectives}</span>
+              Objectives
+            </button>
+          )}
           <button
             type="button"
             className={`nav-drawer-btn ${path === '/record' ? 'active' : ''}`}
@@ -224,22 +248,26 @@ const CurriculumHeader = () => {
             <span className="nav-btn-icon">{iconRecord}</span>
             Record
           </button>
-          <button
-            type="button"
-            className={`nav-drawer-btn ${path === '/reports' ? 'active' : ''}`}
-            onClick={handleReportsClick}
-          >
-            <span className="nav-btn-icon">{iconReports}</span>
-            Reports
-          </button>
-          <button
-            type="button"
-            className={`nav-drawer-btn ${path === '/grading-scheme' ? 'active' : ''}`}
-            onClick={handleGradingSchemeClick}
-          >
-            <span className="nav-btn-icon">{iconGradingScheme}</span>
-            Grading Scheme
-          </button>
+          {canManageSystem && (
+            <button
+              type="button"
+              className={`nav-drawer-btn ${path === '/reports' ? 'active' : ''}`}
+              onClick={handleReportsClick}
+            >
+              <span className="nav-btn-icon">{iconReports}</span>
+              Reports
+            </button>
+          )}
+          {canManageSystem && (
+            <button
+              type="button"
+              className={`nav-drawer-btn ${path === '/grading-scheme' ? 'active' : ''}`}
+              onClick={handleGradingSchemeClick}
+            >
+              <span className="nav-btn-icon">{iconGradingScheme}</span>
+              Grading Scheme
+            </button>
+          )}
           <button type="button" className="nav-drawer-btn nav-drawer-logout" onClick={handleLogout}>
             <span className="nav-btn-icon">{iconLogout}</span>
             Log out
