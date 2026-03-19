@@ -82,7 +82,11 @@ router.post('/', async (req, res) => {
     res.status(201).json({ success: true, message: 'Course admin created successfully.' });
   } catch (err) {
     console.error('Error creating course admin:', err);
-    res.status(500).json({ success: false, error: 'Server error', message: 'Failed to create course admin' });
+    res.status(500).json({
+      success: false,
+      error: 'Server error',
+      message: err?.message || 'Failed to create course admin',
+    });
   }
 });
 
@@ -144,25 +148,6 @@ router.put('/:username', async (req, res) => {
   }
 });
 
-// DELETE /api/admin/course-admins/:username
-router.delete('/:username', async (req, res) => {
-  try {
-    const targetUsername = req.params.username ? String(req.params.username).trim() : '';
-    if (!targetUsername) {
-      return res.status(400).json({ success: false, error: 'Invalid username', message: 'Missing username.' });
-    }
-
-    const result = await User.deleteOne({ username: targetUsername, role: ROLE.COURSE_ADMIN });
-    if (result.deletedCount === 0) {
-      return res.status(404).json({ success: false, error: 'Not found', message: 'Course admin not found.' });
-    }
-    res.json({ success: true, message: 'Course admin deleted successfully.' });
-  } catch (err) {
-    console.error('Error deleting course admin:', err);
-    res.status(500).json({ success: false, error: 'Server error', message: 'Failed to delete course admin' });
-  }
-});
-
 // DELETE /api/admin/course-admins/all
 router.delete('/all', async (req, res) => {
   try {
@@ -187,6 +172,25 @@ router.post('/bulk-delete', async (req, res) => {
   } catch (err) {
     console.error('Error bulk deleting course admins:', err);
     res.status(500).json({ success: false, error: 'Server error', message: 'Failed to delete course admins' });
+  }
+});
+
+// DELETE /api/admin/course-admins/:username
+router.delete('/:username', async (req, res) => {
+  try {
+    const targetUsername = req.params.username ? String(req.params.username).trim() : '';
+    if (!targetUsername) {
+      return res.status(400).json({ success: false, error: 'Invalid username', message: 'Missing username.' });
+    }
+
+    const result = await User.deleteOne({ username: targetUsername, role: ROLE.COURSE_ADMIN });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ success: false, error: 'Not found', message: 'Course admin not found.' });
+    }
+    res.json({ success: true, message: 'Course admin deleted successfully.' });
+  } catch (err) {
+    console.error('Error deleting course admin:', err);
+    res.status(500).json({ success: false, error: 'Server error', message: err?.message || 'Failed to delete course admin' });
   }
 });
 
