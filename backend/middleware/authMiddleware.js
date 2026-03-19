@@ -73,8 +73,9 @@ export const authMiddleware = async (req, res, next) => {
   req.user = {
     userId: dbUser._id?.toString?.() ?? String(dbUser._id),
     username: dbUser.username,
-    // Security default: if a legacy user record is missing `role`, treat as the least-privileged role.
-    role: dbUser.role || 'EDUCATOR',
+    // Security rule: legacy "sapling" user is always ADMIN.
+    // Other users default to least privilege if `role` is missing.
+    role: String(dbUser.username) === 'sapling' ? 'ADMIN' : dbUser.role || 'EDUCATOR',
   };
   return next();
 };

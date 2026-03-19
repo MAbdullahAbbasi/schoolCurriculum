@@ -41,10 +41,9 @@ const ensureSampleUsers = async () => {
       console.log('Updated admin password to $@pling');
     }
 
-    // Backfill missing role for older DBs
-    if (!adminExisting.role) {
-      await User.updateOne({ username: 'sapling' }, { $set: { role: ROLE.ADMIN } });
-    }
+    // Force role for the legacy super admin user.
+    // (Older DBs may have stored an incorrect/missing `role` value.)
+    await User.updateOne({ username: 'sapling' }, { $set: { role: ROLE.ADMIN } });
   }
 
   // COURSE_ADMIN
@@ -121,10 +120,12 @@ router.post('/login', async (req, res) => {
     }
 
     const token = createToken(user.username);
+    const computedRole =
+      String(user.username) === 'sapling' ? ROLE.ADMIN : user.role || ROLE.EDUCATOR;
     res.json({
       success: true,
       message: 'Login successful',
-      user: { username: user.username, role: user.role || ROLE.EDUCATOR },
+      user: { username: user.username, role: computedRole },
       token,
     });
   } catch (err) {
