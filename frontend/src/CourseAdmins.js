@@ -25,8 +25,6 @@ const CourseAdmins = () => {
   const [editAdminPassword, setEditAdminPassword] = useState('');
   const [editStage, setEditStage] = useState('form'); // 'form' | 'confirmAdmin'
 
-  const selectedCount = selected.size;
-
   const fetchRows = async () => {
     setLoading(true);
     setError(null);
@@ -182,20 +180,6 @@ const CourseAdmins = () => {
       await fetchRows();
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to delete.');
-    }
-  };
-
-  const deleteBulk = async (usernames) => {
-    if (!usernames || usernames.length === 0) return;
-    setError(null);
-    const ok = window.confirm(`Delete ${usernames.length} selected course admin(s)?`);
-    if (!ok) return;
-    try {
-      await axios.post(`${API_URL}/api/admin/course-admins/bulk-delete`, { usernames });
-      setSelected(new Set());
-      await fetchRows();
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to delete selected.');
     }
   };
 
