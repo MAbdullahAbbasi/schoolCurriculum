@@ -217,6 +217,10 @@ const ResultSheet = () => {
     setError(null);
     let mountNode = null;
     try {
+      const gradePart = sanitizeNamePart(selectedGrade);
+      const pdfTitle = `ResultSheet-Grade-${gradePart}`;
+      const filename = `${pdfTitle}.pdf`;
+
       // Build a transposed table for PDF:
       // - First column: student names
       // - First row (after header): subjects
@@ -228,6 +232,14 @@ const ResultSheet = () => {
       mountNode.style.background = '#ffffff';
       mountNode.style.zIndex = '-1';
       document.body.appendChild(mountNode);
+
+      const titleEl = document.createElement('div');
+      titleEl.textContent = pdfTitle;
+      titleEl.style.fontSize = '18px';
+      titleEl.style.fontWeight = '900';
+      titleEl.style.textAlign = 'center';
+      titleEl.style.marginBottom = '12px';
+      mountNode.appendChild(titleEl);
 
       const wrapper = document.createElement('div');
       wrapper.className = 'result-sheet-table-wrapper';
@@ -368,8 +380,6 @@ const ResultSheet = () => {
         pdf.text(`-- ${currentPage} of ${totalPages} --`, pageWidth / 2, footerY, { align: 'center' });
       }
 
-      const gradePart = sanitizeNamePart(selectedGrade);
-      const filename = `ResultSheet-Grade-${gradePart}.pdf`;
       const blob = pdf.output('blob');
       triggerBlobDownload(filename, blob);
     } catch (err) {
