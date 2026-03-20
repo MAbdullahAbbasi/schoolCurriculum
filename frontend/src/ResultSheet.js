@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
 import { IconBack } from './ButtonIcons';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import './ResultSheet.css';
 
 const normalizeGradeForMatch = (grade) => {
@@ -66,6 +68,9 @@ const ResultSheet = () => {
   const [recordsByCourse, setRecordsByCourse] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+
+  const tableRef = useRef(null);
 
   const courseCodesForGrade = useMemo(() => {
     if (!selectedGrade) return [];
@@ -191,6 +196,193 @@ const ResultSheet = () => {
     navigate('/reports', { state: { selectedGrade } });
   };
 
+  const triggerBlobDownload = (filename, blob) => {
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+
+  const sanitizeNamePart = (value) =>
+    String(value || '')
+      .trim()
+      .replace(/[\\/:*?"<>|]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
+
+  const handleDownloadPdf = async () => {
+    if (!tableRef.current) return;
+    setDownloadingPdf(true);
+    setError(null);
+    let mountNode = null;
+    try {
+      // Build a transposed table for PDF:
+      // - First column: student names
+      // - First row (after header): subjects
+      mountNode = document.createElement('div');
+      mountNode.style.position = 'fixed';
+      mountNode.style.left = '-10000px';
+      mountNode.style.top = '0';
+      mountNode.style.width = '1100px';
+      mountNode.style.background = '#ffffff';
+      mountNode.style.zIndex = '-1';
+      document.body.appendChild(mountNode);
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'result-sheet-table-wrapper';
+      mountNode.appendChild(wrapper);
+
+      const pdfTable = document.createElement('table');
+      pdfTable.className = 'result-sheet-table';
+
+      const thead = document.createElement('thead');
+      const headerRow = document.createElement('tr');
+
+      const thStudent = document.createElement('th');
+      thStudent.className = 'result-sheet-th';
+      thStudent.textContent = 'Student';
+      headerRow.appendChild(thStudent);
+
+      // Subjects across the header row.
+      for (const row of subjectRows) {
+        const th = document.createElement('th');
+        th.className = 'result-sheet-th';
+        th.style.textAlign = 'center';
+        th.style.fontWeight = '800';
+        th.textContent = row.subjectName;
+        headerRow.appendChild(th);
+      }
+
+      // Add Total + Percentage columns.
+      const thTotal = document.createElement('th');
+      thTotal.className = 'result-sheet-th';
+      thTotal.style.textAlign = 'center';
+      thTotal.textContent = 'Total';
+      headerRow.appendChild(thTotal);
+
+      const thPct = document.createElement('th');
+      thPct.className = 'result-sheet-th';
+      thPct.style.textAlign = 'center';
+      thPct.textContent = 'Percentage';
+      headerRow.appendChild(thPct);
+
+      thead.appendChild(headerRow);
+      pdfTable.appendChild(thead);
+
+      const tbody = document.createElement('tbody');
+
+      studentsInGrade.forEach((student, studentIdx) => {
+        const tr = document.createElement('tr');
+
+        const tdStudent = document.createElement('td');
+        tdStudent.className = 'result-sheet-td';
+        tdStudent.textContent = student.studentName || student.registrationNumber || '—';
+        tdStudent.style.fontWeight = '800';
+        tr.appendChild(tdStudent);
+
+        subjectRows.forEach((subjectRow) => {
+          const cell = subjectRow.marksPerStudent?.[studentIdx] ?? null;
+          const td = document.createElement('td');
+          td.className = 'result-sheet-td';
+          td.style.textAlign = 'center';
+          td.textContent = cell ? `${cell.marks} (${cell.percentage}%)` : '—';
+          tr.appendChild(td);
+        });
+
+        const tdTotal = document.createElement('td');
+        tdTotal.className = 'result-sheet-td';
+        tdTotal.style.textAlign = 'center';
+        tdTotal.style.fontWeight = '800';
+        tdTotal.textContent = String(studentTotals?.[studentIdx] ?? 0);
+        tr.appendChild(tdTotal);
+
+        const tdPct = document.createElement('td');
+        tdPct.className = 'result-sheet-td';
+        tdPct.style.textAlign = 'center';
+        tdPct.style.fontWeight = '800';
+        tdPct.textContent = `${studentPercentages?.[studentIdx] ?? 0}%`;
+        tr.appendChild(tdPct);
+
+        tbody.appendChild(tr);
+      });
+
+      pdfTable.appendChild(tbody);
+      wrapper.appendChild(pdfTable);
+
+      // Give browser a tick to apply layout before snapshot.
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      const canvas = await html2canvas(mountNode, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+      });
+
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const marginX = 10;
+      const marginY = 10;
+      const footerY = pageHeight - 12;
+      const usableWidth = pageWidth - marginX * 2;
+      const usableHeight = pageHeight - marginY * 2 - 14;
+
+      const imgWidth = usableWidth;
+      const imgHeightMm = (canvas.height * imgWidth) / canvas.width;
+      const totalPages = Math.ceil(imgHeightMm / usableHeight) || 1;
+
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      let currentPage = 0;
+
+      for (let p = 0; p < totalPages; p++) {
+        const sliceTopMm = p * usableHeight;
+        const sliceBottomMm = Math.min(sliceTopMm + usableHeight, imgHeightMm);
+        const sliceHeightMm = sliceBottomMm - sliceTopMm;
+        const sliceTopPx = (sliceTopMm / imgHeightMm) * canvas.height;
+        const sliceHeightPx = (sliceHeightMm / imgHeightMm) * canvas.height;
+
+        const sliceCanvas = document.createElement('canvas');
+        sliceCanvas.width = canvas.width;
+        sliceCanvas.height = Math.round(sliceHeightPx);
+        const ctx = sliceCanvas.getContext('2d');
+        ctx.drawImage(
+          canvas,
+          0,
+          sliceTopPx,
+          canvas.width,
+          sliceHeightPx,
+          0,
+          0,
+          canvas.width,
+          sliceHeightPx
+        );
+
+        const sliceData = sliceCanvas.toDataURL('image/png');
+        if (p > 0) pdf.addPage();
+        currentPage += 1;
+        pdf.setPage(currentPage);
+        pdf.addImage(sliceData, 'PNG', marginX, marginY, imgWidth, sliceHeightMm);
+        pdf.setFontSize(9);
+        pdf.setTextColor(100, 100, 100);
+        pdf.text(`-- ${currentPage} of ${totalPages} --`, pageWidth / 2, footerY, { align: 'center' });
+      }
+
+      const gradePart = sanitizeNamePart(selectedGrade);
+      const filename = `ResultSheet-Grade-${gradePart}.pdf`;
+      const blob = pdf.output('blob');
+      triggerBlobDownload(filename, blob);
+    } catch (err) {
+      console.error('Error downloading result sheet PDF:', err);
+      setError('Failed to download PDF.');
+    } finally {
+      if (mountNode && mountNode.parentNode) {
+        mountNode.parentNode.removeChild(mountNode);
+      }
+      setDownloadingPdf(false);
+    }
+  };
+
   if (!selectedGrade) {
     return (
       <div className="result-sheet-container">
@@ -237,8 +429,19 @@ const ResultSheet = () => {
           <h2 className="result-sheet-title">Result Sheet — Grade {selectedGrade}</h2>
         </div>
 
+        <div className="result-sheet-table-actions">
+          <button
+            type="button"
+            className="result-sheet-download-btn"
+            onClick={handleDownloadPdf}
+            disabled={downloadingPdf}
+          >
+            {downloadingPdf ? 'Preparing PDF...' : 'Download PDF'}
+          </button>
+        </div>
+
         <div className="result-sheet-table-wrapper">
-          <table className="result-sheet-table">
+          <table ref={tableRef} className="result-sheet-table">
             <thead>
               <tr>
                 <th className="result-sheet-th result-sheet-th-subject">Subject</th>
