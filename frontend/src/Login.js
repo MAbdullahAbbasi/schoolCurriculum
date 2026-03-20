@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { IconLogin } from './ButtonIcons';
 import axios from 'axios';
 import { API_URL } from './config/api';
@@ -9,6 +9,21 @@ const Login = ({ onLoginSuccess }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const GRADES = useMemo(() => ['KG-II', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'], []);
+
+  const [showSignup, setShowSignup] = useState(false);
+  const [signupError, setSignupError] = useState('');
+  const [studentName, setStudentName] = useState('');
+  const [fathersName, setFathersName] = useState('');
+  const [signupGrade, setSignupGrade] = useState('KG-II');
+  const [dob, setDob] = useState('');
+  const [bioSubject, setBioSubject] = useState('Biology'); // for grades 8/9/10
+
+  const showBioComputer = useMemo(() => {
+    const g = String(signupGrade || '').trim().toLowerCase();
+    return g === '8' || g === '9' || g === '10' || g === 'viii' || g === 'ix' || g === 'x';
+  }, [signupGrade]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -75,6 +90,126 @@ const Login = ({ onLoginSuccess }) => {
             <span className="btn-icon-wrap"><IconLogin />{loading ? 'Signing in...' : 'Sign in'}</span>
           </button>
         </form>
+
+        <div className="login-signup-row">
+          <button
+            type="button"
+            className="login-signup-link"
+            onClick={() => {
+              setSignupError('');
+              setShowSignup((v) => !v);
+            }}
+          >
+            {showSignup ? 'Close signup' : 'Sign up'}
+          </button>
+        </div>
+
+        {showSignup && (
+          <form
+            className="signup-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              setSignupError('');
+
+              if (!studentName.trim() || !fathersName.trim() || !signupGrade || !dob) {
+                setSignupError('Please fill all required fields.');
+                return;
+              }
+              if (showBioComputer && !bioSubject) {
+                setSignupError('Please select Biology or Computer.');
+                return;
+              }
+
+              // Design-only: no backend call yet.
+              // eslint-disable-next-line no-console
+              console.log('Student signup payload (design only):', {
+                studentName: studentName.trim(),
+                fathersName: fathersName.trim(),
+                grade: signupGrade,
+                dateOfBirth: dob,
+                subject: showBioComputer ? bioSubject : undefined,
+              });
+              alert('Signup form design only. No data saved yet.');
+            }}
+          >
+            <h3 className="signup-title">Student Registration</h3>
+
+            <div className="signup-grid">
+              <label className="signup-field">
+                Student Name
+                <input
+                  className="signup-input"
+                  value={studentName}
+                  onChange={(e) => setStudentName(e.target.value)}
+                  placeholder="Enter student name"
+                />
+              </label>
+
+              <label className="signup-field">
+                Father&apos;s Name
+                <input
+                  className="signup-input"
+                  value={fathersName}
+                  onChange={(e) => setFathersName(e.target.value)}
+                  placeholder="Enter father name"
+                />
+              </label>
+
+              <label className="signup-field">
+                Grade
+                <select className="signup-input" value={signupGrade} onChange={(e) => setSignupGrade(e.target.value)}>
+                  {GRADES.map((g) => (
+                    <option key={g} value={g}>
+                      {g === 'KG-II' ? 'KG-II' : g}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="signup-field">
+                Date of Birth
+                <input className="signup-input" type="date" value={dob} onChange={(e) => setDob(e.target.value)} />
+              </label>
+            </div>
+
+            {showBioComputer && (
+              <div className="signup-radio-block">
+                <div className="signup-radio-label">Subject</div>
+                <label className="signup-radio">
+                  <input
+                    type="radio"
+                    name="bioSubject"
+                    value="Biology"
+                    checked={bioSubject === 'Biology'}
+                    onChange={() => setBioSubject('Biology')}
+                  />
+                  Biology
+                </label>
+                <label className="signup-radio">
+                  <input
+                    type="radio"
+                    name="bioSubject"
+                    value="Computer"
+                    checked={bioSubject === 'Computer'}
+                    onChange={() => setBioSubject('Computer')}
+                  />
+                  Computer
+                </label>
+              </div>
+            )}
+
+            {signupError && <p className="signup-error">{signupError}</p>}
+
+            <div className="signup-actions">
+              <button type="button" className="btn-secondary" onClick={() => setShowSignup(false)}>
+                Cancel
+              </button>
+              <button type="submit" className="btn-primary">
+                Register
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );
