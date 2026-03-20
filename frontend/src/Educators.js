@@ -35,6 +35,7 @@ const Educators = () => {
   const [addPassword, setAddPassword] = useState('');
   const [addGrade, setAddGrade] = useState('KG-II');
   const [addSubject, setAddSubject] = useState(SUBJECTS[0] || '');
+  const [addPairs, setAddPairs] = useState([]);
   const [addAdminPassword, setAddAdminPassword] = useState('');
 
   const [showEditCard, setShowEditCard] = useState(false);
@@ -44,6 +45,7 @@ const Educators = () => {
   const [editPassword, setEditPassword] = useState('');
   const [editGrade, setEditGrade] = useState('KG-II');
   const [editSubject, setEditSubject] = useState(SUBJECTS[0] || '');
+  const [editPairs, setEditPairs] = useState([]);
   const [editAdminPassword, setEditAdminPassword] = useState('');
 
   const fetchRows = async () => {
@@ -89,6 +91,46 @@ const Educators = () => {
 
   const maskPassword = (_value) => '********';
 
+  const addCurrentPairToList = () => {
+    setError(null);
+    const grade = String(addGrade || '').trim();
+    const subject = String(addSubject || '').trim();
+    if (!grade || !subject) {
+      setError('Select both Grade and Subject.');
+      return;
+    }
+
+    setAddPairs((prev) => {
+      const exists = prev.some((p) => String(p.grade) === grade && String(p.subject) === subject);
+      if (exists) return prev;
+      return [...prev, { grade, subject }];
+    });
+  };
+
+  const removePairAtIndex = (idx, kind) => {
+    if (kind === 'add') {
+      setAddPairs((prev) => prev.filter((_, i) => i !== idx));
+    } else {
+      setEditPairs((prev) => prev.filter((_, i) => i !== idx));
+    }
+  };
+
+  const addCurrentEditPairToList = () => {
+    setError(null);
+    const grade = String(editGrade || '').trim();
+    const subject = String(editSubject || '').trim();
+    if (!grade || !subject) {
+      setError('Select both Grade and Subject.');
+      return;
+    }
+
+    setEditPairs((prev) => {
+      const exists = prev.some((p) => String(p.grade) === grade && String(p.subject) === subject);
+      if (exists) return prev;
+      return [...prev, { grade, subject }];
+    });
+  };
+
   const deleteAll = async () => {
     setError(null);
     try {
@@ -119,6 +161,7 @@ const Educators = () => {
     setAddPassword('');
     setAddGrade('KG-II');
     setAddSubject(SUBJECTS[0] || '');
+    setAddPairs([]);
     setAddAdminPassword('');
   };
 
@@ -129,6 +172,8 @@ const Educators = () => {
     setEditStage('form');
     setAddAdminPassword('');
     setEditAdminPassword('');
+    setAddPairs([]);
+    setEditPairs([]);
   };
 
   const submitAdd = () => {
@@ -137,17 +182,28 @@ const Educators = () => {
       setError('Username and password are required.');
       return;
     }
+    const effectiveAssignments =
+      Array.isArray(addPairs) && addPairs.length > 0 ? addPairs : [{ grade: addGrade, subject: addSubject }];
+    if (!Array.isArray(effectiveAssignments) || effectiveAssignments.length === 0) {
+      setError('Please select Grade and Subject.');
+      return;
+    }
     setAddStage('confirmAdmin');
   };
 
   const confirmAdd = async () => {
     setError(null);
     try {
+      const effectiveAssignments =
+        Array.isArray(addPairs) && addPairs.length > 0 ? addPairs : [{ grade: addGrade, subject: addSubject }];
+      if (!effectiveAssignments[0]?.grade || !effectiveAssignments[0]?.subject) {
+        setError('Please select Grade and Subject.');
+        return;
+      }
       const payload = {
         username: addUsername.trim(),
         password: addPassword,
-        grade: addGrade,
-        subject: addSubject,
+        assignments: effectiveAssignments,
         adminPassword: addAdminPassword,
       };
       await axios.post(`${API_URL}/api/admin/educators`, payload, {
@@ -171,8 +227,11 @@ const Educators = () => {
     setEditTargetUsername(row.username);
     setEditUsername(row.username);
     setEditPassword('');
-    setEditGrade(row.grade || 'KG-II');
-    setEditSubject(row.subject || (SUBJECTS[0] || ''));
+    const assignments = Array.isArray(row.assignments) ? row.assignments : [];
+    setEditPairs(assignments);
+    const first = assignments[0];
+    setEditGrade(first?.grade || 'KG-II');
+    setEditSubject(first?.subject || (SUBJECTS[0] || ''));
     setEditAdminPassword('');
   };
 
@@ -188,11 +247,16 @@ const Educators = () => {
   const confirmEdit = async () => {
     setError(null);
     try {
+      const effectiveAssignments =
+        Array.isArray(editPairs) && editPairs.length > 0 ? editPairs : [{ grade: editGrade, subject: editSubject }];
+      if (!effectiveAssignments[0]?.grade || !effectiveAssignments[0]?.subject) {
+        setError('Please select Grade and Subject.');
+        return;
+      }
       const payload = {
         newUsername: editUsername.trim(),
         password: editPassword.trim() ? editPassword : undefined,
-        grade: editGrade,
-        subject: editSubject,
+        assignments: effectiveAssignments,
         adminPassword: editAdminPassword,
       };
       await axios.put(`${API_URL}/api/admin/educators/${encodeURIComponent(editTargetUsername)}`, payload, {
@@ -291,6 +355,32 @@ const Educators = () => {
                       </select>
                     </label>
 
+                    <div className="educators-modal-actions" style={{ justifyContent: 'space-between' }}>
+                      <button type="button" className="btn-secondary" onClick={addCurrentPairToList}>
+                        Add Grade+Subject
+                      </button>
+                    </div>
+
+                    {addPairs.length > 0 && (
+                      <div style={{ marginTop: '0.75rem' }}>
+                        <div style={{ fontWeight: 900, marginBottom: '0.5rem', color: '#2c3e50' }}>
+                          Assignments ({addPairs.length})
+                        </div>
+                        <div>
+                          {addPairs.map((p, idx) => (
+                            <div key={`${p.grade}-${p.subject}-${idx}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', padding: '0.45rem 0.65rem', border: '1px solid #e0e0e0', borderRadius: '10px', marginBottom: '0.5rem' }}>
+                              <span style={{ fontWeight: 800, color: '#2c3e50' }}>
+                                {p.grade} - {p.subject}
+                              </span>
+                              <button type="button" className="btn-danger" style={{ padding: '0.35rem 0.6rem' }} onClick={() => removePairAtIndex(idx, 'add')}>
+                                Remove
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="educators-modal-actions">
                       <button type="button" className="btn-secondary" onClick={closeCards}>
                         Cancel
@@ -376,6 +466,32 @@ const Educators = () => {
                         ))}
                       </select>
                     </label>
+
+                    <div className="educators-modal-actions" style={{ justifyContent: 'space-between' }}>
+                      <button type="button" className="btn-secondary" onClick={addCurrentEditPairToList}>
+                        Add Grade+Subject
+                      </button>
+                    </div>
+
+                    {editPairs.length > 0 && (
+                      <div style={{ marginTop: '0.75rem' }}>
+                        <div style={{ fontWeight: 900, marginBottom: '0.5rem', color: '#2c3e50' }}>
+                          Assignments ({editPairs.length})
+                        </div>
+                        <div>
+                          {editPairs.map((p, idx) => (
+                            <div key={`${p.grade}-${p.subject}-${idx}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', padding: '0.45rem 0.65rem', border: '1px solid #e0e0e0', borderRadius: '10px', marginBottom: '0.5rem' }}>
+                              <span style={{ fontWeight: 800, color: '#2c3e50' }}>
+                                {p.grade} - {p.subject}
+                              </span>
+                              <button type="button" className="btn-danger" style={{ padding: '0.35rem 0.6rem' }} onClick={() => removePairAtIndex(idx, 'edit')}>
+                                Remove
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     <div className="educators-modal-actions">
                       <button type="button" className="btn-secondary" onClick={closeCards}>

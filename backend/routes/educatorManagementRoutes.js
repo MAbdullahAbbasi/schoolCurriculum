@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 import Course from '../models/Course.js';
 import { ROLE } from '../rbac/roles.js';
-import { requireRoles } from '../rbac/guards.js';
+import { normalizeGradeForMatch, normalizeSubjectForMatch, requireRoles } from '../rbac/guards.js';
 
 const router = express.Router();
 
@@ -20,6 +20,60 @@ const requireAdminPassword = async (req, adminPassword) => {
   return bcrypt.compare(String(adminPassword), adminUser.passwordHash);
 };
 
+// Sync educator->course assignments based on educator (grade, subject) pairs.
+// - Adds educator username to matching courses.
+// - Removes educator username from non-matching courses.
+const syncEducatorToMatchingCourses = async (educatorUsername, pairs) => {
+  const username = String(educatorUsername || '').trim();
+  if (!username) return;
+
+  const normalizedPairs = (Array.isArray(pairs) ? pairs : [])
+    .map((p) => ({
+      grade: normalizeGradeForMatch(p?.grade),
+      subject: normalizeSubjectForMatch(p?.subject),
+    }))
+    .filter((p) => p.grade && p.subject);
+
+  // If educator has no valid pairs configured, ensure they are removed everywhere.
+  if (!normalizedPairs.length) {
+    await Course.updateMany(
+      { educatorUsernames: username },
+      { $pull: { educatorUsernames: username } }
+    );
+    return;
+  }
+
+  const allCourses = await Course.find({}).lean();
+
+  const matchingCourseIds = allCourses
+    .filter((course) => {
+      const courseSubjectNorm = normalizeSubjectForMatch(course?.subject);
+      if (!courseSubjectNorm) return false;
+
+      const topicGrades = Array.isArray(course?.topics) ? course.topics : [];
+      const topicGradeNorms = topicGrades.map((t) => normalizeGradeForMatch(t?.grade)).filter(Boolean);
+      if (!topicGradeNorms.length) return false;
+
+      return normalizedPairs.some((pair) => {
+        if (pair.subject !== courseSubjectNorm) return false;
+        return topicGradeNorms.includes(pair.grade);
+      });
+    })
+    .map((c) => c._id);
+
+  await Course.updateMany(
+    { educatorUsernames: username, _id: { $nin: matchingCourseIds } },
+    { $pull: { educatorUsernames: username } }
+  );
+
+  if (matchingCourseIds.length > 0) {
+    await Course.updateMany(
+      { _id: { $in: matchingCourseIds } },
+      { $addToSet: { educatorUsernames: username } }
+    );
+  }
+};
+
 // GET /api/admin/educators
 router.get('/', async (req, res) => {
   try {
@@ -32,12 +86,32 @@ router.get('/', async (req, res) => {
     }
 
     const educators = await User.find({ role: ROLE.EDUCATOR })
-      .select({ username: 1, grade: 1, subject: 1, role: 1, createdAt: 1, updatedAt: 1, _id: 0 })
+      .select({ username: 1, grade: 1, subject: 1, educatorAssignments: 1, role: 1, createdAt: 1, updatedAt: 1, _id: 0 })
       .sort({ createdAt: -1 })
       .limit(500)
       .lean();
 
-    res.json({ success: true, data: educators });
+    const data = educators.map((e) => {
+      const assignments = Array.isArray(e.educatorAssignments) ? e.educatorAssignments : [];
+      const pairs =
+        assignments.length > 0
+          ? assignments
+          : e.grade && e.subject
+            ? [{ grade: e.grade, subject: e.subject }]
+            : [];
+
+      return {
+        username: e.username,
+        role: e.role,
+        createdAt: e.createdAt,
+        updatedAt: e.updatedAt,
+        assignments: pairs,
+        grade: pairs.map((p) => p.grade).filter(Boolean).join(', '),
+        subject: pairs.map((p) => p.subject).filter(Boolean).join(', '),
+      };
+    });
+
+    res.json({ success: true, data });
   } catch (err) {
     console.error('Error fetching educators:', err);
     res.status(500).json({
@@ -59,7 +133,7 @@ router.post('/', async (req, res) => {
       });
     }
 
-    const { username, password, adminPassword, grade, subject } = req.body || {};
+    const { username, password, adminPassword, grade, subject, assignments } = req.body || {};
     if (!username || !String(username).trim()) {
       return res.status(400).json({ success: false, error: 'Username required', message: 'username is required' });
     }
@@ -82,18 +156,49 @@ router.post('/', async (req, res) => {
       return res.status(409).json({ success: false, error: 'User exists', message: 'Username already exists.' });
     }
 
+    const assignedPairsFromBody = Array.isArray(assignments) ? assignments : null;
+    const cleanedPairs =
+      assignedPairsFromBody
+        ? assignedPairsFromBody
+            .map((p) => ({
+              grade: p?.grade != null ? String(p.grade).trim() : '',
+              subject: p?.subject != null ? String(p.subject).trim() : '',
+            }))
+            .filter((p) => p.grade && p.subject)
+        : grade && subject
+          ? [{ grade: String(grade).trim(), subject: String(subject).trim() }]
+          : [];
+
+    if (cleanedPairs.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Assignments required',
+        message: 'Provide at least one grade+subject assignment.',
+      });
+    }
+
     const created = await User.create({
       username: u,
       passwordHash: await bcrypt.hash(String(password), SALT_ROUNDS),
       role: ROLE.EDUCATOR,
-      grade: grade != null ? String(grade).trim() : '',
-      subject: subject != null ? String(subject).trim() : '',
+      educatorAssignments: cleanedPairs,
+      // legacy fields for backwards compatibility
+      grade: cleanedPairs[0]?.grade || '',
+      subject: cleanedPairs[0]?.subject || '',
     });
+
+    // Auto-assign educator to matching courses.
+    await syncEducatorToMatchingCourses(created.username, cleanedPairs);
 
     res.status(201).json({
       success: true,
       message: 'Educator created successfully.',
-      data: { username: created.username, grade: created.grade, subject: created.subject },
+      data: {
+        username: created.username,
+        grade: created.grade,
+        subject: created.subject,
+        assignments: created.educatorAssignments,
+      },
     });
   } catch (err) {
     console.error('Error creating educator:', err);
@@ -121,7 +226,7 @@ router.put('/:username', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid username', message: 'Missing username.' });
     }
 
-    const { newUsername, password, adminPassword, grade, subject } = req.body || {};
+    const { newUsername, password, adminPassword, grade, subject, assignments } = req.body || {};
 
     const ok = await requireAdminPassword(req, adminPassword);
     if (!ok) {
@@ -146,8 +251,34 @@ router.put('/:username', async (req, res) => {
       update.username = proposed;
     }
 
-    if (grade !== undefined) update.grade = grade != null ? String(grade).trim() : '';
-    if (subject !== undefined) update.subject = subject != null ? String(subject).trim() : '';
+    const assignedPairsFromBody = Array.isArray(assignments) ? assignments : null;
+    if (assignedPairsFromBody) {
+      const cleanedPairs = assignedPairsFromBody
+        .map((p) => ({
+          grade: p?.grade != null ? String(p.grade).trim() : '',
+          subject: p?.subject != null ? String(p.subject).trim() : '',
+        }))
+        .filter((p) => p.grade && p.subject);
+
+      if (cleanedPairs.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Assignments required',
+          message: 'Provide at least one valid grade+subject assignment.',
+        });
+      }
+      update.educatorAssignments = cleanedPairs;
+      update.grade = cleanedPairs[0]?.grade || '';
+      update.subject = cleanedPairs[0]?.subject || '';
+    } else {
+      if (grade !== undefined) update.grade = grade != null ? String(grade).trim() : '';
+      if (subject !== undefined) update.subject = subject != null ? String(subject).trim() : '';
+
+      // If legacy grade+subject are both provided, also update educatorAssignments.
+      if (update.grade && update.subject) {
+        update.educatorAssignments = [{ grade: update.grade, subject: update.subject }];
+      }
+    }
 
     if (password !== undefined && String(password).trim()) {
       update.passwordHash = await bcrypt.hash(String(password), SALT_ROUNDS);
@@ -168,6 +299,18 @@ router.put('/:username', async (req, res) => {
       await Course.updateMany({ educatorUsernames: targetUsername }, { $addToSet: { educatorUsernames: finalUsername } });
       await Course.updateMany({ educatorUsernames: targetUsername }, { $pull: { educatorUsernames: targetUsername } });
     }
+
+    // Auto-sync educator assignments after any grade/subject changes (or username change).
+    const educatorAfter = updated || educator;
+    const effectivePairs = Array.isArray(educatorAfter?.educatorAssignments) ? educatorAfter.educatorAssignments : [];
+    const effectivePairsWithLegacy =
+      effectivePairs.length > 0
+        ? effectivePairs
+        : educatorAfter?.grade && educatorAfter?.subject
+          ? [{ grade: educatorAfter.grade, subject: educatorAfter.subject }]
+          : [];
+
+    await syncEducatorToMatchingCourses(finalUsername, effectivePairsWithLegacy);
 
     res.json({ success: true, message: 'Educator updated successfully.' });
   } catch (err) {

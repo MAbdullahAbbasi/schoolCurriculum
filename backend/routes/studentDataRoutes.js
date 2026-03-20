@@ -4,6 +4,7 @@ import XLSX from 'xlsx';
 import mongoose from 'mongoose';
 import StudentData from '../models/StudentData.js';
 import Course from '../models/Course.js';
+import User from '../models/User.js';
 import { ROLE } from '../rbac/roles.js';
 import { requireRoles } from '../rbac/guards.js';
 
@@ -41,6 +42,11 @@ function normalizeGradeForMatch(grade) {
   if (/^kg[- ]?3$|^kg[- ]?iii$|^k\.g\.?[- ]?3$|^k\.g\.?[- ]?iii$/i.test(lower) || /^kg[-]?3$|^kg[-]?iii$/.test(compact)) return 'KG-3';
 
   return s;
+}
+
+function normalizeSubjectForMatch(subject) {
+  if (subject == null || String(subject).trim() === '') return '';
+  return String(subject).trim().toLowerCase();
 }
 
 // Configure multer for file uploads
@@ -88,15 +94,40 @@ router.get('/', async (req, res) => {
       const username = req.user?.username;
       if (!username) return res.json([]);
 
+      const educator = await User.findOne({ username }).lean();
+      const educatorAssignments = Array.isArray(educator?.educatorAssignments) ? educator.educatorAssignments : [];
+      const legacyPairs =
+        educator?.grade && educator?.subject ? [{ grade: educator.grade, subject: educator.subject }] : [];
+
+      const pairs = [...educatorAssignments, ...legacyPairs]
+        .map((p) => ({
+          grade: normalizeGradeForMatch(p?.grade),
+          subject: normalizeSubjectForMatch(p?.subject),
+        }))
+        .filter((p) => p.grade && p.subject);
+
+      if (!pairs.length) return res.json([]);
+
       const assignedCourses = await Course.find({ educatorUsernames: username }).lean();
       if (!assignedCourses || assignedCourses.length === 0) return res.json([]);
+
+      // Further restrict courses to those matching any educator (grade, subject) assignment.
+      const filteredCourses = assignedCourses.filter((course) => {
+        const courseSubjectNorm = normalizeSubjectForMatch(course?.subject);
+        if (!courseSubjectNorm) return false;
+        const topicGrades = Array.isArray(course?.topics) ? course.topics : [];
+        const topicGradeNorms = topicGrades.map((t) => normalizeGradeForMatch(t?.grade)).filter(Boolean);
+        return pairs.some((pair) => pair.subject === courseSubjectNorm && topicGradeNorms.includes(pair.grade));
+      });
+
+      if (!filteredCourses.length) return res.json([]);
 
       const allowedGrades = new Set();
       const allowedGrade8Subjects = new Set();
       let allowAllGrade8 = false;
       let hasAssignedGradeEightTopic = false;
 
-      for (const course of assignedCourses) {
+      for (const course of filteredCourses) {
         const topics = Array.isArray(course.topics) ? course.topics : [];
         let hasGradeEight = false;
         for (const t of topics) {

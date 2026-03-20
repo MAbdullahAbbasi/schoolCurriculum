@@ -5,6 +5,7 @@ import User from '../models/User.js';
 import { createToken } from '../middleware/authMiddleware.js';
 import { ROLE } from '../rbac/roles.js';
 import Course from '../models/Course.js';
+import { normalizeGradeForMatch, normalizeSubjectForMatch } from '../rbac/guards.js';
 
 const router = express.Router();
 
@@ -68,23 +69,47 @@ const ensureSampleUsers = async () => {
       username: EDUCATOR_USERNAME,
       passwordHash: hash,
       role: ROLE.EDUCATOR,
-      grade: DEFAULT_EDUCATOR_GRADE,
-      subject: DEFAULT_EDUCATOR_SUBJECT,
+      grade: DEFAULT_EDUCATOR_GRADE, // legacy
+      subject: DEFAULT_EDUCATOR_SUBJECT, // legacy
+      educatorAssignments: [{ grade: DEFAULT_EDUCATOR_GRADE, subject: DEFAULT_EDUCATOR_SUBJECT }],
     });
     console.log(`Created sample user: ${EDUCATOR_USERNAME} / ${EDUCATOR_PASSWORD}`);
   }
 
-  // For demo/testing: if courses have no educators assigned yet,
-  // assign the default educator automatically.
-  await Course.updateMany(
-    { educatorUsernames: { $size: 0 } },
-    { $set: { educatorUsernames: [EDUCATOR_USERNAME] } }
-  );
-  // Also handle legacy docs where educatorUsernames might be missing.
-  await Course.updateMany(
-    { educatorUsernames: { $exists: false } },
-    { $set: { educatorUsernames: [EDUCATOR_USERNAME] } }
-  );
+  // For demo/testing: auto-assign the default educator to only those courses
+  // whose `subject` and topic `grade` match the educator's configured grade+subject.
+  const educator = await User.findOne({ username: EDUCATOR_USERNAME }).lean();
+  const assignments = Array.isArray(educator?.educatorAssignments) ? educator.educatorAssignments : [];
+  const legacyPair = educator?.grade && educator?.subject ? [{ grade: educator.grade, subject: educator.subject }] : [];
+  const pairs = [...assignments, ...legacyPair]
+    .map((p) => ({
+      grade: normalizeGradeForMatch(p?.grade),
+      subject: normalizeSubjectForMatch(p?.subject),
+    }))
+    .filter((p) => p.grade && p.subject);
+
+  if (pairs.length > 0) {
+    const candidates = await Course.find({
+      $or: [{ educatorUsernames: { $exists: false } }, { educatorUsernames: { $size: 0 } }],
+    }).lean();
+
+    // Assign only matching courses (avoid updating non-matching ones).
+    for (const c of candidates) {
+      const courseSubjectNorm = normalizeSubjectForMatch(c?.subject);
+
+      const topicGrades = Array.isArray(c?.topics) ? c.topics : [];
+      const topicGradeNorms = topicGrades.map((t) => normalizeGradeForMatch(t?.grade));
+
+      const matchesAnyPair = pairs.some((pair) => {
+        if (pair.subject !== courseSubjectNorm) return false;
+        return topicGradeNorms.some((g) => g === pair.grade);
+      });
+
+      if (!matchesAnyPair) continue;
+
+      await Course.updateOne({ _id: c._id }, { $set: { educatorUsernames: [EDUCATOR_USERNAME] } });
+    }
+  }
 };
 
 // POST /api/auth/login

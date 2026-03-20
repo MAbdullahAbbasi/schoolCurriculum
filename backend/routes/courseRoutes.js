@@ -4,7 +4,7 @@ import Course from '../models/Course.js';
 import Record from '../models/Record.js';
 import User from '../models/User.js';
 import { ROLE } from '../rbac/roles.js';
-import { requireRoles } from '../rbac/guards.js';
+import { normalizeGradeForMatch, normalizeSubjectForMatch, requireRoles } from '../rbac/guards.js';
 
 const router = express.Router();
 
@@ -268,11 +268,43 @@ router.get('/', async (req, res) => {
 
     const role = req.user?.role || ROLE.EDUCATOR;
     const username = req.user?.username;
-    const query = role === ROLE.EDUCATOR && username ? { educatorUsernames: username } : {};
 
-    const courses = await Course.find(query).sort({ createdAt: -1 }).limit(100);
+    const baseQuery = role === ROLE.EDUCATOR && username ? { educatorUsernames: username } : {};
+    const courses = await Course.find(baseQuery).sort({ createdAt: -1 }).limit(100);
+
+    let filtered = courses;
+    if (role === ROLE.EDUCATOR && username) {
+      const educator = await User.findOne({ username }).lean();
+      const educatorAssignments = Array.isArray(educator?.educatorAssignments)
+        ? educator.educatorAssignments
+        : [];
+
+      const legacyPair =
+        educator?.grade && educator?.subject
+          ? [{ grade: educator.grade, subject: educator.subject }]
+          : [];
+
+      const pairs = [...educatorAssignments, ...legacyPair]
+        .map((p) => ({
+          grade: normalizeGradeForMatch(p?.grade),
+          subject: normalizeSubjectForMatch(p?.subject),
+        }))
+        .filter((p) => p.grade && p.subject);
+
+      filtered = courses.filter((c) => {
+        const courseSubjectNorm = normalizeSubjectForMatch(c.subject);
+        const topicGrades = Array.isArray(c.topics) ? c.topics : [];
+        const topicGradeNorms = topicGrades.map((t) => normalizeGradeForMatch(t?.grade));
+
+        return pairs.some((pair) => {
+          if (!pair.grade || !pair.subject) return false;
+          if (courseSubjectNorm !== pair.subject) return false;
+          return topicGradeNorms.some((g) => g === pair.grade);
+        });
+      });
+    }
     
-    const coursesData = courses.map(course => {
+    const coursesData = filtered.map(course => {
       const courseObj = course.toObject();
       // Format dates
       if (courseObj.startingDate) {

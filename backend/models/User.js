@@ -23,6 +23,16 @@ const userSchema = new mongoose.Schema(
       default: '',
       trim: true,
     },
+    // Educators can teach multiple grade+subject combinations.
+    educatorAssignments: {
+      type: [
+        {
+          grade: { type: String, default: '', trim: true },
+          subject: { type: String, default: '', trim: true },
+        },
+      ],
+      default: [],
+    },
     role: {
       type: String,
       enum: ['ADMIN', 'COURSE_ADMIN', 'EDUCATOR'],
