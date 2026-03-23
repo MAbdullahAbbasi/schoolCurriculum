@@ -19,10 +19,25 @@ function normalizeSubject(value) {
   return null;
 }
 
+function normalizeGradeForSubjectRequirement(grade) {
+  if (grade == null) return '';
+  let g = String(grade).trim();
+  if (!g) return '';
+  g = g.replace(/^(grade|class)\s+/i, '').trim();
+  const lower = g.toLowerCase();
+  if (['8', '08', 'viii', 'eighth'].includes(lower)) return '8';
+  if (['9', '09', 'ix', 'ninth'].includes(lower)) return '9';
+  if (['10', 'x', 'tenth'].includes(lower)) return '10';
+  return '';
+}
+
+function requiresSubjectChoice(grade) {
+  const normalized = normalizeGradeForSubjectRequirement(grade);
+  return normalized === '8' || normalized === '9' || normalized === '10';
+}
+
 function isGradeEight(grade) {
-  if (grade == null) return false;
-  const g = String(grade).trim();
-  return g === '8' || g === 'VIII' || g.toUpperCase() === 'VIII';
+  return normalizeGradeForSubjectRequirement(grade) === '8';
 }
 
 // Normalize grade for matching (mirrors the frontend logic for KG variants).
@@ -274,14 +289,14 @@ router.post('/', requireRoles([ROLE.ADMIN]), async (req, res) => {
 
     const gradeStr = String(grade).trim();
     let subjectValue = '';
-    if (isGradeEight(gradeStr)) {
+    if (requiresSubjectChoice(gradeStr)) {
       const normalized = normalizeSubject(subject);
       if (!normalized) {
         return res.status(400).json({
           success: false,
           error: 'Validation failed',
-          message: 'For Grade 8, Subject is required and must be Biology or Computer.',
-          solution: 'Select Biology or Computer for Class 8 students.',
+          message: 'For Grades 8, 9, and 10, Subject is required and must be Biology or Computer.',
+          solution: 'Select Biology or Computer for Class 8/9/10 students.',
         });
       }
       subjectValue = normalized;
@@ -345,17 +360,28 @@ const updateStudentHandler = async (req, res) => {
     if (studentName !== undefined) updateFields.studentName = String(studentName).trim();
     if (fathersName !== undefined) updateFields.fathersName = String(fathersName).trim();
     if (grade !== undefined) updateFields.grade = String(grade).trim();
-    if (grade !== undefined && !isGradeEight(grade)) {
+    const current = await StudentData.findOne({ registrationNumber: String(registrationNumber).trim() }).select('grade subject').lean();
+    const effectiveGrade = grade !== undefined ? String(grade).trim() : current?.grade;
+    const needsSubject = requiresSubjectChoice(effectiveGrade);
+
+    if (!needsSubject) {
       updateFields.subject = '';
-    } else if (grade !== undefined && isGradeEight(grade) && subject !== undefined) {
-      updateFields.subject = normalizeSubject(subject) || '';
     } else if (subject !== undefined) {
-      const current = await StudentData.findOne({ registrationNumber: String(registrationNumber).trim() }).select('grade').lean();
-      if (current && isGradeEight(current.grade)) {
-        updateFields.subject = normalizeSubject(subject) || '';
-      } else {
-        updateFields.subject = '';
+      const normalized = normalizeSubject(subject);
+      if (!normalized) {
+        return res.status(400).json({
+          success: false,
+          error: 'Validation failed',
+          message: 'For Grades 8, 9, and 10, Subject must be Biology or Computer.',
+        });
       }
+      updateFields.subject = normalized;
+    } else if (!current?.subject || !normalizeSubject(current.subject)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Validation failed',
+        message: 'For Grades 8, 9, and 10, Subject is required (Biology or Computer).',
+      });
     }
     if (dateOfBirth !== undefined) {
       const d = new Date(dateOfBirth);
@@ -597,7 +623,7 @@ router.post('/upload', requireRoles([ROLE.ADMIN]), upload.single('file'), async 
         success: false,
         error: 'Missing required columns',
         message: `Your file is missing the following required column(s): ${missing.join(', ')}. Please add these columns to your Excel file in the correct order.`,
-        solution: 'Strictly follow the column order: Registration Number, Student Name, Fathers Name, Grade, Date of Birth. For Class 8 rows also include a Subject column (Biology or Computer).',
+        solution: 'Strictly follow the column order: Registration Number, Student Name, Fathers Name, Grade, Date of Birth. For Class 8/9/10 rows also include a Subject column (Biology or Computer).',
       });
     }
 
@@ -626,10 +652,10 @@ router.post('/upload', requireRoles([ROLE.ADMIN]), upload.single('file'), async 
       }
       mapped.grade = String(row[gradeKey]).trim();
 
-      // Class 8: Subject column is required and must be Biology or Computer
-      if (isGradeEight(mapped.grade)) {
+      // Class 8/9/10: Subject column is required and must be Biology or Computer
+      if (requiresSubjectChoice(mapped.grade)) {
         if (!subjectColumnKey || row[subjectColumnKey] == null || String(row[subjectColumnKey]).trim() === '') {
-          throw new Error(`Row ${index + 2}: For Grade 8, Subject is required (Biology or Computer)`);
+          throw new Error(`Row ${index + 2}: For Grade 8/9/10, Subject is required (Biology or Computer)`);
         }
         const normalized = normalizeSubject(row[subjectColumnKey]);
         if (!normalized) {

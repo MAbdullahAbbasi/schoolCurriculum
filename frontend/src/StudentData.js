@@ -16,10 +16,18 @@ const gradeSortOrder = (g) => {
   return 10 + n;
 };
 
-const isGradeEight = (grade) => {
-  if (grade == null || String(grade).trim() === '') return false;
-  const g = String(grade).trim();
-  return g === '8' || g.toUpperCase() === 'VIII';
+const normalizeGradeForSubjectRequirement = (grade) => {
+  if (grade == null || String(grade).trim() === '') return '';
+  const g = String(grade).trim().replace(/^(grade|class)\s+/i, '').trim().toLowerCase();
+  if (['8', '08', 'viii', 'eighth'].includes(g)) return '8';
+  if (['9', '09', 'ix', 'ninth'].includes(g)) return '9';
+  if (['10', 'x', 'tenth'].includes(g)) return '10';
+  return '';
+};
+
+const requiresSubjectChoice = (grade) => {
+  const normalized = normalizeGradeForSubjectRequirement(grade);
+  return normalized === '8' || normalized === '9' || normalized === '10';
 };
 
 const StudentData = () => {
@@ -38,7 +46,7 @@ const StudentData = () => {
     fathersName: '',
     grade: '',
     dateOfBirth: '',
-    subject: '', // Class 8 only: "Biology" or "Computer"
+    subject: '', // Class 8/9/10 only: "Biology" or "Computer"
   });
   const [addError, setAddError] = useState(null);
   const [addingStudent, setAddingStudent] = useState(false);
@@ -169,9 +177,9 @@ const StudentData = () => {
       });
       return;
     }
-    if (isGradeEight(addForm.grade.trim()) && !addForm.subject) {
+    if (requiresSubjectChoice(addForm.grade.trim()) && !addForm.subject) {
       setAddError({
-        message: 'For Grade 8, please select Subject (Biology or Computer).',
+        message: 'For Grades 8, 9, and 10, please select Subject (Biology or Computer).',
         solution: 'Select Biology or Computer.',
       });
       return;
@@ -185,7 +193,7 @@ const StudentData = () => {
         fathersName: (addForm.fathersName != null) ? String(addForm.fathersName).trim() : '',
         grade: addForm.grade.trim(),
         dateOfBirth: addForm.dateOfBirth,
-        subject: isGradeEight(addForm.grade.trim()) ? addForm.subject : '',
+        subject: requiresSubjectChoice(addForm.grade.trim()) ? addForm.subject : '',
       });
       setAddForm({ registrationNumber: '', studentName: '', fathersName: '', grade: '', dateOfBirth: '', subject: '' });
       await fetchStudentsData();
@@ -210,8 +218,8 @@ const StudentData = () => {
       alert('Please fill all fields.');
       return;
     }
-    if (isGradeEight(editForm.grade.trim()) && !editForm.subject) {
-      alert('For Grade 8, please select Subject (Biology or Computer).');
+    if (requiresSubjectChoice(editForm.grade.trim()) && !editForm.subject) {
+      alert('For Grades 8, 9, and 10, please select Subject (Biology or Computer).');
       return;
     }
     try {
@@ -223,7 +231,7 @@ const StudentData = () => {
         fathersName: (editForm.fathersName != null) ? String(editForm.fathersName).trim() : '',
         grade: editForm.grade.trim(),
         dateOfBirth: editForm.dateOfBirth,
-        subject: isGradeEight(editForm.grade.trim()) ? editForm.subject : '',
+        subject: requiresSubjectChoice(editForm.grade.trim()) ? editForm.subject : '',
       });
       await fetchStudentsData();
       setEditingRegistrationNumber(null);
@@ -349,7 +357,7 @@ const StudentData = () => {
       <div className="add-student-section">
         <h3 className="add-student-title">Add student individually</h3>
         <p className="upload-requirements upload-requirements-above">
-          Excel columns: Registration Number, Student Name, Fathers Name, Grade, Date of Birth. For Class 8 rows only, include a Subject column with values Biology or Computer (e.g. bio, comp, computer).
+          Excel columns: Registration Number, Student Name, Fathers Name, Grade, Date of Birth. For Class 8/9/10 rows only, include a Subject column with values Biology or Computer (e.g. bio, comp, computer, compute).
         </p>
         {addError && (
           <div className="add-error-message" role="alert">
@@ -413,9 +421,9 @@ const StudentData = () => {
                 disabled={addingStudent}
               />
             </div>
-            {isGradeEight(addForm.grade) && (
+            {requiresSubjectChoice(addForm.grade) && (
               <div className="add-field add-field-radio">
-                <span className="add-field-label">Subject (Class 8)</span>
+                <span className="add-field-label">Subject (Class 8/9/10)</span>
                 <div className="radio-group">
                   <label className="radio-label">
                     <input
@@ -610,7 +618,7 @@ const StudentData = () => {
                             />
                           </td>
                           <td>
-                            {isGradeEight(editForm.grade) ? (
+                            {requiresSubjectChoice(editForm.grade) ? (
                               <div className="radio-group-inline">
                                 <label className="radio-label">
                                   <input
@@ -670,7 +678,7 @@ const StudentData = () => {
                           <td>{student.studentName || '-'}</td>
                           <td>{student.fathersName || '-'}</td>
                           <td>{student.grade || '-'}</td>
-                          <td>{student.grade && isGradeEight(student.grade) ? (student.subject || '—') : '—'}</td>
+                          <td>{student.grade && requiresSubjectChoice(student.grade) ? (student.subject || '—') : '—'}</td>
                           <td>
                             {student.dateOfBirth
                               ? new Date(student.dateOfBirth).toLocaleDateString('en-US', {
