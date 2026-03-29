@@ -3,10 +3,22 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #3498db 0%, #2ecc71 100%);
+  background: linear-gradient(145deg, #1b5e20 0%, #2e7d32 35%, #43a047 65%, #81c784 100%);
+  background-size: 200% 200%;
+  animation: login-bg-shift 18s ease infinite;
   padding: 2rem;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+}
+
+@keyframes login-bg-shift {
+  0%,
+  100% {
+    background-position: 0% 40%;
+  }
+  50% {
+    background-position: 100% 60%;
+  }
 }
 
 .login-card {
@@ -18,11 +30,45 @@
   max-width: 380px;
 }
 
+.login-card--forest {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(46, 125, 50, 0.12);
+  box-shadow:
+    0 12px 40px rgba(27, 94, 32, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.6) inset;
+}
+
+.login-card-decoration {
+  position: absolute;
+  top: -30%;
+  right: -20%;
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(circle, rgba(129, 199, 132, 0.35) 0%, transparent 70%);
+  pointer-events: none;
+  animation: login-leaf-float 6s ease-in-out infinite;
+}
+
+@keyframes login-leaf-float {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 0.9;
+  }
+  50% {
+    transform: translate(-8px, 6px) rotate(8deg);
+    opacity: 1;
+  }
+}
+
 .login-title {
+  position: relative;
+  z-index: 1;
   margin: 0 0 0.25rem 0;
   font-size: 1.75rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #3498db 0%, #2ecc71 100%);
+  background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 50%, #43a047 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -30,6 +76,8 @@
 }
 
 .login-subtitle {
+  position: relative;
+  z-index: 1;
   margin: 0 0 1.75rem 0;
   font-size: 0.95rem;
   color: #7f8c8d;
@@ -37,6 +85,8 @@
 }
 
 .login-form {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
@@ -95,7 +145,7 @@
   font-size: 1rem;
   font-weight: 600;
   color: #fff;
-  background: linear-gradient(135deg, #3498db 0%, #2ecc71 100%);
+  background: linear-gradient(135deg, #2e7d32 0%, #43a047 100%);
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -204,4 +254,14 @@
   display: flex;
   gap: 0.75rem;
   justify-content: flex-end;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-page {
+    animation: none;
+    background: #2e7d32;
+  }
+  .login-card-decoration {
+    animation: none;
+  }
 }

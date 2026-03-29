@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import axios from 'axios';
 import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
+import { APP_LABELS, ROLE_LABELS } from './roleLabels';
 import { IconAdd, IconCancel, IconDelete, IconEdit, IconSave, IconSelectAll, IconUpload } from './ButtonIcons';
 import './StudentData.css';
 
@@ -172,7 +173,7 @@ const StudentData = () => {
     e.preventDefault();
     if (!addForm.registrationNumber?.trim() || !addForm.studentName?.trim() || !addForm.grade?.trim() || !addForm.dateOfBirth) {
       setAddError({
-        message: 'Registration Number, Student Name, Grade and Date of Birth are required.',
+        message: `Registration Number, ${ROLE_LABELS.seedling} name, Grade and Date of Birth are required.`,
         solution: 'Please fill all required fields.',
       });
       return;
@@ -349,13 +350,15 @@ const StudentData = () => {
   return (
     <div className="student-data-container">
       <CurriculumHeader />
-      <div className="student-data-header">
-        <h2>Students Data Management</h2>
-        <p>Upload and manage student information in bulk</p>
+      <div className="student-data-header student-data-header--grove">
+        <h2>{APP_LABELS.seedlingDataLong}</h2>
+        <p>
+          Upload and tend your {ROLE_LABELS.seedling.toLowerCase()} records — import in bulk or add one at a time
+        </p>
       </div>
 
       <div className="add-student-section">
-        <h3 className="add-student-title">Add student individually</h3>
+        <h3 className="add-student-title">Add a {ROLE_LABELS.seedling.toLowerCase()} individually</h3>
         <p className="upload-requirements upload-requirements-above">
           Excel columns: Registration Number, Student Name, Fathers Name, Grade, Date of Birth. For Class 8/9/10 rows only, include a Subject column with values Biology or Computer (e.g. bio, comp, computer, compute).
         </p>
@@ -389,13 +392,13 @@ const StudentData = () => {
               />
             </div>
             <div className="add-field">
-              <label htmlFor="add-studentName">Student Name</label>
+              <label htmlFor="add-studentName">{ROLE_LABELS.seedling} name</label>
               <input
                 id="add-studentName"
                 type="text"
                 value={addForm.studentName}
                 onChange={(e) => handleAddFormChange('studentName', e.target.value)}
-                placeholder="Student Name"
+                placeholder="Name"
                 disabled={addingStudent}
               />
             </div>
@@ -462,7 +465,7 @@ const StudentData = () => {
             </div>
           </div>
           <button type="submit" className="add-student-btn" disabled={addingStudent}>
-            <span className="btn-icon-wrap"><IconAdd />{addingStudent ? 'Adding...' : 'Add Student'}</span>
+            <span className="btn-icon-wrap"><IconAdd />{addingStudent ? 'Adding...' : `Add ${ROLE_LABELS.seedling}`}</span>
           </button>
           <input
             ref={fileInputRef}
@@ -495,7 +498,7 @@ const StudentData = () => {
         <div className="students-table-section">
           <div className="students-table-header-row">
             <h3>
-              Students Data ({filteredStudents.length}
+              {APP_LABELS.seedlingData} ({filteredStudents.length}
               {gradeFilter ? ` of ${studentsData.length}` : ''} records)
             </h3>
             <div className="grade-filter-wrapper">
@@ -561,7 +564,7 @@ const StudentData = () => {
                     </th>
                   )}
                   <th>Registration Number</th>
-                  <th>Student Name</th>
+                  <th>{ROLE_LABELS.seedling} name</th>
                   <th>Fathers Name</th>
                   <th>Grade</th>
                   <th>Subject</th>
@@ -596,7 +599,7 @@ const StudentData = () => {
                               className="student-edit-input"
                               value={editForm.studentName}
                               onChange={(e) => handleEditFormChange('studentName', e.target.value)}
-                              placeholder="Student Name"
+                              placeholder="Name"
                             />
                           </td>
                           <td>

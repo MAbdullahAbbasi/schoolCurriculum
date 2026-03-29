@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
+import { ROLE_LABELS } from './roleLabels';
 import { IconDelete, IconEdit } from './ButtonIcons';
 import './CourseAdmins.css';
 
@@ -32,7 +33,7 @@ const CourseAdmins = () => {
       const res = await axios.get(`${API_URL}/api/admin/course-admins`);
       setRows(Array.isArray(res.data?.data) ? res.data.data : []);
     } catch (err) {
-      setError('Failed to load course admins.');
+      setError(`Failed to load ${ROLE_LABELS.forestKeeper.toLowerCase()} accounts.`);
       setRows([]);
     } finally {
       setLoading(false);
@@ -110,7 +111,7 @@ const CourseAdmins = () => {
         logoutAndReload();
         return;
       }
-      setError(err.response?.data?.message || 'Failed to create course admin.');
+      setError(err.response?.data?.message || `Failed to create ${ROLE_LABELS.forestKeeper.toLowerCase()}.`);
     }
   };
 
@@ -168,7 +169,7 @@ const CourseAdmins = () => {
 
   const deleteSingle = async (username) => {
     setError(null);
-    const ok = window.confirm(`Delete course admin "${username}"?`);
+    const ok = window.confirm(`Delete ${ROLE_LABELS.forestKeeper} "${username}"?`);
     if (!ok) return;
     try {
       await axios.delete(`${API_URL}/api/admin/course-admins/${encodeURIComponent(username)}`);
@@ -189,7 +190,9 @@ const CourseAdmins = () => {
       const usernames = Array.from(selected);
       const hasSelection = usernames.length > 0;
       const ok = window.confirm(
-        hasSelection ? `Delete ${usernames.length} selected course admin(s)?` : 'Delete ALL course admins?'
+        hasSelection
+          ? `Delete ${usernames.length} selected ${ROLE_LABELS.forestKeeper}(s)?`
+          : `Delete ALL ${ROLE_LABELS.forestKeeper}s?`
       );
       if (!ok) return;
 
@@ -225,14 +228,14 @@ const CourseAdmins = () => {
     <div className="course-admins-container">
       <CurriculumHeader />
       <div className="course-admins-content">
-        <h2 className="course-admins-title">Course Admins</h2>
+        <h2 className="course-admins-title">{ROLE_LABELS.forestKeeper}s</h2>
         {error && <div className="course-admins-error">{error}</div>}
 
         {(showAddCard || showEditCard) && (
           <div className="course-admins-modal-wrap">
             {showAddCard && (
               <div className="course-admins-modal-card">
-                <h3 className="course-admins-modal-title">Add Course Admin</h3>
+                <h3 className="course-admins-modal-title">Add {ROLE_LABELS.forestKeeper}</h3>
                 {addStage === 'form' && (
                   <>
                     <label className="course-admins-label">
@@ -296,7 +299,7 @@ const CourseAdmins = () => {
 
             {showEditCard && (
               <div className="course-admins-modal-card">
-                <h3 className="course-admins-modal-title">Edit Course Admin</h3>
+                <h3 className="course-admins-modal-title">Edit {ROLE_LABELS.forestKeeper}</h3>
                 {editStage === 'form' && (
                   <>
                     <label className="course-admins-label">
@@ -376,7 +379,7 @@ const CourseAdmins = () => {
                 setAddAdminPassword('');
               }}
             >
-              Add Course Admin
+              Add {ROLE_LABELS.forestKeeper}
             </button>
             <button type="button" className="btn-danger" onClick={deleteAll}>
               Delete All
@@ -394,7 +397,7 @@ const CourseAdmins = () => {
                       type="checkbox"
                       checked={allChecked}
                       onChange={(e) => toggleAll(e.target.checked)}
-                      aria-label="Select all course admins"
+                      aria-label={`Select all ${ROLE_LABELS.forestKeeper}s`}
                     />
                     <span>Username</span>
                   </div>
@@ -407,7 +410,7 @@ const CourseAdmins = () => {
               {rows.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="course-admins-empty">
-                    No course admins found.
+                    No {ROLE_LABELS.forestKeeper.toLowerCase()}s found.
                   </td>
                 </tr>
               ) : (

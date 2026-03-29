@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { APP_LABELS } from './roleLabels';
 import './CurriculumHeader.css';
 
 const svgProps = { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true };
@@ -149,8 +150,8 @@ const CurriculumHeader = () => {
     <header className="curriculum-header">
       <div className="curriculum-header-inner">
         <div className="curriculum-header-brand">
-          <h1 className="curriculum-title">School Curriculum</h1>
-          <p className="curriculum-subtitle">Explore courses and topics by grade level</p>
+          <h1 className="curriculum-title">{APP_LABELS.brandTitle}</h1>
+          <p className="curriculum-subtitle">{APP_LABELS.brandTagline}</p>
         </div>
         <div className="header-buttons-group">
           {canViewStudentsData && (
@@ -160,7 +161,7 @@ const CurriculumHeader = () => {
               onClick={handleStudentsDataClick}
             >
               <span className="nav-btn-icon">{iconStudentsData}</span>
-              Students Data
+              {APP_LABELS.seedlingData}
             </button>
           )}
           {canViewObjectives && (
@@ -183,7 +184,7 @@ const CurriculumHeader = () => {
               }}
             >
               <span className="nav-btn-icon">{iconRoles}</span>
-              Roles
+              {APP_LABELS.groveNav}
             </button>
           )}
           <button
@@ -256,7 +257,7 @@ const CurriculumHeader = () => {
               onClick={handleStudentsDataClick}
             >
               <span className="nav-btn-icon">{iconStudentsData}</span>
-              Students Data
+              {APP_LABELS.seedlingData}
             </button>
           )}
           {canViewObjectives && (
@@ -279,7 +280,7 @@ const CurriculumHeader = () => {
               }}
             >
               <span className="nav-btn-icon">{iconRoles}</span>
-              Roles
+              {APP_LABELS.groveNav}
             </button>
           )}
           <button

@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { IconLogin } from './ButtonIcons';
 import axios from 'axios';
 import { API_URL } from './config/api';
+import { APP_LABELS, ROLE_LABELS } from './roleLabels';
 import './Login.css';
 
 const Login = ({ onLoginSuccess }) => {
@@ -57,9 +58,10 @@ const Login = ({ onLoginSuccess }) => {
 
   return (
     <div className="login-page">
-      <div className="login-card">
-        <h1 className="login-title">School Curriculum</h1>
-        <p className="login-subtitle">Sign in to continue</p>
+      <div className="login-card login-card--forest">
+        <div className="login-card-decoration" aria-hidden="true" />
+        <h1 className="login-title">{APP_LABELS.brandTitle}</h1>
+        <p className="login-subtitle">Sign in to continue your journey</p>
         <form onSubmit={handleSubmit} className="login-form">
           <div className="login-field">
             <label htmlFor="login-userid">User ID</label>
@@ -132,26 +134,26 @@ const Login = ({ onLoginSuccess }) => {
               alert('Signup form design only. No data saved yet.');
             }}
           >
-            <h3 className="signup-title">Student Registration</h3>
+            <h3 className="signup-title">{ROLE_LABELS.seedling} registration</h3>
 
             <div className="signup-grid">
               <label className="signup-field">
-                Student Name
+                {ROLE_LABELS.seedling} name
                 <input
                   className="signup-input"
                   value={studentName}
                   onChange={(e) => setStudentName(e.target.value)}
-                  placeholder="Enter student name"
+                  placeholder="Enter name"
                 />
               </label>
 
               <label className="signup-field">
-                Father&apos;s Name
+                {ROLE_LABELS.nurturer} (caregiver) name
                 <input
                   className="signup-input"
                   value={fathersName}
                   onChange={(e) => setFathersName(e.target.value)}
-                  placeholder="Enter father name"
+                  placeholder="Enter caregiver name"
                 />
               </label>
 

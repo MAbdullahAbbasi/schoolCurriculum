@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
+import { ROLE_LABELS } from './roleLabels';
 import { IconDelete, IconEdit } from './ButtonIcons';
 import './Educators.css';
 
@@ -55,7 +56,7 @@ const Educators = () => {
       const res = await axios.get(`${API_URL}/api/admin/educators`);
       setRows(Array.isArray(res.data?.data) ? res.data.data : []);
     } catch (err) {
-      setError('Failed to load educators.');
+      setError(`Failed to load ${ROLE_LABELS.gardener.toLowerCase()}s.`);
       setRows([]);
     } finally {
       setLoading(false);
@@ -137,7 +138,9 @@ const Educators = () => {
       const usernames = Array.from(selected);
       const hasSelection = usernames.length > 0;
       const ok = window.confirm(
-        hasSelection ? `Delete ${usernames.length} selected educator(s)?` : 'Delete ALL educators?'
+        hasSelection
+          ? `Delete ${usernames.length} selected ${ROLE_LABELS.gardener}(s)?`
+          : `Delete ALL ${ROLE_LABELS.gardener}s?`
       );
       if (!ok) return;
 
@@ -270,13 +273,13 @@ const Educators = () => {
         logoutAndReload();
         return;
       }
-      setError(err.response?.data?.message || 'Failed to update educator.');
+      setError(err.response?.data?.message || `Failed to update ${ROLE_LABELS.gardener.toLowerCase()}.`);
     }
   };
 
   const deleteSingle = async (username) => {
     setError(null);
-    const ok = window.confirm(`Delete educator "${username}"?`);
+    const ok = window.confirm(`Delete ${ROLE_LABELS.gardener} "${username}"?`);
     if (!ok) return;
     try {
       await axios.delete(`${API_URL}/api/admin/educators/${encodeURIComponent(username)}`);
@@ -310,14 +313,14 @@ const Educators = () => {
     <div className="educators-container">
       <CurriculumHeader />
       <div className="educators-content">
-        <h2 className="educators-title">Educators</h2>
+        <h2 className="educators-title">{ROLE_LABELS.gardener}s</h2>
         {error && <div className="educators-error">{error}</div>}
 
         {(showAddCard || showEditCard) && (
           <div className="educators-modal-wrap">
             {showAddCard && (
               <div className="educators-modal-card">
-                <h3 className="educators-modal-title">Add Educator</h3>
+                <h3 className="educators-modal-title">Add {ROLE_LABELS.gardener}</h3>
 
                 {addStage === 'form' && (
                   <>
@@ -544,7 +547,7 @@ const Educators = () => {
           <div />
           <div className="educators-actions-right">
             <button type="button" className="btn-primary" onClick={openAdd}>
-              Add Educator
+              Add {ROLE_LABELS.gardener}
             </button>
             <button type="button" className="btn-danger" onClick={deleteAll}>
               Delete All
@@ -558,7 +561,7 @@ const Educators = () => {
               <tr>
                 <th className="educators-th">
                   <div className="educators-username-header">
-                    <input type="checkbox" checked={allChecked} onChange={(e) => toggleAll(e.target.checked)} aria-label="Select all educators" />
+                    <input type="checkbox" checked={allChecked} onChange={(e) => toggleAll(e.target.checked)} aria-label={`Select all ${ROLE_LABELS.gardener}s`} />
                     <span>Username</span>
                   </div>
                 </th>
@@ -572,7 +575,7 @@ const Educators = () => {
               {rows.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="educators-empty">
-                    No educators found.
+                    No {ROLE_LABELS.gardener.toLowerCase()}s found.
                   </td>
                 </tr>
               ) : (
