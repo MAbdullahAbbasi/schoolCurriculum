@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
 import { IconBack } from './ButtonIcons';
 import { formatGradingSchemeForDisplay, getCourseTotalMarks, getSubjectSortIndex } from './reportUtils';
@@ -359,18 +358,14 @@ const StudentReportDetail = () => {
 
   if (loading) {
     return (
-      <div className="student-report-detail-container">
-        <CurriculumHeader />
-        <div className="student-report-detail-loading">Loading...</div>
+      <div className="student-report-detail-container">        <div className="student-report-detail-loading">Loading...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="student-report-detail-container">
-        <CurriculumHeader />
-        <div className="student-report-detail-error">{error}</div>
+      <div className="student-report-detail-container">        <div className="student-report-detail-error">{error}</div>
         <button type="button" className="student-report-detail-back-btn" onClick={handleBack}>
           <span className="btn-icon-wrap"><IconBack />Back to Reports</span>
         </button>
@@ -398,9 +393,7 @@ const StudentReportDetail = () => {
   const reportMonthYear = new Date().toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 
   return (
-    <div className="student-report-detail-container">
-      <CurriculumHeader />
-      <div className="student-report-detail-content">
+    <div className="student-report-detail-container">      <div className="student-report-detail-content">
         <div className="student-report-page-watermark" aria-hidden="true">
           <img src={logoLeft} alt="" className="student-report-page-watermark-img" />
         </div>

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import axios from 'axios';
-import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
 import { APP_LABELS, ROLE_LABELS } from './roleLabels';
 import { IconAdd, IconCancel, IconDelete, IconEdit, IconSave, IconSelectAll, IconUpload } from './ButtonIcons';
@@ -337,9 +336,7 @@ const StudentData = () => {
 
   if (loading && studentsData.length === 0) {
     return (
-      <div className="student-data-container">
-        <CurriculumHeader />
-        <div className="loading-spinner">
+      <div className="student-data-container">        <div className="loading-spinner">
           <div className="spinner"></div>
           <p>Loading students data...</p>
         </div>
@@ -348,9 +345,7 @@ const StudentData = () => {
   }
 
   return (
-    <div className="student-data-container">
-      <CurriculumHeader />
-      <div className="student-data-header student-data-header--grove">
+    <div className="student-data-container">      <div className="student-data-header student-data-header--grove">
         <h2>{APP_LABELS.seedlingDataLong}</h2>
         <p>
           Upload and tend your {ROLE_LABELS.seedling.toLowerCase()} records — import in bulk or add one at a time

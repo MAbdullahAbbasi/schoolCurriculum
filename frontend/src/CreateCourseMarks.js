@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
 import { IconBack, IconCreate } from './ButtonIcons';
 import './CreateCourseMarks.css';
@@ -223,9 +222,7 @@ const CreateCourseMarks = () => {
 
   if (!coursePayload || !totalQuestionsFromState) {
     return (
-      <div className="create-course-marks-container">
-        <CurriculumHeader />
-        <div className="create-course-marks-content">
+      <div className="create-course-marks-container">        <div className="create-course-marks-content">
           <p className="create-course-marks-missing">Missing course data. Please start from the Create Course page.</p>
           <button type="button" className="create-course-marks-back-btn" onClick={() => navigate('/create-course')}>
             <span className="btn-icon-wrap"><IconBack />Back to Create Course</span>
@@ -236,9 +233,7 @@ const CreateCourseMarks = () => {
   }
 
   return (
-    <div className="create-course-marks-container">
-      <CurriculumHeader />
-      <div className="create-course-marks-content">
+    <div className="create-course-marks-container">      <div className="create-course-marks-content">
         <h2 className="create-course-marks-title">Enter marks per question</h2>
         <p className="create-course-marks-hint">
           Enter marks for each question/part and select one objective per row. Only <strong>compulsory</strong> parts count toward the total; optional parts are still saved and assigned to their objectives. Total (compulsory only) must equal <strong>{totalMarks}</strong>.

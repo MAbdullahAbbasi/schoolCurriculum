@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import AppLayout from './AppLayout';
 import Curriculum from './Curriculum';
 import CreateCourse from './CreateCourse';
 import CreateCourseMarks from './CreateCourseMarks';
@@ -167,42 +168,44 @@ function App() {
     <Router>
       <div className="App">
         <Routes>
-          <Route
-            path="/"
-            element={
-              userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <Curriculum />
-            }
-          />
-          <Route path="/create-course" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <CreateCourse />} />
-          <Route path="/create-course/marks" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <CreateCourseMarks />} />
-          <Route path="/create-course/map-questions" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <MapCourseQuestions />} />
-          <Route
-            path="/students-data"
-            element={userRole === 'ADMIN' ? <StudentData /> : <Navigate to="/record" replace />}
-          />
-          <Route path="/record" element={<StudentsRecord />} />
-          <Route path="/studentRecord/:courseCode" element={<StudentRecordDetail />} />
-          <Route path="/roles" element={userRole === 'ADMIN' ? <RolesDashboard /> : <Navigate to="/record" replace />} />
-          <Route
-            path="/course-admins"
-            element={userRole === 'ADMIN' ? <CourseAdmins /> : <Navigate to="/" replace />}
-          />
-          <Route
-            path="/educators"
-            element={userRole === 'ADMIN' ? <Educators /> : <Navigate to="/" replace />}
-          />
-          <Route path="/reports" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <Reports />} />
-          <Route path="/reports/result-sheet" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <ResultSheet />} />
-          <Route
-            path="/reports/student/:registrationNumber"
-            element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <StudentReportDetail />}
-          />
-          <Route
-            path="/grading-scheme"
-            element={userRole === 'ADMIN' || userRole === 'COURSE_ADMIN' ? <GradingScheme /> : <Navigate to="/record" replace />}
-          />
-          <Route path="/login" element={<Navigate to="/" replace />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route element={<AppLayout />}>
+            <Route
+              path="/"
+              element={
+                userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <Curriculum />
+              }
+            />
+            <Route path="/create-course" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <CreateCourse />} />
+            <Route path="/create-course/marks" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <CreateCourseMarks />} />
+            <Route path="/create-course/map-questions" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <MapCourseQuestions />} />
+            <Route
+              path="/students-data"
+              element={userRole === 'ADMIN' ? <StudentData /> : <Navigate to="/record" replace />}
+            />
+            <Route path="/record" element={<StudentsRecord />} />
+            <Route path="/studentRecord/:courseCode" element={<StudentRecordDetail />} />
+            <Route path="/roles" element={userRole === 'ADMIN' ? <RolesDashboard /> : <Navigate to="/record" replace />} />
+            <Route
+              path="/course-admins"
+              element={userRole === 'ADMIN' ? <CourseAdmins /> : <Navigate to="/" replace />}
+            />
+            <Route
+              path="/educators"
+              element={userRole === 'ADMIN' ? <Educators /> : <Navigate to="/" replace />}
+            />
+            <Route path="/reports" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <Reports />} />
+            <Route path="/reports/result-sheet" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <ResultSheet />} />
+            <Route
+              path="/reports/student/:registrationNumber"
+              element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <StudentReportDetail />}
+            />
+            <Route
+              path="/grading-scheme"
+              element={userRole === 'ADMIN' || userRole === 'COURSE_ADMIN' ? <GradingScheme /> : <Navigate to="/record" replace />}
+            />
+            <Route path="/login" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
         </Routes>
       </div>
     </Router>

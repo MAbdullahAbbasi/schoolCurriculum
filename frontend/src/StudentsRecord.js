@@ -1,7 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
 import { IconAdd, IconCancel, IconClose, IconDelete, IconEdit, IconRemove, IconSave, IconSelectAll } from './ButtonIcons';
 import './StudentsRecord.css';
@@ -310,9 +309,7 @@ const StudentsRecord = () => {
 
   if (loading) {
     return (
-      <div className="students-record-container">
-        <CurriculumHeader />
-        <div className="loading-spinner">
+      <div className="students-record-container">        <div className="loading-spinner">
           <div className="spinner"></div>
           <p>Loading courses...</p>
         </div>
@@ -321,9 +318,7 @@ const StudentsRecord = () => {
   }
 
   return (
-    <div className="students-record-container">
-      <CurriculumHeader />
-      <div className="students-record-content">
+    <div className="students-record-container">      <div className="students-record-content">
         <h2>Courses Record</h2>
         <p>Select a course to view and manage student records</p>
         

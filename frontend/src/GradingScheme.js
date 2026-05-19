@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
-import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
 import { IconAdd, IconCancel, IconClose, IconCreate, IconDelete, IconEdit, IconRemove, IconSave } from './ButtonIcons';
 import './GradingScheme.css';
@@ -222,9 +221,7 @@ const GradingScheme = () => {
   };
 
   return (
-    <div className="grading-scheme-container">
-      <CurriculumHeader />
-      <div className="grading-scheme-content">
+    <div className="grading-scheme-container">      <div className="grading-scheme-content">
         <h2 className="grading-scheme-title">Grading Scheme</h2>
         <p className="grading-scheme-subtitle">
           Create grading schemes with validity periods. Each scheme defines how percentage maps to grades.

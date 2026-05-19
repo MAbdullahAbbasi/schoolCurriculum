@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
 import { IconAdd, IconCancel, IconClearFilters, IconCreate, IconDelete, IconEdit, IconNext, IconSave, IconSelectAll, IconUpload, IconUploadFile } from './ButtonIcons';
 import './Curriculum.css';
@@ -568,9 +567,7 @@ const Curriculum = () => {
   }
 
   return (
-    <div className="curriculum-container">
-      <CurriculumHeader />
-      
+    <div className="curriculum-container">      
       <div className="filters-section">
           <div className="filter-group">
             <label htmlFor="age-group-filter" className="filter-label">Age Group</label>
@@ -580,16 +577,16 @@ const Curriculum = () => {
               value={filters.ageGroup}
               onChange={(e) => handleFilterChange('ageGroup', e.target.value)}
             >
-              <option value="">All Ages (4-18 years)</option>
+              <option value="">All Ages</option>
               <option value="4-5">4-5 years</option>
-              <option value="5-6">5-6 years (Grade 1)</option>
-              <option value="6-7">6-7 years (Grade 2)</option>
+              <option value="5-6">Grade 1</option>
+              <option value="6-7">Grade 2</option>
               <option value="7-8">7-8 years</option>
               <option value="8-9">8-9 years</option>
               <option value="9-10">9-10 years</option>
               <option value="10-11">10-11 years</option>
               <option value="11-12">11-12 years</option>
-              <option value="12-13">12-13 years (Grade 8)</option>
+              <option value="12-13">Grade 8</option>
               <option value="13-14">13-14 years</option>
               <option value="14-15">14-15 years</option>
               <option value="15-16">15-16 years</option>
@@ -610,14 +607,14 @@ const Curriculum = () => {
               <option value="KG-1">KG-1</option>
               <option value="KG-2">KG-2</option>
               <option value="KG-3">KG-3</option>
-              <option value="1">Grade 1 (Year 5-6)</option>
-              <option value="2">Grade 2 (Year 6-7)</option>
+              <option value="1">Grade 1</option>
+              <option value="2">Grade 2</option>
               <option value="3">Grade 3</option>
               <option value="4">Grade 4</option>
               <option value="5">Grade 5</option>
               <option value="6">Grade 6</option>
               <option value="7">Grade 7</option>
-              <option value="8">Grade 8 (Year 12-13)</option>
+              <option value="8">Grade 8</option>
               <option value="9">Grade 9</option>
               <option value="10">Grade 10</option>
               <option value="11">Grade 11</option>

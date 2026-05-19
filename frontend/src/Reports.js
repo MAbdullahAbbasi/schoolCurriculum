@@ -5,7 +5,6 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import JSZip from 'jszip';
 import { createRoot } from 'react-dom/client';
-import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
 import { IconDownload, IconList, IconView } from './ButtonIcons';
 import {
@@ -451,26 +450,20 @@ const Reports = () => {
 
   if (loading) {
     return (
-      <div className="reports-container">
-        <CurriculumHeader />
-        <div className="reports-loading">Loading...</div>
+      <div className="reports-container">        <div className="reports-loading">Loading...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="reports-container">
-        <CurriculumHeader />
-        <div className="reports-error">{error}</div>
+      <div className="reports-container">        <div className="reports-error">{error}</div>
       </div>
     );
   }
 
   return (
-    <div className="reports-container">
-      <CurriculumHeader />
-      <div className="reports-content">
+    <div className="reports-container">      <div className="reports-content">
         <h2 className="reports-title">Reports</h2>
         <p className="reports-subtitle">Select a grade to view students and download reports.</p>
 

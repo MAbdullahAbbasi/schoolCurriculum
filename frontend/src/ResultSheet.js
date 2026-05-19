@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
 import { IconBack } from './ButtonIcons';
 import html2canvas from 'html2canvas';
@@ -395,9 +394,7 @@ const ResultSheet = () => {
 
   if (!selectedGrade) {
     return (
-      <div className="result-sheet-container">
-        <CurriculumHeader />
-        <div className="result-sheet-content">
+      <div className="result-sheet-container">        <div className="result-sheet-content">
           <p className="result-sheet-no-grade">No grade selected. Please go to Reports and select a grade first.</p>
           <button type="button" className="result-sheet-back-btn" onClick={() => navigate('/reports')}>
             <span className="btn-icon-wrap"><IconBack />Back to Reports</span>
@@ -409,18 +406,14 @@ const ResultSheet = () => {
 
   if (loading) {
     return (
-      <div className="result-sheet-container">
-        <CurriculumHeader />
-        <div className="result-sheet-loading">Loading result sheet...</div>
+      <div className="result-sheet-container">        <div className="result-sheet-loading">Loading result sheet...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="result-sheet-container">
-        <CurriculumHeader />
-        <div className="result-sheet-error">{error}</div>
+      <div className="result-sheet-container">        <div className="result-sheet-error">{error}</div>
         <button type="button" className="result-sheet-back-btn" onClick={handleBack}>
           <span className="btn-icon-wrap"><IconBack />Back to Reports</span>
         </button>
@@ -429,9 +422,7 @@ const ResultSheet = () => {
   }
 
   return (
-    <div className="result-sheet-container">
-      <CurriculumHeader />
-      <div className="result-sheet-content">
+    <div className="result-sheet-container">      <div className="result-sheet-content">
         <div className="result-sheet-header">
           <button type="button" className="result-sheet-back-btn" onClick={handleBack}>
             <span className="btn-icon-wrap"><IconBack />Back to Reports</span>

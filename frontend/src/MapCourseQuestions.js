@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
 import { IconBack, IconCancel, IconCreate, IconList } from './ButtonIcons';
 import './MapCourseQuestions.css';
@@ -250,9 +249,7 @@ const MapCourseQuestions = () => {
 
   if (!coursePayload || totalQuestions < 1 || resolvedTopics.length === 0) {
     return (
-      <div className="map-questions-container">
-        <CurriculumHeader />
-        <div className="map-questions-content">
+      <div className="map-questions-container">        <div className="map-questions-content">
           <p className="map-questions-missing">
             Missing course data or objectives. Please start from the curriculum and create course again.
           </p>
@@ -268,9 +265,7 @@ const MapCourseQuestions = () => {
   const showPartButtons = currentParts.length > 1;
 
   return (
-    <div className="map-questions-container">
-      <CurriculumHeader />
-      <div className="map-questions-content">
+    <div className="map-questions-container">      <div className="map-questions-content">
         <h2 className="map-questions-title">Map questions to objectives</h2>
         <p className="map-questions-subtitle">
           Click a question (Q1–Q{totalQuestions}). If it has parts, choose a part. Then select objectives and enter marks for that question or part.

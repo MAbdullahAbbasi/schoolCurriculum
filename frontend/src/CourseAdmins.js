@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
-import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
 import { ROLE_LABELS } from './roleLabels';
 import { IconDelete, IconEdit } from './ButtonIcons';
@@ -213,9 +212,7 @@ const CourseAdmins = () => {
 
   if (loading) {
     return (
-      <div className="course-admins-container">
-        <CurriculumHeader />
-        <div className="course-admins-content">
+      <div className="course-admins-container">        <div className="course-admins-content">
           <div className="loading-spinner">
             <p>Loading...</p>
           </div>
@@ -225,9 +222,7 @@ const CourseAdmins = () => {
   }
 
   return (
-    <div className="course-admins-container">
-      <CurriculumHeader />
-      <div className="course-admins-content">
+    <div className="course-admins-container">      <div className="course-admins-content">
         <h2 className="course-admins-title">{ROLE_LABELS.forestKeeper}s</h2>
         {error && <div className="course-admins-error">{error}</div>}
 

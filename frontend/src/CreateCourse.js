@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import CurriculumHeader from './CurriculumHeader';
 import { IconCancel, IconNext } from './ButtonIcons';
 import './CreateCourse.css';
 
@@ -202,9 +201,7 @@ const CreateCourse = () => {
 
   if (resolvedTopics.length === 0 && selectedTopics.length > 0) {
     return (
-      <div className="create-course-container">
-        <CurriculumHeader />
-        <div className="create-course-loading">Loading...</div>
+      <div className="create-course-container">        <div className="create-course-loading">Loading...</div>
       </div>
     );
   }
@@ -214,9 +211,7 @@ const CreateCourse = () => {
   }
 
   return (
-    <div className="create-course-container">
-      <CurriculumHeader />
-      <div className="create-course-content">
+    <div className="create-course-container">      <div className="create-course-content">
         <h2 className="create-course-title">Create Course</h2>
 
         <form onSubmit={handleSubmit} className="create-course-form">

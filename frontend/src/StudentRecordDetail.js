@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
 import { IconCancel, IconEdit, IconNotAttempted, IconSave } from './ButtonIcons';
 import './StudentRecordDetail.css';
@@ -362,9 +361,7 @@ const StudentRecordDetail = () => {
 
   if (loading) {
     return (
-      <div className="student-record-detail-container">
-        <CurriculumHeader />
-        <div className="loading-spinner">
+      <div className="student-record-detail-container">        <div className="loading-spinner">
           <div className="spinner" />
           <p>Loading course and student data...</p>
         </div>
@@ -374,9 +371,7 @@ const StudentRecordDetail = () => {
 
   if (error || !course) {
     return (
-      <div className="student-record-detail-container">
-        <CurriculumHeader />
-        <div className="error-message">{error || 'Course not found'}</div>
+      <div className="student-record-detail-container">        <div className="error-message">{error || 'Course not found'}</div>
       </div>
     );
   }
@@ -385,8 +380,6 @@ const StudentRecordDetail = () => {
 
   return (
     <div className="student-record-detail-container">
-      <CurriculumHeader />
-
       <div className="record-detail-content">
         <div className="course-details-section">
           <h2>{course.courseName}</h2>

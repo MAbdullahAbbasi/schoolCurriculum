@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
-import CurriculumHeader from './CurriculumHeader';
 import { API_URL } from './config/api';
 import { ROLE_LABELS } from './roleLabels';
 import { IconDelete, IconEdit } from './ButtonIcons';
@@ -298,9 +297,7 @@ const Educators = () => {
 
   if (loading) {
     return (
-      <div className="educators-container">
-        <CurriculumHeader />
-        <div className="educators-content">
+      <div className="educators-container">        <div className="educators-content">
           <div className="loading-spinner">
             <p>Loading...</p>
           </div>
@@ -310,9 +307,7 @@ const Educators = () => {
   }
 
   return (
-    <div className="educators-container">
-      <CurriculumHeader />
-      <div className="educators-content">
+    <div className="educators-container">      <div className="educators-content">
         <h2 className="educators-title">{ROLE_LABELS.gardener}s</h2>
         {error && <div className="educators-error">{error}</div>}
 

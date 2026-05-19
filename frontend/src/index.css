@@ -1,3 +1,18 @@
+:root {
+  --garden-forest-dark: #081c15;
+  --garden-forest: #1b4332;
+  --garden-forest-mid: #2d6a4f;
+  --garden-moss: #40916c;
+  --garden-moss-light: #d8f3dc;
+  --garden-leaf: #52b788;
+  --garden-leaf-light: #95d5b2;
+  --garden-earth: #606c38;
+  --garden-bloom: #bc6c25;
+  --garden-cream: #f8f5f0;
+  --garden-soil: #4a3728;
+  --sidebar-width: 260px;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -10,8 +25,8 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(180deg, #fafdfb 0%, #ffffff 40%, #f7fbf8 100%);
-  color: #2c3e50;
+  background: linear-gradient(180deg, #f0f7f2 0%, var(--garden-cream) 35%, #eef6f0 100%);
+  color: var(--garden-forest);
 }
 
 code {

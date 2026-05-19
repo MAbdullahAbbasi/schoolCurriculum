@@ -1,6 +1,5 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import CurriculumHeader from './CurriculumHeader';
 import { APP_LABELS, ROLE_LABELS } from './roleLabels';
 import './RolesDashboard.css';
 
@@ -69,9 +68,7 @@ const RolesDashboard = () => {
   const goGardener = () => navigate('/educators');
 
   return (
-    <div className="roles-dashboard-container">
-      <CurriculumHeader />
-      <div className="roles-dashboard-content">
+    <div className="roles-dashboard-container">      <div className="roles-dashboard-content">
         <header className="roles-dashboard-hero">
           <span className="roles-dashboard-badge" aria-hidden="true">
             <span className="roles-dashboard-badge-leaf">🌿</span>
