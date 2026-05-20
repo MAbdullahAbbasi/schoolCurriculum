@@ -223,7 +223,7 @@ const CourseAdmins = () => {
 
   return (
     <div className="course-admins-container">      <div className="course-admins-content">
-        <h2 className="course-admins-title">{ROLE_LABELS.forestKeeper}s</h2>
+        <h2 className="course-admins-title page-local-header">{ROLE_LABELS.forestKeeper}s</h2>
         {error && <div className="course-admins-error">{error}</div>}
 
         {(showAddCard || showEditCard) && (

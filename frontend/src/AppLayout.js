@@ -1,11 +1,16 @@
 import React, { useState, useCallback } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import AppSidebar from './AppSidebar';
+import PageHeader from './PageHeader';
+import { getPageMeta } from './pageTitles';
 import './AppLayout.css';
+import './pageLayout.css';
 
 const AppLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);
+  const { pathname } = useLocation();
+  const { title, subtitle } = getPageMeta(pathname);
 
   return (
     <div className="app-layout">
@@ -29,7 +34,12 @@ const AppLayout = () => {
           )}
         </button>
         <div className="app-main-content">
-          <Outlet />
+          <div className="app-page-panel">
+            <PageHeader title={title} subtitle={subtitle} />
+            <div className="app-page-body">
+              <Outlet />
+            </div>
+          </div>
         </div>
       </div>
       <div

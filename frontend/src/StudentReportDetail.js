@@ -398,7 +398,7 @@ const StudentReportDetail = () => {
           <img src={logoLeft} alt="" className="student-report-page-watermark-img" />
         </div>
         <div className="student-report-detail-header">
-          <h2 className="student-report-detail-title">
+          <h2 className="student-report-detail-title page-local-header">
             Report: {displayName} ({displayRegNo})
           </h2>
           <button type="button" className="student-report-detail-back-btn" onClick={handleBack}>

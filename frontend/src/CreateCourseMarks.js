@@ -234,7 +234,7 @@ const CreateCourseMarks = () => {
 
   return (
     <div className="create-course-marks-container">      <div className="create-course-marks-content">
-        <h2 className="create-course-marks-title">Enter marks per question</h2>
+        <h2 className="create-course-marks-title page-local-header">Enter marks per question</h2>
         <p className="create-course-marks-hint">
           Enter marks for each question/part and select one objective per row. Only <strong>compulsory</strong> parts count toward the total; optional parts are still saved and assigned to their objectives. Total (compulsory only) must equal <strong>{totalMarks}</strong>.
         </p>

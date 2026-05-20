@@ -308,7 +308,7 @@ const Educators = () => {
 
   return (
     <div className="educators-container">      <div className="educators-content">
-        <h2 className="educators-title">{ROLE_LABELS.gardener}s</h2>
+        <h2 className="educators-title page-local-header">{ROLE_LABELS.gardener}s</h2>
         {error && <div className="educators-error">{error}</div>}
 
         {(showAddCard || showEditCard) && (

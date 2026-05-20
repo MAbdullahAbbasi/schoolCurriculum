@@ -222,10 +222,12 @@ const GradingScheme = () => {
 
   return (
     <div className="grading-scheme-container">      <div className="grading-scheme-content">
-        <h2 className="grading-scheme-title">Grading Scheme</h2>
-        <p className="grading-scheme-subtitle">
-          Create grading schemes with validity periods. Each scheme defines how percentage maps to grades.
-        </p>
+        <div className="page-local-header-block">
+          <h2 className="grading-scheme-title">Grading Scheme</h2>
+          <p className="grading-scheme-subtitle">
+            Create grading schemes with validity periods. Each scheme defines how percentage maps to grades.
+          </p>
+        </div>
 
         {error && (
           <div className="grading-scheme-error" role="alert">

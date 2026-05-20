@@ -73,8 +73,8 @@ const RolesDashboard = () => {
           <span className="roles-dashboard-badge" aria-hidden="true">
             <span className="roles-dashboard-badge-leaf">🌿</span>
           </span>
-          <h2 className="roles-dashboard-title">{APP_LABELS.rolesDashboardTitle}</h2>
-          <p className="roles-dashboard-subtitle">{APP_LABELS.rolesDashboardSubtitle}</p>
+          <h2 className="roles-dashboard-title page-local-header">{APP_LABELS.rolesDashboardTitle}</h2>
+          <p className="roles-dashboard-subtitle page-local-header">{APP_LABELS.rolesDashboardSubtitle}</p>
         </header>
 
         <div className="roles-grid" role="region" aria-label="Community roles">

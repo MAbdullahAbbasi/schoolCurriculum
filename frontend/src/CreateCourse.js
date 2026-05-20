@@ -212,7 +212,7 @@ const CreateCourse = () => {
 
   return (
     <div className="create-course-container">      <div className="create-course-content">
-        <h2 className="create-course-title">Create Course</h2>
+        <h2 className="create-course-title page-local-header">Create Course</h2>
 
         <form onSubmit={handleSubmit} className="create-course-form">
           <div className="create-course-fields">

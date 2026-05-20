@@ -319,8 +319,10 @@ const StudentsRecord = () => {
 
   return (
     <div className="students-record-container">      <div className="students-record-content">
-        <h2>Courses Record</h2>
-        <p>Select a course to view and manage student records</p>
+        <div className="page-local-header-block">
+          <h2>Courses Record</h2>
+          <p>Select a course to view and manage student records</p>
+        </div>
         
         {error && (
           <div className="error-message">

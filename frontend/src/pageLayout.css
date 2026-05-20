@@ -1,0 +1,242 @@
+/* ── Main panel shell (right content area) ── */
+.app-main-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.app-page-panel {
+  flex: 1;
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid rgba(27, 67, 50, 0.1);
+  box-shadow: 0 4px 28px rgba(8, 28, 21, 0.07);
+  overflow: hidden;
+  min-height: calc(100vh - 5.5rem);
+}
+
+.app-page-header {
+  padding: 1.35rem 2rem 1rem;
+  border-bottom: 1px solid rgba(27, 67, 50, 0.08);
+  background: linear-gradient(180deg, rgba(216, 243, 220, 0.35) 0%, rgba(255, 255, 255, 0) 100%);
+  flex-shrink: 0;
+}
+
+.app-page-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.65rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--garden-forest, #1b4332);
+  letter-spacing: -0.02em;
+}
+
+.app-page-subtitle {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--garden-forest-mid, #2d6a4f);
+  font-weight: 400;
+  max-width: 52rem;
+}
+
+.app-page-body {
+  padding: 1.25rem 2rem 2rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--garden-soil, #4a3728);
+}
+
+/* Hide duplicate in-page titles (layout header is canonical) */
+.app-page-body .page-local-header,
+.app-page-body .page-local-header-block,
+.app-page-body h2.page-local-header,
+.app-page-body p.page-local-header {
+  display: none !important;
+}
+
+/* Page containers: no extra chrome inside the panel */
+.app-page-body .curriculum-container,
+.app-page-body .students-record-container,
+.app-page-body .student-data-container,
+.app-page-body .reports-container,
+.app-page-body .grading-scheme-container,
+.app-page-body .roles-dashboard-container,
+.app-page-body .course-admins-container,
+.app-page-body .educators-container,
+.app-page-body .create-course-container,
+.app-page-body .create-course-marks-container,
+.app-page-body .map-questions-container,
+.app-page-body .student-record-detail-container,
+.app-page-body .result-sheet-container,
+.app-page-body .student-report-detail-container {
+  min-height: auto;
+  padding: 0;
+  background: transparent;
+  font-size: inherit;
+}
+
+/* Typography scale inside panel */
+.app-page-body p,
+.app-page-body label,
+.app-page-body .filter-label,
+.app-page-body td,
+.app-page-body th,
+.app-page-body li,
+.app-page-body input,
+.app-page-body select,
+.app-page-body textarea,
+.app-page-body button {
+  font-size: inherit;
+}
+
+.app-page-body h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--garden-forest, #1b4332);
+  margin: 1.25rem 0 0.5rem;
+}
+
+.app-page-body h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--garden-forest-mid, #2d6a4f);
+  margin: 1rem 0 0.5rem;
+}
+
+.app-page-body .filter-select,
+.app-page-body select,
+.app-page-body input[type='text'],
+.app-page-body input[type='number'],
+.app-page-body input[type='email'],
+.app-page-body input[type='password'],
+.app-page-body textarea {
+  font-size: 0.8125rem;
+}
+
+/* Section cards */
+.app-page-body .filters-section,
+.app-page-body .students-record-content,
+.app-page-body .reports-content,
+.app-page-body .grading-scheme-content,
+.app-page-body .roles-dashboard-content,
+.app-page-body .course-admins-content,
+.app-page-body .educators-content,
+.app-page-body .create-course-content,
+.app-page-body .record-detail-content {
+  max-width: none;
+  text-align: left;
+  padding: 0;
+}
+
+.app-page-body .students-record-content {
+  padding: 0;
+}
+
+.app-page-body .filters-section {
+  margin-top: 0;
+  padding-top: 0;
+  justify-content: flex-start;
+}
+
+.app-page-body .roles-dashboard-hero {
+  margin-top: 0;
+  padding: 0 0 1rem;
+  text-align: left;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.app-page-body .roles-dashboard-hero .roles-dashboard-badge {
+  margin-bottom: 0.5rem;
+}
+
+.app-page-body .roles-grid {
+  margin-top: 0.5rem;
+}
+
+/* Tables */
+.app-page-body table {
+  font-size: 0.8125rem;
+}
+
+.app-page-body th {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--garden-forest-mid, #2d6a4f);
+}
+
+/* Buttons stay readable */
+.app-page-body .nav-btn,
+.app-page-body .btn-primary,
+.app-page-body .btn-secondary,
+.app-page-body [class*='-btn'] {
+  font-size: 0.8125rem;
+}
+
+/* Course / record detail */
+.app-page-body .course-details-section h2 {
+  font-size: 1.15rem;
+  margin-top: 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(27, 67, 50, 0.1);
+}
+
+.app-page-body .result-sheet-header,
+.app-page-body .student-report-detail-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.app-page-body .student-data-header--grove::before {
+  display: none;
+}
+
+.app-page-body .add-student-title {
+  font-size: 0.95rem;
+}
+
+.app-page-body .grade-main-heading {
+  font-size: 1.05rem;
+  margin: 1.5rem 0 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(216, 243, 220, 0.4);
+  border-radius: 8px;
+  border-left: 3px solid var(--garden-moss, #40916c);
+}
+
+.app-page-body .error-message,
+.app-page-body [class*='-error'] {
+  font-size: 0.8125rem;
+}
+
+.app-page-body .loading-spinner p,
+.app-page-body [class*='-loading'] {
+  font-size: 0.875rem;
+  color: var(--garden-forest-mid, #2d6a4f);
+}
+
+@media (max-width: 768px) {
+  .app-page-header {
+    padding: 1rem 1.25rem 0.85rem;
+  }
+
+  .app-page-title {
+    font-size: 1.35rem;
+  }
+
+  .app-page-subtitle {
+    font-size: 0.8125rem;
+  }
+
+  .app-page-body {
+    padding: 1rem 1.25rem 1.5rem;
+  }
+}

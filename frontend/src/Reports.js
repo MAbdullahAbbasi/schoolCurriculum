@@ -464,8 +464,10 @@ const Reports = () => {
 
   return (
     <div className="reports-container">      <div className="reports-content">
-        <h2 className="reports-title">Reports</h2>
-        <p className="reports-subtitle">Select a grade to view students and download reports.</p>
+        <div className="page-local-header-block">
+          <h2 className="reports-title">Reports</h2>
+          <p className="reports-subtitle">Select a grade to view students and download reports.</p>
+        </div>
 
         <div className="reports-select-wrapper">
           <label htmlFor="reports-grade-select" className="reports-select-label">

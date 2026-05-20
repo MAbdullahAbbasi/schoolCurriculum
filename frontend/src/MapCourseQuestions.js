@@ -266,10 +266,12 @@ const MapCourseQuestions = () => {
 
   return (
     <div className="map-questions-container">      <div className="map-questions-content">
-        <h2 className="map-questions-title">Map questions to objectives</h2>
-        <p className="map-questions-subtitle">
-          Click a question (Q1–Q{totalQuestions}). If it has parts, choose a part. Then select objectives and enter marks for that question or part.
-        </p>
+        <div className="page-local-header-block">
+          <h2 className="map-questions-title">Map questions to objectives</h2>
+          <p className="map-questions-subtitle">
+            Click a question (Q1–Q{totalQuestions}). If it has parts, choose a part. Then select objectives and enter marks for that question or part.
+          </p>
+        </div>
 
         <div className="map-questions-buttons">
           {Array.from({ length: totalQuestions }, (_, i) => i + 1).map((q) => (

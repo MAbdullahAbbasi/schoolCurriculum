@@ -345,7 +345,7 @@ const StudentData = () => {
   }
 
   return (
-    <div className="student-data-container">      <div className="student-data-header student-data-header--grove">
+    <div className="student-data-container">      <div className="student-data-header student-data-header--grove page-local-header">
         <h2>{APP_LABELS.seedlingDataLong}</h2>
         <p>
           Upload and tend your {ROLE_LABELS.seedling.toLowerCase()} records — import in bulk or add one at a time

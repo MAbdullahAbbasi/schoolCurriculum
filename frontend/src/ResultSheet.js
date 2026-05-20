@@ -427,7 +427,7 @@ const ResultSheet = () => {
           <button type="button" className="result-sheet-back-btn" onClick={handleBack}>
             <span className="btn-icon-wrap"><IconBack />Back to Reports</span>
           </button>
-          <h2 className="result-sheet-title">Result Sheet — Grade {selectedGrade}</h2>
+          <h2 className="result-sheet-title page-local-header">Result Sheet — Grade {selectedGrade}</h2>
         </div>
 
         <div className="result-sheet-table-actions">
