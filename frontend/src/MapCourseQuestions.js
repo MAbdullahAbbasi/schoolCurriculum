@@ -15,6 +15,7 @@ const MapCourseQuestions = () => {
     totalQuestions: totalQuestionsFromState = 0,
     questionParts: questionPartsFromState = [],
     questionPartMarks: questionPartMarksFromState = [],
+    questionChoiceGroups: questionChoiceGroupsFromState,
     resolvedTopics = [],
   } = location.state || {};
 
@@ -208,6 +209,8 @@ const MapCourseQuestions = () => {
       ...(coursePayload.compulsoryQuestions != null && { compulsoryQuestions: coursePayload.compulsoryQuestions }),
       ...(questionPartsFromState?.length > 0 && { questionParts: questionPartsFromState }),
       ...(questionPartMarksFromState?.length > 0 && { questionPartMarks: questionPartMarksFromState }),
+      ...(Array.isArray(questionChoiceGroupsFromState) &&
+        questionChoiceGroupsFromState.length > 0 && { questionChoiceGroups: questionChoiceGroupsFromState }),
     };
   };
 

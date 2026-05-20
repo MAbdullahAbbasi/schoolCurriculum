@@ -4,6 +4,10 @@ import Record from '../models/Record.js';
 import Course from '../models/Course.js';
 import { ROLE } from '../rbac/roles.js';
 import { requireCourseAccess, requireRoles } from '../rbac/guards.js';
+import {
+  effectiveTotalFromQuestionPartMarks,
+  pickBestQuestionPerGroup,
+} from '../utils/questionChoiceMarks.js';
 
 const router = express.Router();
 
@@ -135,13 +139,18 @@ router.post('/', requireCourseAccess, async (req, res) => {
     const questionPartMarks = (course?.questionPartMarks || []).sort(
       (a, b) => Number(a.questionIndex) - Number(b.questionIndex) || Number(a.partIndex) - Number(b.partIndex)
     );
+    const questionChoiceGroups = course?.questionChoiceGroups || [];
     const totalMarksCourse =
       questionPartMarks.length > 0
-        ? questionPartMarks.reduce((s, m) => s + (Number(m.marks) || 0), 0)
+        ? effectiveTotalFromQuestionPartMarks(questionPartMarks, questionChoiceGroups)
         : topics.reduce((s, t) => s + (Number(t.marks) || 0), 0);
 
     function computeObjectiveMarksFromSlots(student) {
-      const questionMarks = student.questionMarks || {};
+      const questionMarks = pickBestQuestionPerGroup(
+        student.questionMarks || {},
+        questionPartMarks,
+        questionChoiceGroups
+      );
       const notAttemptedSlots = student.notAttemptedSlots || [];
       const leftOnChoiceSlots = student.leftOnChoiceSlots || [];
       const objMarks = {};

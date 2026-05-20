@@ -5,6 +5,9 @@ import Record from '../models/Record.js';
 import User from '../models/User.js';
 import { ROLE } from '../rbac/roles.js';
 import { normalizeGradeForMatch, normalizeSubjectForMatch, requireRoles } from '../rbac/guards.js';
+import {
+  validateQuestionChoiceGroups,
+} from '../utils/questionChoiceMarks.js';
 
 const router = express.Router();
 
@@ -189,6 +192,26 @@ router.post('/', requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), async (req, res)
       marks: Number(m.marks) || 0,
     })) : [];
 
+    let questionChoiceGroupsToSave = undefined;
+    const bodyChoiceGroups = req.body.questionChoiceGroups;
+    if (Array.isArray(bodyChoiceGroups) && bodyChoiceGroups.length > 0) {
+      const perQMarks = {};
+      for (const m of questionPartMarksToSave) {
+        const q = Number(m.questionIndex);
+        if (!Number.isFinite(q) || q < 1) continue;
+        perQMarks[q] = (perQMarks[q] || 0) + (Number(m.marks) || 0);
+      }
+      const v = validateQuestionChoiceGroups(bodyChoiceGroups, totalQuestionsNum, perQMarks);
+      if (!v.ok) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid question choice groups',
+          message: v.message,
+        });
+      }
+      if (v.groups.length > 0) questionChoiceGroupsToSave = v.groups;
+    }
+
     // Create course object
     const subjectStr = bodySubject != null && String(bodySubject).trim() !== '' ? String(bodySubject).trim() : '';
     const courseData = {
@@ -209,6 +232,7 @@ router.post('/', requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), async (req, res)
       ...(compulsoryNum != null && { compulsoryQuestions: compulsoryNum }),
       ...(questionPartsToSave.length > 0 && { questionParts: questionPartsToSave }),
       ...(questionPartMarksToSave.length > 0 && { questionPartMarks: questionPartMarksToSave }),
+      ...(questionChoiceGroupsToSave != null && questionChoiceGroupsToSave.length > 0 && { questionChoiceGroups: questionChoiceGroupsToSave }),
       ...(questionsToSave.length > 0 && { questions: questionsToSave }),
     };
 
@@ -368,6 +392,7 @@ router.put('/:code', requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), async (req, 
       questionParts,
       questionPartMarks,
       compulsoryQuestions,
+      questionChoiceGroups,
     } = req.body || {};
 
     if (courseName !== undefined) {
@@ -455,6 +480,35 @@ router.put('/:code', requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), async (req, 
     if (Array.isArray(questions)) existing.questions = questions;
     if (Array.isArray(questionParts)) existing.questionParts = questionParts;
     if (Array.isArray(questionPartMarks)) existing.questionPartMarks = questionPartMarks;
+
+    if (questionChoiceGroups !== undefined) {
+      const qpm = (Array.isArray(questionPartMarks) ? questionPartMarks : existing.questionPartMarks) || [];
+      const qpmNorm = qpm.map((m) => ({
+        questionIndex: Number(m.questionIndex),
+        partIndex: Number(m.partIndex),
+        marks: Number(m.marks) || 0,
+      }));
+      const tq = existing.totalQuestions != null ? Number(existing.totalQuestions) : null;
+      if (!Array.isArray(questionChoiceGroups) || questionChoiceGroups.length === 0) {
+        existing.questionChoiceGroups = undefined;
+      } else {
+        const perQMarks = {};
+        for (const m of qpmNorm) {
+          const q = Number(m.questionIndex);
+          if (!Number.isFinite(q) || q < 1) continue;
+          perQMarks[q] = (perQMarks[q] || 0) + (Number(m.marks) || 0);
+        }
+        const v = validateQuestionChoiceGroups(questionChoiceGroups, tq, perQMarks);
+        if (!v.ok) {
+          return res.status(400).json({
+            success: false,
+            error: 'Invalid question choice groups',
+            message: v.message,
+          });
+        }
+        existing.questionChoiceGroups = v.groups.length > 0 ? v.groups : undefined;
+      }
+    }
 
     // Prevent code changes explicitly
     if (req.body && req.body.code && String(req.body.code).trim() !== code) {

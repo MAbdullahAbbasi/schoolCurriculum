@@ -3,6 +3,11 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from './config/api';
 import { IconBack, IconCreate } from './ButtonIcons';
+import {
+  effectiveCompulsoryTotal,
+  normalizeChoiceGroups,
+  validateQuestionChoiceGroups,
+} from './questionChoiceUtils';
 import './CreateCourseMarks.css';
 
 const slotKey = (q, part) => (part === 0 ? `q${q}` : `q${q}-p${part}`);
@@ -36,6 +41,8 @@ const CreateCourseMarks = () => {
   const [objectiveSelection, setObjectiveSelection] = useState({});
   const [createError, setCreateError] = useState(null);
   const [creating, setCreating] = useState(false);
+  const [questionChoiceEnabled, setQuestionChoiceEnabled] = useState(false);
+  const [choiceGroups, setChoiceGroups] = useState([[]]);
 
   const totalMarks = useMemo(() => Number(coursePayload?.totalMarks) || 0, [coursePayload]);
   const questionParts = useMemo(
@@ -81,7 +88,39 @@ const CreateCourseMarks = () => {
     () => slots.filter((sl) => sl.isCompulsory).reduce((s, sl) => s + (Number(marksBySlot[sl.key]) || 0), 0),
     [slots, marksBySlot]
   );
-  const totalValid = totalMarks > 0 && Math.abs(sumCompulsoryMarks - totalMarks) < 0.01;
+
+  const perQuestionAllSlotTotals = useMemo(() => {
+    const m = {};
+    slots.forEach((sl) => {
+      const q = sl.questionIndex;
+      m[q] = (m[q] || 0) + (Number(marksBySlot[sl.key]) || 0);
+    });
+    return m;
+  }, [slots, marksBySlot]);
+
+  const normalizedChoiceGroups = useMemo(
+    () => (questionChoiceEnabled ? normalizeChoiceGroups(choiceGroups) : []),
+    [questionChoiceEnabled, choiceGroups]
+  );
+
+  const choiceGroupsValidation = useMemo(
+    () =>
+      questionChoiceEnabled
+        ? validateQuestionChoiceGroups(choiceGroups, totalQuestionsFromState, perQuestionAllSlotTotals)
+        : { ok: true, groups: [] },
+    [questionChoiceEnabled, choiceGroups, totalQuestionsFromState, perQuestionAllSlotTotals]
+  );
+
+  const effectiveCompulsoryForTotal = useMemo(
+    () => effectiveCompulsoryTotal(slots, marksBySlot, choiceGroupsValidation.ok ? choiceGroupsValidation.groups : []),
+    [slots, marksBySlot, choiceGroupsValidation]
+  );
+
+  const totalValid =
+    totalMarks > 0 &&
+    Math.abs(effectiveCompulsoryForTotal - totalMarks) < 0.01 &&
+    choiceGroupsValidation.ok &&
+    (!questionChoiceEnabled || (normalizedChoiceGroups.length > 0 && choiceGroupsValidation.groups.length > 0));
   const allObjectivesSelected = useMemo(
     () => resolvedTopics.length > 0 && slots.every((sl) => objectiveSelection[sl.key]),
     [slots, objectiveSelection, resolvedTopics.length]
@@ -97,6 +136,27 @@ const CreateCourseMarks = () => {
     setCreateError(null);
   };
 
+  const toggleQInGroup = (groupIndex, q) => {
+    setChoiceGroups((prev) => {
+      const next = prev.map((g, idx) => (idx === groupIndex ? g : g.filter((x) => x !== q)));
+      const g = [...(next[groupIndex] || [])];
+      if (g.includes(q)) next[groupIndex] = g.filter((x) => x !== q);
+      else next[groupIndex] = [...g, q].sort((a, b) => a - b);
+      return next;
+    });
+    setCreateError(null);
+  };
+
+  const addChoiceGroup = () => {
+    setChoiceGroups((prev) => [...prev, []]);
+    setCreateError(null);
+  };
+
+  const removeChoiceGroup = (groupIndex) => {
+    setChoiceGroups((prev) => (prev.length <= 1 ? prev : prev.filter((_, i) => i !== groupIndex)));
+    setCreateError(null);
+  };
+
   const handleBack = () => {
     navigate(-1);
   };
@@ -107,7 +167,17 @@ const CreateCourseMarks = () => {
       return;
     }
     if (!totalValid) {
-      setCreateError(`Total (compulsory parts only) must equal ${totalMarks}. Current compulsory sum: ${sumCompulsoryMarks}.`);
+      if (questionChoiceEnabled && !choiceGroupsValidation.ok) {
+        setCreateError(choiceGroupsValidation.message);
+        return;
+      }
+      if (questionChoiceEnabled && normalizedChoiceGroups.length === 0) {
+        setCreateError('Add at least one question-choice group with two or more questions, or turn off question choice.');
+        return;
+      }
+      setCreateError(
+        `Effective compulsory total (counting each choice group once) must equal ${totalMarks}. Current: ${effectiveCompulsoryForTotal.toFixed(2)}; raw compulsory sum: ${sumCompulsoryMarks}.`
+      );
       return;
     }
     if (resolvedTopics.length === 0) {
@@ -164,6 +234,7 @@ const CreateCourseMarks = () => {
       ...(coursePayload.compulsoryQuestions != null && { compulsoryQuestions: coursePayload.compulsoryQuestions }),
       ...(questionPartsFromState?.length > 0 && { questionParts: questionPartsFromState }),
       ...(questionPartMarks.length > 0 && { questionPartMarks }),
+      ...(questionChoiceEnabled && normalizedChoiceGroups.length > 0 && { questionChoiceGroups: normalizedChoiceGroups }),
     };
 
     try {
@@ -236,7 +307,7 @@ const CreateCourseMarks = () => {
     <div className="create-course-marks-container">      <div className="create-course-marks-content">
         <h2 className="create-course-marks-title page-local-header">Enter marks per question</h2>
         <p className="create-course-marks-hint">
-          Enter marks for each question/part and select one objective per row. Only <strong>compulsory</strong> parts count toward the total; optional parts are still saved and assigned to their objectives. Total (compulsory only) must equal <strong>{totalMarks}</strong>.
+          Enter marks for each question/part and select one objective per row. Only <strong>compulsory</strong> parts count toward the paper total; optional parts are still saved. With <strong>question choice</strong> (below), the paper total counts each choice group as one question’s worth — every question in a group must have the same <em>total</em> marks (sum of all parts).
         </p>
 
         <div className="create-course-marks-table-wrapper">
@@ -287,8 +358,66 @@ const CreateCourseMarks = () => {
           </table>
         </div>
 
-        <p className={`create-course-marks-sum ${!totalValid && sumCompulsoryMarks > 0 ? 'create-course-marks-sum-error' : ''}`}>
-          Total (compulsory only): <strong>{sumCompulsoryMarks}</strong> / {totalMarks}
+        <div className="create-course-question-choice">
+          <label className="create-course-question-choice-toggle">
+            <input
+              type="checkbox"
+              checked={questionChoiceEnabled}
+              onChange={(e) => {
+                const on = e.target.checked;
+                setQuestionChoiceEnabled(on);
+                setChoiceGroups([[]]);
+                setCreateError(null);
+              }}
+            />
+            <span>Allow students to choose <strong>one whole question</strong> from each group (same marks per question in a group; paper total counts the group once)</span>
+          </label>
+
+          {questionChoiceEnabled && (
+            <div className="create-course-question-choice-groups">
+              <p className="create-course-question-choice-help">
+                Tick the questions that belong together in each group (at least two per group). A question can only appear in one group.
+              </p>
+              {choiceGroups.map((group, gi) => (
+                <div key={gi} className="create-course-choice-group-row">
+                  <span className="create-course-choice-group-label">Group {gi + 1}</span>
+                  <div className="create-course-choice-group-checks">
+                    {Array.from({ length: totalQuestionsFromState }, (_, i) => i + 1).map((q) => (
+                      <label key={q} className="create-course-choice-q-label">
+                        <input
+                          type="checkbox"
+                          checked={group.includes(q)}
+                          onChange={() => toggleQInGroup(gi, q)}
+                        />
+                        Q{q}
+                      </label>
+                    ))}
+                  </div>
+                  {choiceGroups.length > 1 && (
+                    <button type="button" className="create-course-remove-group-btn" onClick={() => removeChoiceGroup(gi)}>
+                      Remove group
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button type="button" className="create-course-add-group-btn" onClick={addChoiceGroup}>
+                Add another choice group
+              </button>
+            </div>
+          )}
+        </div>
+
+        <p className={`create-course-marks-sum ${!totalValid && (sumCompulsoryMarks > 0 || questionChoiceEnabled) ? 'create-course-marks-sum-error' : ''}`}>
+          {questionChoiceEnabled ? (
+            <>
+              Effective compulsory total (for paper): <strong>{effectiveCompulsoryForTotal.toFixed(2)}</strong> / {totalMarks}
+              <span className="create-course-marks-sum-optional"> (raw compulsory sum: {sumCompulsoryMarks})</span>
+            </>
+          ) : (
+            <>
+              Total (compulsory only): <strong>{sumCompulsoryMarks}</strong> / {totalMarks}
+            </>
+          )}
           {sumAllMarks !== sumCompulsoryMarks && (
             <span className="create-course-marks-sum-optional"> (all parts: {sumAllMarks})</span>
           )}

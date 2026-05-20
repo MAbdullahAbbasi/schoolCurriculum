@@ -1,3 +1,5 @@
+import { effectiveTotalFromQuestionPartMarks } from './questionChoiceUtils.js';
+
 export const GRADING_SCHEME_STORAGE_KEY = 'curriculum_grading_scheme';
 
 export const MARKSHEET_TEMPLATE_ROWS = [
@@ -104,7 +106,9 @@ export const MARKSHEET_SUBJECT_GROUPS = [
 export const getCourseTotalMarks = (course) => {
   if (!course) return 0;
   const qpm = course.questionPartMarks || [];
-  if (qpm.length > 0) return qpm.reduce((s, m) => s + (Number(m.marks) || 0), 0);
+  if (qpm.length > 0) {
+    return effectiveTotalFromQuestionPartMarks(qpm, course.questionChoiceGroups);
+  }
   const topics = course.topics || [];
   return topics.reduce((s, t) => s + (Number(t.marks) || 0), 0);
 };

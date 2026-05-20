@@ -13,7 +13,7 @@ import {
   StudentReportMarksheet,
   StudentReportObjectiveSection,
 } from './StudentReportDocument';
-import { buildStudentReportData, normalizeGradingSchemeRows } from './reportUtils';
+import { buildStudentReportData, normalizeGradingSchemeRows, getCourseTotalMarks } from './reportUtils';
 import logoLeft from './assets/logoleft.jpg';
 import './Reports.css';
 
@@ -128,15 +128,6 @@ const Reports = () => {
       .map((c) => c.code)
       .filter(Boolean);
   }, [courses, selectedGrade]);
-
-  // Course total marks (from topics or questionPartMarks)
-  const getCourseTotalMarks = (course) => {
-    if (!course) return 0;
-    const qpm = course.questionPartMarks || [];
-    if (qpm.length > 0) return qpm.reduce((s, m) => s + (Number(m.marks) || 0), 0);
-    const topics = course.topics || [];
-    return topics.reduce((s, t) => s + (Number(t.marks) || 0), 0);
-  };
 
   // Top 3 students by aggregate marks across all courses for this grade
   const topThreeStudents = useMemo(() => {

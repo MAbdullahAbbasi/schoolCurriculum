@@ -5,6 +5,7 @@ import { API_URL } from './config/api';
 import { IconBack } from './ButtonIcons';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { getCourseTotalMarks } from './reportUtils';
 import './ResultSheet.css';
 
 const normalizeGradeForMatch = (grade) => {
@@ -19,14 +20,6 @@ const normalizeGradeForMatch = (grade) => {
   if (/^kg[- ]?2$|^kg\s*ii$|^kg[- ]?ii$|^k\.g\.?[- ]?2$|^k\.g\.?[- ]?ii$/i.test(lower) || /^kg[-]?2$|^kg[-]?ii$/.test(compact)) return 'KG-2';
   if (/^kg[- ]?3$|^kg[- ]?iii$|^k\.g\.?[- ]?3$|^k\.g\.?[- ]?iii$/i.test(lower) || /^kg[-]?3$|^kg[-]?iii$/.test(compact)) return 'KG-3';
   return s;
-};
-
-const getCourseTotalMarks = (course) => {
-  if (!course) return 0;
-  const qpm = course.questionPartMarks || [];
-  if (qpm.length > 0) return qpm.reduce((s, m) => s + (Number(m.marks) || 0), 0);
-  const topics = course.topics || [];
-  return topics.reduce((s, t) => s + (Number(t.marks) || 0), 0);
 };
 
 // Registration number has 4 parts separated by 3 hyphens: year - serialNumber - part3 - part4

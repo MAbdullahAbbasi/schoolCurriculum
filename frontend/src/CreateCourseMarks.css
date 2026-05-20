@@ -162,3 +162,81 @@
   color: #64748b;
   margin-bottom: 1rem;
 }
+
+.create-course-question-choice {
+  margin: 1.5rem 0 1rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid rgba(27, 67, 50, 0.15);
+  border-radius: 10px;
+  background: rgba(216, 243, 220, 0.25);
+}
+
+.create-course-question-choice-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  font-size: 0.95rem;
+  color: #1b4332;
+  cursor: pointer;
+}
+
+.create-course-question-choice-toggle input {
+  margin-top: 0.2rem;
+}
+
+.create-course-question-choice-groups {
+  margin-top: 1rem;
+}
+
+.create-course-question-choice-help {
+  font-size: 0.85rem;
+  color: #2d6a4f;
+  margin: 0 0 0.75rem 0;
+}
+
+.create-course-choice-group-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.create-course-choice-group-label {
+  font-weight: 600;
+  color: #1b4332;
+  min-width: 4.5rem;
+}
+
+.create-course-choice-group-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.create-course-choice-q-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.create-course-remove-group-btn,
+.create-course-add-group-btn {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background: #f8faf8;
+  cursor: pointer;
+  color: #1b4332;
+}
+
+.create-course-add-group-btn {
+  margin-top: 0.35rem;
+}

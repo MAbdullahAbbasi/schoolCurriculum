@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from './config/api';
+import { effectiveTotalFromQuestionPartMarks, pickBestQuestionPerGroup } from './questionChoiceUtils.js';
 import { IconCancel, IconEdit, IconNotAttempted, IconSave } from './ButtonIcons';
 import './StudentRecordDetail.css';
 
@@ -50,10 +51,10 @@ const StudentRecordDetail = () => {
 
   const totalMarksForCourse = useMemo(() => {
     if (questionPartMarks.length > 0) {
-      return questionPartMarks.reduce((sum, m) => sum + (Number(m.marks) || 0), 0);
+      return effectiveTotalFromQuestionPartMarks(questionPartMarks, course?.questionChoiceGroups);
     }
     return topics.reduce((sum, t) => sum + (t.marks || 0), 0);
-  }, [topics, questionPartMarks]);
+  }, [topics, questionPartMarks, course?.questionChoiceGroups]);
 
   const slots = useMemo(() => {
     if (questionPartMarks.length > 0) {
@@ -249,7 +250,8 @@ const StudentRecordDetail = () => {
 
   const getTotalForStudent = (registrationNumber) => {
     const leftOnChoice = computeLeftOnChoiceForStudent(registrationNumber);
-    const qM = questionMarks[registrationNumber] || {};
+    const qMRaw = questionMarks[registrationNumber] || {};
+    const qM = pickBestQuestionPerGroup(qMRaw, questionPartMarks, course?.questionChoiceGroups);
     const na = notAttempted[registrationNumber] || new Set();
     return slots.reduce((sum, s) => {
       if (na.has(s.slotKey) || leftOnChoice.includes(s.slotKey)) return sum;
