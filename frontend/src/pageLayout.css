@@ -203,13 +203,30 @@
   font-size: 0.95rem;
 }
 
+/* Grade titles use gradient + transparent fill in Curriculum.css; overriding
+   `background` here broke the gradient and left transparent text on white. */
 .app-page-body .grade-main-heading {
-  font-size: 1.05rem;
-  margin: 1.5rem 0 0.75rem;
-  padding: 0.5rem 0.75rem;
-  background: rgba(216, 243, 220, 0.4);
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin: 1.35rem 0 0.65rem;
+  padding: 0.45rem 0.65rem;
   border-radius: 8px;
-  border-left: 3px solid var(--garden-moss, #40916c);
+  border-left: 4px solid var(--garden-moss, #40916c);
+  background: rgba(216, 243, 220, 0.35);
+  -webkit-text-fill-color: var(--garden-forest, #1b4332);
+  color: var(--garden-forest, #1b4332);
+  -webkit-background-clip: unset;
+  background-clip: border-box;
+}
+
+.app-page-body .no-topics {
+  color: var(--garden-forest-mid, #2d6a4f);
+}
+
+.app-page-body .no-topics p {
+  color: var(--garden-forest, #1b4332);
+  font-style: normal;
+  font-weight: 500;
 }
 
 .app-page-body .error-message,
