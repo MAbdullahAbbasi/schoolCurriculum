@@ -42,7 +42,8 @@ const CreateCourseMarks = () => {
   const [createError, setCreateError] = useState(null);
   const [creating, setCreating] = useState(false);
   const [questionChoiceEnabled, setQuestionChoiceEnabled] = useState(false);
-  const [choiceGroups, setChoiceGroups] = useState([[]]);
+  const emptyChoiceGroup = () => ({ questions: [], attemptCount: 1 });
+  const [choiceGroups, setChoiceGroups] = useState([emptyChoiceGroup()]);
 
   const totalMarks = useMemo(() => Number(coursePayload?.totalMarks) || 0, [coursePayload]);
   const questionParts = useMemo(
@@ -138,17 +139,41 @@ const CreateCourseMarks = () => {
 
   const toggleQInGroup = (groupIndex, q) => {
     setChoiceGroups((prev) => {
-      const next = prev.map((g, idx) => (idx === groupIndex ? g : g.filter((x) => x !== q)));
-      const g = [...(next[groupIndex] || [])];
-      if (g.includes(q)) next[groupIndex] = g.filter((x) => x !== q);
-      else next[groupIndex] = [...g, q].sort((a, b) => a - b);
+      const next = prev.map((g, idx) => {
+        if (idx !== groupIndex) {
+          return { ...g, questions: g.questions.filter((x) => x !== q) };
+        }
+        const qs = [...g.questions];
+        if (qs.includes(q)) {
+          const questions = qs.filter((x) => x !== q).sort((a, b) => a - b);
+          const attemptCount = Math.min(g.attemptCount, Math.max(1, questions.length));
+          return { questions, attemptCount: questions.length < 1 ? 1 : attemptCount };
+        }
+        const questions = [...qs, q].sort((a, b) => a - b);
+        return { ...g, questions, attemptCount: Math.min(g.attemptCount, questions.length) };
+      });
       return next;
     });
     setCreateError(null);
   };
 
+  const setGroupAttemptCount = (groupIndex, value) => {
+    const n = parseInt(String(value).trim(), 10);
+    setChoiceGroups((prev) =>
+      prev.map((g, idx) => {
+        if (idx !== groupIndex) return g;
+        const max = g.questions.length;
+        let attemptCount = Number.isNaN(n) ? 1 : n;
+        if (attemptCount < 1) attemptCount = 1;
+        if (max > 0 && attemptCount > max) attemptCount = max;
+        return { ...g, attemptCount };
+      })
+    );
+    setCreateError(null);
+  };
+
   const addChoiceGroup = () => {
-    setChoiceGroups((prev) => [...prev, []]);
+    setChoiceGroups((prev) => [...prev, emptyChoiceGroup()]);
     setCreateError(null);
   };
 
@@ -366,27 +391,43 @@ const CreateCourseMarks = () => {
               onChange={(e) => {
                 const on = e.target.checked;
                 setQuestionChoiceEnabled(on);
-                setChoiceGroups([[]]);
+                setChoiceGroups([emptyChoiceGroup()]);
                 setCreateError(null);
               }}
             />
-            <span>Allow students to choose <strong>one whole question</strong> from each group (same marks per question in a group; paper total counts the group once)</span>
+            <span>
+              Group whole questions for choice (same marks per question in each group). For each group, set how many questions the student must attempt.
+            </span>
           </label>
 
           {questionChoiceEnabled && (
             <div className="create-course-question-choice-groups">
               <p className="create-course-question-choice-help">
-                Tick the questions that belong together in each group (at least two per group). A question can only appear in one group.
+                Tick questions in each group (at least two). Then enter how many must be attempted (e.g. 4 questions, attempt 2). A question can only be in one group.
               </p>
               {choiceGroups.map((group, gi) => (
                 <div key={gi} className="create-course-choice-group-row">
                   <span className="create-course-choice-group-label">Group {gi + 1}</span>
+                  <label className="create-course-choice-attempt-label">
+                    Attempt
+                    <input
+                      type="number"
+                      min={1}
+                      max={Math.max(1, group.questions.length)}
+                      className="create-course-choice-attempt-input"
+                      value={group.attemptCount}
+                      disabled={group.questions.length < 2}
+                      onChange={(e) => setGroupAttemptCount(gi, e.target.value)}
+                      aria-label={`Questions to attempt in group ${gi + 1}`}
+                    />
+                    of {group.questions.length || '—'}
+                  </label>
                   <div className="create-course-choice-group-checks">
                     {Array.from({ length: totalQuestionsFromState }, (_, i) => i + 1).map((q) => (
                       <label key={q} className="create-course-choice-q-label">
                         <input
                           type="checkbox"
-                          checked={group.includes(q)}
+                          checked={group.questions.includes(q)}
                           onChange={() => toggleQInGroup(gi, q)}
                         />
                         Q{q}

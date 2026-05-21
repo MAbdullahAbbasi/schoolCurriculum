@@ -101,11 +101,13 @@ const courseSchema = new mongoose.Schema(
         marks: { type: Number, required: true, min: 0 },
       },
     ],
-    // Each inner array is question indices (1-based) where the student answers only one question per group.
-    questionChoiceGroups: {
-      type: [[Number]],
-      default: undefined,
-    },
+    // Choice among whole questions: attemptCount questions from each group's questions list (same marks per question).
+    questionChoiceGroups: [
+      {
+        questions: { type: [Number], default: [] },
+        attemptCount: { type: Number, default: 1, min: 1 },
+      },
+    ],
     questions: [
       {
         questionIndex: {

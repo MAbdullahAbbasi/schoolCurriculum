@@ -1,6 +1,5 @@
 /**
- * Question choice between main questions (mirrors backend/utils/questionChoiceMarks.js).
- * Compulsory-only totals match Create Course "total marks" validation.
+ * Question choice among whole questions (mirrors backend/utils/questionChoiceMarks.js).
  */
 
 export function perQuestionSlotTotals(questionPartMarks) {
@@ -18,21 +17,47 @@ export function perQuestionCompulsoryTotals(slots, marksBySlot) {
   for (const sl of slots || []) {
     if (!sl.isCompulsory) continue;
     const q = sl.questionIndex;
-    const key = sl.key;
-    map[q] = (map[q] || 0) + (Number(marksBySlot[key]) || 0);
+    map[q] = (map[q] || 0) + (Number(marksBySlot[sl.key]) || 0);
   }
   return map;
 }
 
+/** @returns {{ questions: number[], attemptCount: number }[]} */
 export function normalizeChoiceGroups(raw) {
   if (!Array.isArray(raw) || raw.length === 0) return [];
   const out = [];
-  for (const g of raw) {
-    if (!Array.isArray(g) || g.length < 2) continue;
-    const nums = [...new Set(g.map((x) => Number(x)).filter((n) => Number.isFinite(n) && n >= 1))].sort((a, b) => a - b);
-    if (nums.length >= 2) out.push(nums);
+  for (const item of raw) {
+    if (Array.isArray(item)) {
+      const nums = [...new Set(item.map((x) => Number(x)).filter((n) => Number.isFinite(n) && n >= 1))].sort(
+        (a, b) => a - b
+      );
+      if (nums.length >= 2) out.push({ questions: nums, attemptCount: 1 });
+      continue;
+    }
+    if (item && typeof item === 'object') {
+      const qs = item.questions ?? item.questionIndices;
+      const nums = [...new Set((Array.isArray(qs) ? qs : []).map((x) => Number(x)).filter((n) => Number.isFinite(n) && n >= 1))].sort(
+        (a, b) => a - b
+      );
+      if (nums.length < 2) continue;
+      let k = Number(item.attemptCount ?? item.attempt ?? 1);
+      if (!Number.isFinite(k) || k < 1) k = 1;
+      k = Math.min(Math.floor(k), nums.length);
+      out.push({ questions: nums, attemptCount: k });
+    }
   }
   return out;
+}
+
+function subtractForGroups(perQ, groups) {
+  let subtract = 0;
+  for (const g of groups) {
+    const vals = g.questions.map((q) => perQ[q] || 0);
+    const sumG = vals.reduce((a, b) => a + b, 0);
+    const perQuestion = vals[0] ?? 0;
+    subtract += sumG - g.attemptCount * perQuestion;
+  }
+  return subtract;
 }
 
 export function effectiveCompulsoryTotal(slots, marksBySlot, questionChoiceGroups) {
@@ -41,16 +66,8 @@ export function effectiveCompulsoryTotal(slots, marksBySlot, questionChoiceGroup
   if (groups.length === 0) {
     return Object.values(perQ).reduce((a, b) => a + b, 0);
   }
-  let raw = 0;
-  for (const v of Object.values(perQ)) raw += v;
-  let subtract = 0;
-  for (const g of groups) {
-    const vals = g.map((q) => perQ[q] || 0);
-    const sumG = vals.reduce((a, b) => a + b, 0);
-    const maxG = Math.max(0, ...vals);
-    subtract += sumG - maxG;
-  }
-  return Math.max(0, raw - subtract);
+  const raw = Object.values(perQ).reduce((a, b) => a + b, 0);
+  return Math.max(0, raw - subtractForGroups(perQ, groups));
 }
 
 export function effectiveTotalFromQuestionPartMarks(questionPartMarks, questionChoiceGroups) {
@@ -59,14 +76,7 @@ export function effectiveTotalFromQuestionPartMarks(questionPartMarks, questionC
   const groups = normalizeChoiceGroups(questionChoiceGroups);
   if (groups.length === 0) return raw;
   const perQ = perQuestionSlotTotals(qpm);
-  let subtract = 0;
-  for (const g of groups) {
-    const vals = g.map((q) => perQ[q] || 0);
-    const sumG = vals.reduce((a, b) => a + b, 0);
-    const maxG = Math.max(0, ...vals);
-    subtract += sumG - maxG;
-  }
-  return Math.max(0, raw - subtract);
+  return Math.max(0, raw - subtractForGroups(perQ, groups));
 }
 
 export function validateQuestionChoiceGroups(groups, totalQuestionsNum, perQuestionTotals) {
@@ -74,7 +84,17 @@ export function validateQuestionChoiceGroups(groups, totalQuestionsNum, perQuest
   if (gnorm.length === 0) return { ok: true, groups: [] };
   const used = new Set();
   for (const g of gnorm) {
-    for (const q of g) {
+    const { questions, attemptCount } = g;
+    if (questions.length < 2) {
+      return { ok: false, message: 'Each choice group must include at least two questions.' };
+    }
+    if (attemptCount < 1 || attemptCount > questions.length) {
+      return {
+        ok: false,
+        message: `Group Q${questions.join(', Q')}: number to attempt must be between 1 and ${questions.length}.`,
+      };
+    }
+    for (const q of questions) {
       if (totalQuestionsNum != null && q > totalQuestionsNum) {
         return { ok: false, message: `Question choice group contains invalid question Q${q}.` };
       }
@@ -83,12 +103,12 @@ export function validateQuestionChoiceGroups(groups, totalQuestionsNum, perQuest
       }
       used.add(q);
     }
-    const vals = g.map((q) => perQuestionTotals[q] ?? 0);
+    const vals = questions.map((q) => perQuestionTotals[q] ?? 0);
     const first = vals[0];
     if (!vals.every((v) => Math.abs(v - first) < 0.01)) {
       return {
         ok: false,
-        message: `Questions in a choice group must have the same compulsory total marks. Group Q${g.join(', Q')}: ${g.map((q) => `Q${q}=${(perQuestionTotals[q] ?? 0).toFixed(1)}`).join(', ')}.`,
+        message: `Questions in a choice group must have the same compulsory total marks. Group Q${questions.join(', Q')}: ${questions.map((q) => `Q${q}=${(perQuestionTotals[q] ?? 0).toFixed(1)}`).join(', ')}.`,
       };
     }
     if (first <= 0) {
@@ -98,46 +118,76 @@ export function validateQuestionChoiceGroups(groups, totalQuestionsNum, perQuest
   return { ok: true, groups: gnorm };
 }
 
-/**
- * For totals: only the best-scoring question in each choice group counts (same rule as server).
- */
-export function pickBestQuestionPerGroup(questionMarks, questionPartMarks, questionChoiceGroups) {
+function slotKeysForQuestion(questionPartMarks, q) {
+  const keys = [];
+  for (const m of questionPartMarks || []) {
+    if (Number(m.questionIndex) !== q) continue;
+    const part = Number(m.partIndex);
+    keys.push(part === 0 ? `q${q}` : `q${q}-p${part}`);
+  }
+  return keys;
+}
+
+function obtainedForQuestion(q, marks, questionPartMarks) {
+  let s = 0;
+  for (const key of slotKeysForQuestion(questionPartMarks, q)) {
+    const v = Number(marks[key]);
+    if (!Number.isNaN(v) && v > 0) s += v;
+  }
+  return s;
+}
+
+/** Question indices (1-based) whose marks count toward the total for this student. */
+export function getKeptQuestionIndices(questionMarks, questionPartMarks, questionChoiceGroups) {
+  const groups = normalizeChoiceGroups(questionChoiceGroups);
+  const allQ = new Set();
+  for (const m of questionPartMarks || []) {
+    const q = Number(m.questionIndex);
+    if (Number.isFinite(q) && q >= 1) allQ.add(q);
+  }
+  const inAnyGroup = new Set();
+  groups.forEach((g) => g.questions.forEach((q) => inAnyGroup.add(q)));
+
+  const kept = new Set();
+  for (const q of allQ) {
+    if (!inAnyGroup.has(q)) kept.add(q);
+  }
+  if (groups.length === 0) return kept.size > 0 ? kept : allQ;
+
+  const marks = questionMarks || {};
+  for (const g of groups) {
+    const ranked = g.questions
+      .map((q) => ({ q, score: obtainedForQuestion(q, marks, questionPartMarks) }))
+      .sort((a, b) => b.score - a.score || a.q - b.q);
+    ranked.slice(0, g.attemptCount).forEach((r) => kept.add(r.q));
+  }
+  return kept;
+}
+
+export function isSlotCountedForStudent(slot, questionMarks, questionPartMarks, questionChoiceGroups) {
+  const q = slot?.questionIndex;
+  if (q == null) return true;
+  const kept = getKeptQuestionIndices(questionMarks, questionPartMarks, questionChoiceGroups);
+  return kept.has(q);
+}
+
+export function pickBestQuestionsPerGroup(questionMarks, questionPartMarks, questionChoiceGroups) {
   const groups = normalizeChoiceGroups(questionChoiceGroups);
   if (groups.length === 0) return { ...(questionMarks || {}) };
   const next = { ...(questionMarks || {}) };
-  const slotKeysForQuestion = (q) => {
-    const keys = [];
-    for (const m of questionPartMarks || []) {
-      if (Number(m.questionIndex) !== q) continue;
-      const part = Number(m.partIndex);
-      keys.push(part === 0 ? `q${q}` : `q${q}-p${part}`);
-    }
-    return keys;
-  };
-  const obtainedForQuestion = (q, marks) => {
-    let s = 0;
-    for (const key of slotKeysForQuestion(q)) {
-      const v = Number(marks[key]);
-      if (!Number.isNaN(v) && v > 0) s += v;
-    }
-    return s;
-  };
   for (const g of groups) {
-    let bestQ = g[0];
-    let bestScore = obtainedForQuestion(bestQ, next);
-    for (const q of g) {
-      const sc = obtainedForQuestion(q, next);
-      if (sc > bestScore) {
-        bestScore = sc;
-        bestQ = q;
-      }
-    }
-    for (const q of g) {
-      if (q === bestQ) continue;
-      for (const key of slotKeysForQuestion(q)) {
+    const ranked = g.questions
+      .map((q) => ({ q, score: obtainedForQuestion(q, next, questionPartMarks) }))
+      .sort((a, b) => b.score - a.score);
+    const keep = new Set(ranked.slice(0, g.attemptCount).map((r) => r.q));
+    for (const q of g.questions) {
+      if (keep.has(q)) continue;
+      for (const key of slotKeysForQuestion(questionPartMarks, q)) {
         delete next[key];
       }
     }
   }
   return next;
 }
+
+export const pickBestQuestionPerGroup = pickBestQuestionsPerGroup;

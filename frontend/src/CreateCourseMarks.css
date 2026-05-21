@@ -212,6 +212,23 @@
   min-width: 4.5rem;
 }
 
+.create-course-choice-attempt-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: #2d6a4f;
+  font-weight: 500;
+}
+
+.create-course-choice-attempt-input {
+  width: 3.25rem;
+  padding: 0.25rem 0.4rem;
+  font-size: 0.875rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
 .create-course-choice-group-checks {
   display: flex;
   flex-wrap: wrap;

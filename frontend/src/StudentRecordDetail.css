@@ -412,6 +412,35 @@
   line-height: 1.2;
 }
 
+.matrix-mark-not-counted {
+  background: rgba(127, 140, 141, 0.08);
+}
+
+.matrix-mark-not-counted .matrix-score-input {
+  opacity: 0.65;
+}
+
+.matrix-mark-not-counted-label {
+  font-size: 0.65rem;
+  color: #95a5a6;
+  font-weight: 600;
+  font-style: italic;
+}
+
+.question-choice-hint {
+  font-size: 0.875rem;
+  color: #2d6a4f;
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.85rem;
+  background: rgba(216, 243, 220, 0.35);
+  border-radius: 8px;
+  border-left: 3px solid #40916c;
+}
+
+.info-item--full {
+  grid-column: 1 / -1;
+}
+
 .matrix-table .matrix-score-input {
   max-width: 80px;
   margin: 0 auto;

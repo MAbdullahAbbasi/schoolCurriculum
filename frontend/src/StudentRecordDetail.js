@@ -2,7 +2,12 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from './config/api';
-import { effectiveTotalFromQuestionPartMarks, pickBestQuestionPerGroup } from './questionChoiceUtils.js';
+import {
+  effectiveTotalFromQuestionPartMarks,
+  pickBestQuestionPerGroup,
+  normalizeChoiceGroups,
+  isSlotCountedForStudent,
+} from './questionChoiceUtils.js';
 import { IconCancel, IconEdit, IconNotAttempted, IconSave } from './ButtonIcons';
 import './StudentRecordDetail.css';
 
@@ -96,6 +101,18 @@ const StudentRecordDetail = () => {
     const n = course?.compulsoryQuestions;
     return n != null && Number(n) >= 0 ? Number(n) : null;
   }, [course]);
+
+  const questionChoiceGroups = useMemo(
+    () => normalizeChoiceGroups(course?.questionChoiceGroups),
+    [course?.questionChoiceGroups]
+  );
+
+  const questionChoiceSummary = useMemo(() => {
+    if (questionChoiceGroups.length === 0) return null;
+    return questionChoiceGroups
+      .map((g, i) => `Group ${i + 1}: attempt ${g.attemptCount} of Q${g.questions.join(', Q')}`)
+      .join('; ');
+  }, [questionChoiceGroups]);
 
   const courseGrades = useMemo(() => {
     const grades = new Set();
@@ -309,7 +326,8 @@ const StudentRecordDetail = () => {
 
     const studentsData = enrolledStudents.map((student) => {
       const reg = student.registrationNumber;
-      const qM = questionMarks[reg] || {};
+      const qMRaw = questionMarks[reg] || {};
+      const qMScoring = pickBestQuestionPerGroup(qMRaw, questionPartMarks, course?.questionChoiceGroups);
       const na = Array.from(notAttempted[reg] || []);
       const leftOnChoice = computeLeftOnChoiceForStudent(reg);
       const total = getTotalForStudent(reg);
@@ -318,8 +336,9 @@ const StudentRecordDetail = () => {
 
       const questionMarksPayload = {};
       slots.forEach((s) => {
-        const v = qM[s.slotKey];
-        if (v != null && !na.includes(s.slotKey)) questionMarksPayload[s.slotKey] = Number(v);
+        if (na.includes(s.slotKey)) return;
+        const v = qMScoring[s.slotKey];
+        if (v != null && !Number.isNaN(Number(v))) questionMarksPayload[s.slotKey] = Number(v);
       });
 
       return {
@@ -410,6 +429,12 @@ const StudentRecordDetail = () => {
                 <span className="info-value">{compulsoryQuestions} of {slots.length}</span>
               </div>
             )}
+            {questionChoiceSummary && (
+              <div className="info-item info-item--full">
+                <span className="info-label">Question choice:</span>
+                <span className="info-value">{questionChoiceSummary}</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -417,6 +442,11 @@ const StudentRecordDetail = () => {
           <div className="table-header-section">
             <h3>Marks by question and student</h3>
           </div>
+          {questionChoiceSummary && (
+            <p className="question-choice-hint">
+              For each choice group, only the <strong>highest-scoring</strong> question(s) count toward the total (up to the attempt limit). Other questions in the group are shown dimmed and are not included in the total or saved marks.
+            </p>
+          )}
           {compulsoryQuestions != null && (
             <p className="compulsory-hint">
               Enter marks for at least {compulsoryQuestions} question(s). Remaining questions can be left on choice (stored as &quot;Left on choice&quot;) if compulsory are attempted.
@@ -449,9 +479,23 @@ const StudentRecordDetail = () => {
                         {enrolledStudents.map((student, studentIndex) => {
                           const reg = student.registrationNumber;
                           const na = isNotAttempted(reg, slot.slotKey);
+                          const qMRaw = questionMarks[reg] || {};
+                          const countsTowardTotal = isSlotCountedForStudent(
+                            slot,
+                            qMRaw,
+                            questionPartMarks,
+                            course?.questionChoiceGroups
+                          );
                           return (
                             <React.Fragment key={reg}>
-                              <td className="matrix-td-mark">
+                              <td
+                                className={`matrix-td-mark ${!countsTowardTotal && !na ? 'matrix-mark-not-counted' : ''}`}
+                                title={
+                                  !countsTowardTotal && !na && questionChoiceGroups.length > 0
+                                    ? 'Not counted — a higher-scoring question in this choice group is used instead'
+                                    : undefined
+                                }
+                              >
                                 {isEditMode ? (
                                   na ? (
                                     <span className="not-attempted-label">Not attempted</span>
@@ -472,6 +516,9 @@ const StudentRecordDetail = () => {
                                         data-student-index={studentIndex}
                                       />
                                       <span className="matrix-mark-max-hint">Max: {slot.maxMarks}</span>
+                                      {!countsTowardTotal && questionChoiceGroups.length > 0 && (
+                                        <span className="matrix-mark-not-counted-label">Not counted</span>
+                                      )}
                                     </div>
                                   )
                                 ) : (
@@ -499,7 +546,9 @@ const StudentRecordDetail = () => {
                     ))}
                     <tr className="matrix-total-row">
                       <td className="matrix-td-srno" />
-                      <td className="matrix-td-objective total-label">Total (obtained)</td>
+                      <td className="matrix-td-objective total-label">
+                        Total (obtained{questionChoiceGroups.length > 0 ? ', best per choice group' : ''})
+                      </td>
                       <td className="matrix-td-max">{totalMarksForCourse}</td>
                       {enrolledStudents.map((student) => {
                         const total = getTotalForStudent(student.registrationNumber);

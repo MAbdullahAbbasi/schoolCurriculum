@@ -6,7 +6,7 @@ import { ROLE } from '../rbac/roles.js';
 import { requireCourseAccess, requireRoles } from '../rbac/guards.js';
 import {
   effectiveTotalFromQuestionPartMarks,
-  pickBestQuestionPerGroup,
+  pickBestQuestionsPerGroup,
 } from '../utils/questionChoiceMarks.js';
 
 const router = express.Router();
@@ -146,7 +146,7 @@ router.post('/', requireCourseAccess, async (req, res) => {
         : topics.reduce((s, t) => s + (Number(t.marks) || 0), 0);
 
     function computeObjectiveMarksFromSlots(student) {
-      const questionMarks = pickBestQuestionPerGroup(
+      const questionMarks = pickBestQuestionsPerGroup(
         student.questionMarks || {},
         questionPartMarks,
         questionChoiceGroups
