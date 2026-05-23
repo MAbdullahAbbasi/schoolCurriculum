@@ -6,6 +6,7 @@ import { ROLE_LABELS } from './roleLabels';
 import { IconBack, IconPromote } from './ButtonIcons';
 import {
   formatGradeDisplay,
+  formatGradeOptionLabel,
   getNextGrade,
   gradesFromStudents,
   gradesMatch,
@@ -209,7 +210,7 @@ const PromoteStudents = () => {
               <option value="">Select class</option>
               {gradesFromDb.map((g) => (
                 <option key={g} value={g}>
-                  Grade {g}
+                  {formatGradeOptionLabel(g)}
                 </option>
               ))}
             </select>
@@ -218,7 +219,7 @@ const PromoteStudents = () => {
             <p className="promote-target-hint">
               {studentsInClass.length} student(s) →{' '}
               {classNextGrade
-                ? `Grade ${formatGradeDisplay(classNextGrade)}`
+                ? formatGradeDisplay(classNextGrade)
                 : 'Cannot promote (highest grade)'}
             </p>
           )}
@@ -262,14 +263,14 @@ const PromoteStudents = () => {
               <option value="">Select class</option>
               {gradesFromDb.map((g) => (
                 <option key={g} value={g}>
-                  Grade {g}
+                  {formatGradeOptionLabel(g)}
                 </option>
               ))}
             </select>
           </div>
           {sourceGrade && sourceNextGrade && (
             <p className="promote-target-hint">
-              Promotes to Grade {formatGradeDisplay(sourceNextGrade)}
+              Promotes to {formatGradeDisplay(sourceNextGrade)}
             </p>
           )}
         </div>

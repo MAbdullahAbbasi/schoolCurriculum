@@ -1,13 +1,11 @@
 /** Shared helpers for Seedlings (student data) screens. */
 
 export const gradeSortOrder = (g) => {
-  const s = String(g).trim();
-  if (/^KG[- ]?1$/i.test(s) || /^KG[- ]?I$/i.test(s)) return 0;
-  if (/^KG[- ]?2$/i.test(s) || /^KG[- ]?II$/i.test(s) || /^K\.G\.?-?II$/i.test(s)) return 1;
-  if (/^KG[- ]?3$/i.test(s) || /^KG[- ]?III$/i.test(s)) return 2;
-  const n = parseInt(s, 10);
-  if (Number.isNaN(n)) return 100;
-  return 10 + n;
+  const canon = normalizeGradeForMatch(g);
+  if (canon === 'KG-2') return 0;
+  const n = parseInt(canon, 10);
+  if (!Number.isNaN(n)) return 10 + n;
+  return 100;
 };
 
 export const normalizeGradeForSubjectRequirement = (grade) => {
@@ -52,21 +50,8 @@ export const gradesFromStudents = (students) => {
   return Array.from(set).sort((a, b) => gradeSortOrder(a) - gradeSortOrder(b));
 };
 
-export const GRADE_SEQUENCE = [
-  'KG-1',
-  'KG-2',
-  'KG-3',
-  '1',
-  '2',
-  '3',
-  '4',
-  '5',
-  '6',
-  '7',
-  '8',
-  '9',
-  '10',
-];
+/** School ladder: only K.G-II, then Class 1–10 (no KG-1 / KG-3). */
+export const GRADE_SEQUENCE = ['KG-2', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
 
 /** Normalize grade for comparison (KG variants, numeric). */
 export const normalizeGradeForMatch = (grade) => {
@@ -120,12 +105,20 @@ export const getNextGrade = (grade) => {
   return GRADE_SEQUENCE[idx + 1];
 };
 
-export const formatGradeDisplay = (canon) => {
-  if (!canon) return '';
-  if (canon === 'KG-1') return 'K.G-I';
+/** Display label for a grade (K.G-II, Class 1, Class 8, …). */
+export const formatGradeDisplay = (canonOrGrade) => {
+  if (!canonOrGrade) return '';
+  const canon = normalizeGradeForMatch(canonOrGrade) || String(canonOrGrade);
   if (canon === 'KG-2') return 'K.G-II';
-  if (canon === 'KG-3') return 'K.G-III';
-  return canon;
+  if (/^\d+$/.test(canon)) return `Class ${canon}`;
+  return String(canonOrGrade);
+};
+
+/** Label for grade filter / class dropdown options. */
+export const formatGradeOptionLabel = (grade) => {
+  const display = formatGradeDisplay(grade);
+  if (normalizeGradeForMatch(grade) === 'KG-2') return `Grade ${display}`;
+  return display;
 };
 
 const CANON_TO_ENROLLMENT_CLASS = {

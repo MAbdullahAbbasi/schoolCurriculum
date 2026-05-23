@@ -1,20 +1,7 @@
 /** Canonical grade ladder and promotion helpers (mirrors frontend studentDataUtils). */
 
-export const GRADE_SEQUENCE = [
-  'KG-1',
-  'KG-2',
-  'KG-3',
-  '1',
-  '2',
-  '3',
-  '4',
-  '5',
-  '6',
-  '7',
-  '8',
-  '9',
-  '10',
-];
+/** School ladder: only K.G-II, then Class 1–10 (no KG-1 / KG-3). */
+export const GRADE_SEQUENCE = ['KG-2', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
 
 export function normalizeGradeForMatch(grade) {
   if (grade == null || grade === '') return '';
@@ -69,10 +56,10 @@ export function getNextGrade(grade) {
 
 export function formatGradeLabel(canon) {
   if (!canon) return '';
-  if (canon === 'KG-1') return 'K.G-I';
-  if (canon === 'KG-2') return 'K.G-II';
-  if (canon === 'KG-3') return 'K.G-III';
-  return canon;
+  const normalized = normalizeGradeForMatch(canon) || canon;
+  if (normalized === 'KG-2') return 'K.G-II';
+  if (/^\d+$/.test(normalized)) return `Class ${normalized}`;
+  return String(canon);
 }
 
 /** Canonical grade → 3rd enrollment segment (e.g. KG II, VIII, I). */

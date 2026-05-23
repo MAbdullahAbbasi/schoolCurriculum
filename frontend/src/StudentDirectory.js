@@ -4,7 +4,7 @@ import axios from 'axios';
 import { API_URL } from './config/api';
 import { ROLE_LABELS } from './roleLabels';
 import { IconAdd, IconCancel, IconDelete, IconEdit, IconPromote, IconSelectAll } from './ButtonIcons';
-import { gradesFromStudents, sortStudentsByGrade } from './studentDataUtils';
+import { formatGradeOptionLabel, gradesFromStudents, sortStudentsByGrade } from './studentDataUtils';
 import './StudentData.css';
 
 const StudentDirectory = () => {
@@ -190,7 +190,7 @@ const StudentDirectory = () => {
               <option value="">All grades</option>
               {gradesFromDb.map((g) => (
                 <option key={g} value={g}>
-                  Grade {g}
+                  {formatGradeOptionLabel(g)}
                 </option>
               ))}
             </select>

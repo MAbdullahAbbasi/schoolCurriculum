@@ -147,7 +147,7 @@ const StudentDetail = () => {
     const nextLabel = formatGradeDisplay(next);
     if (
       !window.confirm(
-        `Promote "${student?.studentName || registrationNumber}" to Grade ${nextLabel}?`
+        `Promote "${student?.studentName || registrationNumber}" to ${nextLabel}?`
       )
     ) {
       return;
