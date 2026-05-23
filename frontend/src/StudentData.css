@@ -665,6 +665,180 @@
   background: #7f8c8d;
 }
 
+/* Directory-only page */
+.student-directory-page .student-data-container {
+  padding-top: 0;
+}
+
+.student-directory-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.student-directory-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.1rem;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #1b5e20 0%, #43a047 100%);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(27, 94, 32, 0.25);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.student-directory-add-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(27, 94, 32, 0.3);
+}
+
+.student-directory-add-icon {
+  display: flex;
+  align-items: center;
+}
+
+.student-directory-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.student-directory-count {
+  margin: 0 0 0.75rem;
+  color: #5d6d7e;
+  font-size: 0.95rem;
+}
+
+.student-directory-table .student-directory-row {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.student-directory-table .student-directory-row:hover {
+  background: rgba(46, 125, 50, 0.08);
+}
+
+.student-directory-table .student-directory-row--selected {
+  background: rgba(52, 152, 219, 0.12);
+}
+
+.student-directory-reg {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.student-directory-name {
+  font-weight: 500;
+}
+
+.student-directory-open {
+  color: #43a047;
+  font-size: 1.25rem;
+  text-align: right;
+  width: 2rem;
+}
+
+.student-directory-th-open {
+  width: 2rem;
+}
+
+.student-directory-empty {
+  margin-top: 2rem;
+}
+
+.student-page-back-btn {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid rgba(46, 125, 50, 0.25);
+  border-radius: 8px;
+  background: #fff;
+  color: #1b5e20;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.student-page-back-btn:hover {
+  background: rgba(46, 125, 50, 0.08);
+}
+
+.student-upload-section {
+  margin-top: 2rem;
+}
+
+.student-detail-card {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid rgba(46, 125, 50, 0.15);
+  box-shadow: 0 8px 24px rgba(27, 94, 32, 0.08);
+  padding: 1.75rem 2rem;
+  max-width: 640px;
+}
+
+.student-detail-header {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #ecf0f1;
+}
+
+.student-detail-name {
+  margin: 0 0 0.35rem;
+  font-size: 1.5rem;
+  color: #2c3e50;
+}
+
+.student-detail-reg {
+  margin: 0;
+  color: #7f8c8d;
+  font-size: 0.95rem;
+}
+
+.student-detail-fields {
+  margin: 0 0 1.5rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.student-detail-field dt {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #7f8c8d;
+  margin-bottom: 0.25rem;
+}
+
+.student-detail-field dd {
+  margin: 0;
+  font-size: 1rem;
+  color: #2c3e50;
+}
+
+.student-detail-input {
+  width: 100%;
+  max-width: 320px;
+}
+
+.student-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid #ecf0f1;
+}
+
 /* Empty State */
 .empty-state {
   text-align: center;

@@ -6,7 +6,9 @@ import Curriculum from './Curriculum';
 import CreateCourse from './CreateCourse';
 import CreateCourseMarks from './CreateCourseMarks';
 import MapCourseQuestions from './MapCourseQuestions';
-import StudentData from './StudentData';
+import StudentDirectory from './StudentDirectory';
+import AddStudent from './AddStudent';
+import StudentDetail from './StudentDetail';
 import StudentsRecord from './StudentsRecord';
 import StudentRecordDetail from './StudentRecordDetail';
 import Reports from './Reports';
@@ -180,7 +182,15 @@ function App() {
             <Route path="/create-course/map-questions" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <MapCourseQuestions />} />
             <Route
               path="/students-data"
-              element={userRole === 'ADMIN' ? <StudentData /> : <Navigate to="/record" replace />}
+              element={userRole === 'ADMIN' ? <StudentDirectory /> : <Navigate to="/record" replace />}
+            />
+            <Route
+              path="/students-data/add"
+              element={userRole === 'ADMIN' ? <AddStudent /> : <Navigate to="/record" replace />}
+            />
+            <Route
+              path="/students-data/:registrationNumber"
+              element={userRole === 'ADMIN' ? <StudentDetail /> : <Navigate to="/record" replace />}
             />
             <Route path="/record" element={<StudentsRecord />} />
             <Route path="/studentRecord/:courseCode" element={<StudentRecordDetail />} />
