@@ -679,30 +679,119 @@
   margin-bottom: 1.5rem;
 }
 
-.student-directory-add-btn {
-  display: inline-flex;
+.student-directory-toolbar-primary {
+  display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.65rem 1.1rem;
+}
+
+.student-directory-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
   border: none;
   border-radius: 10px;
-  background: linear-gradient(135deg, #1b5e20 0%, #43a047 100%);
   color: #fff;
-  font-weight: 600;
-  font-size: 0.95rem;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(27, 94, 32, 0.25);
+  box-shadow: 0 4px 14px rgba(27, 94, 32, 0.2);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.student-directory-add-btn:hover {
+.student-directory-icon-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(27, 94, 32, 0.3);
 }
 
-.student-directory-add-icon {
+.student-directory-add-btn {
+  background: linear-gradient(135deg, #1b5e20 0%, #43a047 100%);
+}
+
+.student-directory-promote-btn {
+  background: linear-gradient(135deg, #1565c0 0%, #42a5f5 100%);
+  box-shadow: 0 4px 14px rgba(21, 101, 192, 0.25);
+}
+
+.student-directory-actions {
+  white-space: nowrap;
+}
+
+.student-directory-th-actions {
+  width: 6rem;
+  text-align: center;
+}
+
+.icon-only-btn {
+  padding: 0.5rem;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  margin-left: 0.25rem;
+}
+
+.icon-only-btn .btn-icon-wrap {
+  display: none;
+}
+
+.promote-action-btn {
+  background: #1565c0;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.promote-action-btn:hover:not(:disabled) {
+  background: #0d47a1;
+  transform: translateY(-1px);
+}
+
+.promote-action-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.student-promote-page .promote-section {
+  background: #fff;
+  border: 1px solid rgba(46, 125, 50, 0.12);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 16px rgba(27, 94, 32, 0.06);
+}
+
+.promote-section-hint {
+  color: #7f8c8d;
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+}
+
+.promote-controls {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.promote-target-hint {
+  margin: 0;
+  color: #1b5e20;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.promote-select-table {
+  margin-bottom: 1rem;
+}
+
+.promote-empty-class {
+  color: #7f8c8d;
+  margin: 0;
 }
 
 .student-directory-toolbar-actions {

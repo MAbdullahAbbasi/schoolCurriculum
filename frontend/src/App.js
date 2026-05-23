@@ -9,6 +9,7 @@ import MapCourseQuestions from './MapCourseQuestions';
 import StudentDirectory from './StudentDirectory';
 import AddStudent from './AddStudent';
 import StudentDetail from './StudentDetail';
+import PromoteStudents from './PromoteStudents';
 import StudentsRecord from './StudentsRecord';
 import StudentRecordDetail from './StudentRecordDetail';
 import Reports from './Reports';
@@ -187,6 +188,10 @@ function App() {
             <Route
               path="/students-data/add"
               element={userRole === 'ADMIN' ? <AddStudent /> : <Navigate to="/record" replace />}
+            />
+            <Route
+              path="/students-data/promote"
+              element={userRole === 'ADMIN' ? <PromoteStudents /> : <Navigate to="/record" replace />}
             />
             <Route
               path="/students-data/:registrationNumber"

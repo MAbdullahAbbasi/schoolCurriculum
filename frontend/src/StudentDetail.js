@@ -3,9 +3,11 @@ import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from './config/api';
 import { ROLE_LABELS } from './roleLabels';
-import { IconBack, IconCancel, IconDelete, IconEdit, IconSave } from './ButtonIcons';
+import { IconBack, IconCancel, IconDelete, IconEdit, IconPromote, IconSave } from './ButtonIcons';
 import {
   formatDateOfBirth,
+  formatGradeDisplay,
+  getNextGrade,
   requiresSubjectChoice,
   toDateInputValue,
 } from './studentDataUtils';
@@ -21,6 +23,7 @@ const StudentDetail = () => {
   const [error, setError] = useState(null);
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({
+    enrollmentNumber: '',
     studentName: '',
     fathersName: '',
     grade: '',
@@ -29,6 +32,7 @@ const StudentDetail = () => {
   });
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [promoting, setPromoting] = useState(false);
 
   const loadStudent = useCallback(async () => {
     if (!registrationNumber) {
@@ -68,6 +72,7 @@ const StudentDetail = () => {
   const startEdit = () => {
     if (!student) return;
     setEditForm({
+      enrollmentNumber: student.registrationNumber || registrationNumber,
       studentName: student.studentName || '',
       fathersName: student.fathersName || '',
       grade: student.grade || '',
@@ -80,6 +85,7 @@ const StudentDetail = () => {
   const cancelEdit = () => {
     setEditing(false);
     setEditForm({
+      enrollmentNumber: '',
       studentName: '',
       fathersName: '',
       grade: '',
@@ -93,7 +99,7 @@ const StudentDetail = () => {
   };
 
   const handleSave = async () => {
-    if (!editForm.studentName?.trim() || !editForm.grade?.trim() || !editForm.dateOfBirth) {
+    if (!editForm.enrollmentNumber?.trim() || !editForm.studentName?.trim() || !editForm.grade?.trim() || !editForm.dateOfBirth) {
       alert('Please fill all required fields.');
       return;
     }
@@ -101,10 +107,12 @@ const StudentDetail = () => {
       alert('For Grades 8, 9, and 10, please select Subject (Biology or Computer).');
       return;
     }
+    const newReg = editForm.enrollmentNumber.trim();
     try {
       setSaving(true);
       await axios.put(`${API_URL}/api/students-data/update`, {
         registrationNumber,
+        newRegistrationNumber: newReg !== registrationNumber ? newReg : undefined,
         studentName: editForm.studentName.trim(),
         fathersName:
           editForm.fathersName != null ? String(editForm.fathersName).trim() : '',
@@ -113,7 +121,11 @@ const StudentDetail = () => {
         subject: requiresSubjectChoice(editForm.grade.trim()) ? editForm.subject : '',
       });
       setEditing(false);
-      await loadStudent();
+      if (newReg !== registrationNumber) {
+        navigate(`/students-data/${encodeURIComponent(newReg)}`, { replace: true });
+      } else {
+        await loadStudent();
+      }
     } catch (err) {
       const msg =
         err.response?.data?.message ||
@@ -123,6 +135,47 @@ const StudentDetail = () => {
       alert(msg);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handlePromote = async () => {
+    const next = getNextGrade(student?.grade);
+    if (!next) {
+      alert('This student is already at the highest grade.');
+      return;
+    }
+    const nextLabel = formatGradeDisplay(next);
+    if (
+      !window.confirm(
+        `Promote "${student?.studentName || registrationNumber}" to Grade ${nextLabel}?`
+      )
+    ) {
+      return;
+    }
+    try {
+      setPromoting(true);
+      const res = await axios.post(`${API_URL}/api/students-data/promote`, {
+        mode: 'selected',
+        sourceGrade: student.grade,
+        registrationNumbers: [registrationNumber],
+      });
+      alert(res.data.message || 'Student promoted.');
+      const promoted = res.data.promoted?.[0];
+      const newReg = promoted?.newRegistrationNumber || promoted?.toEnrollment;
+      if (newReg && newReg !== registrationNumber) {
+        navigate(`/students-data/${encodeURIComponent(newReg)}`, { replace: true });
+      } else {
+        await loadStudent();
+      }
+    } catch (err) {
+      alert(
+        err.response?.data?.message ||
+          err.response?.data?.error ||
+          err.message ||
+          'Failed to promote student.'
+      );
+    } finally {
+      setPromoting(false);
     }
   };
 
@@ -210,8 +263,19 @@ const StudentDetail = () => {
 
         <dl className="student-detail-fields">
           <div className="student-detail-field">
-            <dt>Registration Number</dt>
-            <dd>{registrationNumber}</dd>
+            <dt>Enrollment (Registration Number)</dt>
+            <dd>
+              {editing ? (
+                <input
+                  type="text"
+                  className="student-edit-input student-detail-input"
+                  value={editForm.enrollmentNumber}
+                  onChange={(e) => handleEditFormChange('enrollmentNumber', e.target.value)}
+                />
+              ) : (
+                registrationNumber
+              )}
+            </dd>
           </div>
           <div className="student-detail-field">
             <dt>{ROLE_LABELS.seedling} name</dt>
@@ -313,45 +377,61 @@ const StudentDetail = () => {
             <>
               <button
                 type="button"
-                className="save-record-btn"
+                className="save-record-btn icon-btn icon-only-btn"
                 onClick={handleSave}
                 disabled={saving}
+                title={saving ? 'Saving...' : 'Save'}
+                aria-label={saving ? 'Saving...' : 'Save changes'}
               >
-                <span className="btn-icon-wrap">
-                  <IconSave />
-                  {saving ? 'Saving...' : 'Save changes'}
-                </span>
+                <IconSave />
               </button>
               <button
                 type="button"
-                className="cancel-edit-btn"
+                className="cancel-edit-btn icon-btn icon-only-btn"
                 onClick={cancelEdit}
                 disabled={saving}
+                title="Cancel"
+                aria-label="Cancel editing"
               >
-                <span className="btn-icon-wrap">
-                  <IconCancel />
-                  Cancel
-                </span>
+                <IconCancel />
               </button>
             </>
           ) : (
-            <button type="button" className="edit-record-btn" onClick={startEdit}>
-              <span className="btn-icon-wrap">
+            <>
+              <button
+                type="button"
+                className="edit-record-btn icon-btn icon-only-btn"
+                onClick={startEdit}
+                title="Edit"
+                aria-label="Edit student"
+              >
                 <IconEdit />
-                Edit
-              </span>
-            </button>
+              </button>
+              <button
+                type="button"
+                className="promote-action-btn icon-btn icon-only-btn"
+                onClick={handlePromote}
+                disabled={promoting || !getNextGrade(student.grade)}
+                title={
+                  getNextGrade(student.grade)
+                    ? 'Promote to next grade'
+                    : 'Already at highest grade'
+                }
+                aria-label="Promote to next grade"
+              >
+                <IconPromote />
+              </button>
+            </>
           )}
           <button
             type="button"
-            className="delete-record-btn"
+            className="delete-record-btn icon-btn icon-only-btn"
             onClick={handleDelete}
             disabled={deleting || editing}
+            title={deleting ? 'Deleting...' : 'Delete'}
+            aria-label={deleting ? 'Deleting...' : 'Delete student'}
           >
-            <span className="btn-icon-wrap">
-              <IconDelete />
-              {deleting ? 'Deleting...' : 'Delete'}
-            </span>
+            <IconDelete />
           </button>
         </div>
       </div>

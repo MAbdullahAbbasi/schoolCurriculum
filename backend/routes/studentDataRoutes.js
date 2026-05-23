@@ -3,8 +3,24 @@ import multer from 'multer';
 import XLSX from 'xlsx';
 import mongoose from 'mongoose';
 import StudentData from '../models/StudentData.js';
+import Record from '../models/Record.js';
 import Course from '../models/Course.js';
 import User from '../models/User.js';
+import {
+  getNextGrade,
+  gradesMatch,
+  normalizeGradeForMatch,
+  updateEnrollmentClassInRegistration,
+} from '../utils/gradePromotion.js';
+
+async function cascadeRegistrationNumberChange(oldReg, newReg) {
+  if (!oldReg || !newReg || oldReg === newReg) return;
+  await Record.updateMany(
+    { 'students.registrationNumber': oldReg },
+    { $set: { 'students.$[elem].registrationNumber': newReg } },
+    { arrayFilters: [{ 'elem.registrationNumber': oldReg }] }
+  );
+}
 import { ROLE } from '../rbac/roles.js';
 import { requireRoles } from '../rbac/guards.js';
 
@@ -347,7 +363,15 @@ const updateStudentHandler = async (req, res) => {
       });
     }
 
-    const { registrationNumber, studentName, fathersName, grade, dateOfBirth, subject } = req.body;
+    const {
+      registrationNumber,
+      newRegistrationNumber,
+      studentName,
+      fathersName,
+      grade,
+      dateOfBirth,
+      subject,
+    } = req.body;
 
     if (!registrationNumber || !registrationNumber.toString().trim()) {
       return res.status(400).json({
@@ -356,11 +380,33 @@ const updateStudentHandler = async (req, res) => {
       });
     }
 
+    const regNum = String(registrationNumber).trim();
     const updateFields = {};
+
+    if (newRegistrationNumber !== undefined) {
+      const newReg = String(newRegistrationNumber).trim();
+      if (!newReg) {
+        return res.status(400).json({
+          success: false,
+          error: 'Enrollment number cannot be empty',
+        });
+      }
+      if (newReg !== regNum) {
+        const duplicate = await StudentData.findOne({ registrationNumber: newReg }).lean();
+        if (duplicate) {
+          return res.status(400).json({
+            success: false,
+            error: 'Duplicate enrollment number',
+            message: `A student with enrollment number "${newReg}" already exists.`,
+          });
+        }
+        updateFields.registrationNumber = newReg;
+      }
+    }
     if (studentName !== undefined) updateFields.studentName = String(studentName).trim();
     if (fathersName !== undefined) updateFields.fathersName = String(fathersName).trim();
     if (grade !== undefined) updateFields.grade = String(grade).trim();
-    const current = await StudentData.findOne({ registrationNumber: String(registrationNumber).trim() }).select('grade subject').lean();
+    const current = await StudentData.findOne({ registrationNumber: regNum }).select('grade subject').lean();
     const effectiveGrade = grade !== undefined ? String(grade).trim() : current?.grade;
     const needsSubject = requiresSubjectChoice(effectiveGrade);
 
@@ -402,7 +448,7 @@ const updateStudentHandler = async (req, res) => {
     }
 
     const updated = await StudentData.findOneAndUpdate(
-      { registrationNumber: String(registrationNumber).trim() },
+      { registrationNumber: regNum },
       { $set: updateFields },
       { new: true, runValidators: true }
     );
@@ -413,6 +459,29 @@ const updateStudentHandler = async (req, res) => {
         error: 'Student not found',
         message: `No student with registration number "${registrationNumber}" found.`,
       });
+    }
+
+    if (grade !== undefined && !updateFields.registrationNumber) {
+      const regForSync = regNum;
+      const syncedReg = updateEnrollmentClassInRegistration(
+        regForSync,
+        normalizeGradeForMatch(String(grade).trim())
+      );
+      if (syncedReg !== regForSync) {
+        const duplicate = await StudentData.findOne({ registrationNumber: syncedReg }).lean();
+        if (duplicate) {
+          return res.status(400).json({
+            success: false,
+            error: 'Duplicate enrollment number',
+            message: `Updating class in enrollment to "${syncedReg}" conflicts with another student.`,
+          });
+        }
+        updateFields.registrationNumber = syncedReg;
+      }
+    }
+
+    if (updateFields.registrationNumber) {
+      await cascadeRegistrationNumberChange(regNum, updateFields.registrationNumber);
     }
 
     const studentObj = updated.toObject();
@@ -441,6 +510,159 @@ const updateStudentHandler = async (req, res) => {
 
 router.put('/', requireRoles([ROLE.ADMIN]), updateStudentHandler);
 router.put('/update', requireRoles([ROLE.ADMIN]), updateStudentHandler);
+
+// POST promote students to the next grade (whole class or selected from a class)
+router.post('/promote', requireRoles([ROLE.ADMIN]), async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        error: 'Database not connected',
+      });
+    }
+
+    const { mode, grade, sourceGrade, registrationNumbers } = req.body;
+
+    if (mode !== 'class' && mode !== 'selected') {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid mode',
+        message: 'Mode must be "class" or "selected".',
+      });
+    }
+
+    let students = [];
+
+    if (mode === 'class') {
+      if (!grade || !String(grade).trim()) {
+        return res.status(400).json({
+          success: false,
+          error: 'Grade is required',
+          message: 'Select a class to promote.',
+        });
+      }
+      const all = await StudentData.find({}).lean();
+      students = all.filter((s) => gradesMatch(s.grade, grade));
+    } else {
+      if (!sourceGrade || !String(sourceGrade).trim()) {
+        return res.status(400).json({
+          success: false,
+          error: 'Source grade is required',
+          message: 'Select the class your students are in.',
+        });
+      }
+      if (!Array.isArray(registrationNumbers) || registrationNumbers.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'No students selected',
+          message: 'Select at least one student to promote.',
+        });
+      }
+      const regSet = new Set(registrationNumbers.map((r) => String(r).trim()).filter(Boolean));
+      const all = await StudentData.find({ registrationNumber: { $in: [...regSet] } }).lean();
+      students = all.filter(
+        (s) => regSet.has(String(s.registrationNumber)) && gradesMatch(s.grade, sourceGrade)
+      );
+      const missing = [...regSet].filter(
+        (r) => !students.some((s) => String(s.registrationNumber) === r)
+      );
+      if (missing.length > 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid selection',
+          message:
+            'Some selected students were not found in the chosen class. Refresh and try again.',
+          missingRegistrationNumbers: missing,
+        });
+      }
+    }
+
+    if (students.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'No students to promote',
+        message: 'No students found in the selected class.',
+      });
+    }
+
+    const nextCanon = getNextGrade(students[0].grade);
+    const promoted = [];
+    const skipped = [];
+
+    for (const student of students) {
+      const next = getNextGrade(student.grade);
+      if (!next) {
+        skipped.push({
+          registrationNumber: student.registrationNumber,
+          studentName: student.studentName,
+          reason: 'Already at the highest grade or grade not recognized.',
+        });
+        continue;
+      }
+      if (mode === 'selected' && nextCanon && next !== nextCanon) {
+        skipped.push({
+          registrationNumber: student.registrationNumber,
+          studentName: student.studentName,
+          reason: 'Students must share the same current class to promote together.',
+        });
+        continue;
+      }
+
+      const updateFields = { grade: next };
+      if (!requiresSubjectChoice(next)) {
+        updateFields.subject = '';
+      }
+
+      const oldReg = String(student.registrationNumber).trim();
+      const syncedReg = updateEnrollmentClassInRegistration(oldReg, next);
+      if (syncedReg !== oldReg) {
+        const duplicate = await StudentData.findOne({ registrationNumber: syncedReg }).lean();
+        if (duplicate) {
+          skipped.push({
+            registrationNumber: oldReg,
+            studentName: student.studentName,
+            reason: `Enrollment "${syncedReg}" already exists; class segment not updated.`,
+          });
+          continue;
+        }
+        updateFields.registrationNumber = syncedReg;
+      }
+
+      await StudentData.updateOne({ registrationNumber: oldReg }, { $set: updateFields });
+
+      if (updateFields.registrationNumber) {
+        await cascadeRegistrationNumberChange(oldReg, updateFields.registrationNumber);
+      }
+
+      promoted.push({
+        registrationNumber: oldReg,
+        newRegistrationNumber: updateFields.registrationNumber || oldReg,
+        studentName: student.studentName,
+        fromGrade: student.grade,
+        toGrade: next,
+        fromEnrollment: oldReg,
+        toEnrollment: updateFields.registrationNumber || oldReg,
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `Promoted ${promoted.length} student(s)${skipped.length ? `; ${skipped.length} skipped` : ''}.`,
+      promotedCount: promoted.length,
+      skippedCount: skipped.length,
+      targetGrade: nextCanon || (promoted[0] ? promoted[0].toGrade : null),
+      promoted,
+      skipped,
+    });
+  } catch (error) {
+    console.error('Error promoting students:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to promote students',
+      message: error.message,
+    });
+  }
+});
 
 // DELETE all students data
 router.delete('/all', requireRoles([ROLE.ADMIN]), async (req, res) => {

@@ -62,3 +62,6 @@ export const IconGrading = () => (
 export const IconList = () => (
   <svg {...svgProps}><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>
 );
+export const IconPromote = () => (
+  <svg {...svgProps}><path d="M12 19V5" /><polyline points="5 12 12 5 19 12" /></svg>
+);

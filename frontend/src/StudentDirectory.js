@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from './config/api';
 import { ROLE_LABELS } from './roleLabels';
-import { IconAdd, IconCancel, IconDelete, IconSelectAll } from './ButtonIcons';
+import { IconAdd, IconCancel, IconDelete, IconEdit, IconPromote, IconSelectAll } from './ButtonIcons';
 import { gradesFromStudents, sortStudentsByGrade } from './studentDataUtils';
 import './StudentData.css';
 
@@ -17,6 +17,7 @@ const StudentDirectory = () => {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedRegistrationNumbers, setSelectedRegistrationNumbers] = useState(new Set());
   const [deletingSelected, setDeletingSelected] = useState(false);
+  const [deletingRegistrationNumber, setDeletingRegistrationNumber] = useState(null);
 
   const gradesFromDb = useMemo(() => gradesFromStudents(studentsData), [studentsData]);
 
@@ -47,6 +48,35 @@ const StudentDirectory = () => {
   const openStudent = (registrationNumber) => {
     if (!registrationNumber || selectionMode) return;
     navigate(`/students-data/${encodeURIComponent(registrationNumber)}`);
+  };
+
+  const handleEditClick = (e, registrationNumber) => {
+    e.stopPropagation();
+    if (!registrationNumber) return;
+    navigate(`/students-data/${encodeURIComponent(registrationNumber)}`);
+  };
+
+  const handleDeleteOne = async (e, registrationNumber, studentName) => {
+    e.stopPropagation();
+    if (!registrationNumber) return;
+    if (
+      !window.confirm(
+        `Delete record for "${studentName || registrationNumber}"? This cannot be undone.`
+      )
+    ) {
+      return;
+    }
+    try {
+      setDeletingRegistrationNumber(registrationNumber);
+      await axios.delete(`${API_URL}/api/students-data/single`, {
+        data: { registrationNumber },
+      });
+      await fetchStudentsData();
+    } catch (err) {
+      alert(err.response?.data?.message || err.message || 'Failed to delete record.');
+    } finally {
+      setDeletingRegistrationNumber(null);
+    }
   };
 
   const handleDeleteAll = async () => {
@@ -126,17 +156,26 @@ const StudentDirectory = () => {
   return (
     <div className="student-data-container student-directory-page">
       <div className="student-directory-toolbar">
-        <button
-          type="button"
-          className="student-directory-add-btn"
-          onClick={() => navigate('/students-data/add')}
-          aria-label={`Add ${ROLE_LABELS.seedling}`}
-        >
-          <span className="student-directory-add-icon" aria-hidden>
+        <div className="student-directory-toolbar-primary">
+          <button
+            type="button"
+            className="student-directory-icon-btn student-directory-add-btn"
+            onClick={() => navigate('/students-data/add')}
+            aria-label={`Add ${ROLE_LABELS.seedling}`}
+            title={`Add ${ROLE_LABELS.seedling}`}
+          >
             <IconAdd />
-          </span>
-          <span className="student-directory-add-label">Add {ROLE_LABELS.seedling}</span>
-        </button>
+          </button>
+          <button
+            type="button"
+            className="student-directory-icon-btn student-directory-promote-btn"
+            onClick={() => navigate('/students-data/promote')}
+            aria-label="Promote students"
+            title="Promote students"
+          >
+            <IconPromote />
+          </button>
+        </div>
         <div className="student-directory-toolbar-actions">
           <div className="grade-filter-wrapper">
             <label htmlFor="student-data-grade-filter" className="grade-filter-label">
@@ -230,7 +269,7 @@ const StudentDirectory = () => {
                   <th>Registration</th>
                   <th>Name</th>
                   <th>Grade</th>
-                  <th className="student-directory-th-open" aria-hidden />
+                  <th className="student-directory-th-actions">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -266,8 +305,26 @@ const StudentDirectory = () => {
                       <td className="student-directory-reg">{reg || '—'}</td>
                       <td className="student-directory-name">{student.studentName || '—'}</td>
                       <td>{student.grade || '—'}</td>
-                      <td className="student-directory-open" aria-hidden>
-                        ›
+                      <td className="student-directory-actions" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          className="edit-record-btn icon-btn icon-only-btn"
+                          onClick={(e) => handleEditClick(e, reg)}
+                          title="Edit"
+                          aria-label={`Edit ${student.studentName || reg}`}
+                        >
+                          <IconEdit />
+                        </button>
+                        <button
+                          type="button"
+                          className="delete-record-btn icon-btn icon-only-btn"
+                          onClick={(e) => handleDeleteOne(e, reg, student.studentName)}
+                          disabled={deletingRegistrationNumber === reg}
+                          title={deletingRegistrationNumber === reg ? 'Deleting...' : 'Delete'}
+                          aria-label={`Delete ${student.studentName || reg}`}
+                        >
+                          <IconDelete />
+                        </button>
                       </td>
                     </tr>
                   );

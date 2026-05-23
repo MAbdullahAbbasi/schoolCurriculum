@@ -51,3 +51,108 @@ export const gradesFromStudents = (students) => {
   });
   return Array.from(set).sort((a, b) => gradeSortOrder(a) - gradeSortOrder(b));
 };
+
+export const GRADE_SEQUENCE = [
+  'KG-1',
+  'KG-2',
+  'KG-3',
+  '1',
+  '2',
+  '3',
+  '4',
+  '5',
+  '6',
+  '7',
+  '8',
+  '9',
+  '10',
+];
+
+/** Normalize grade for comparison (KG variants, numeric). */
+export const normalizeGradeForMatch = (grade) => {
+  if (grade == null || grade === '') return '';
+  let s = String(grade).trim();
+  if (s === '') return '';
+  s = s.replace(/^(grade|class)\s+/i, '').trim();
+  if (s === '') return '';
+
+  const lower = s.toLowerCase().replace(/\s+/g, ' ');
+  const compact = lower.replace(/\s/g, '').replace(/k\.g\.?/g, 'kg');
+
+  if (/^kg[- ]?1$|^kg[- ]?i$|^k\.g\.?[- ]?1$|^k\.g\.?[- ]?i$/i.test(lower) || /^kg[-]?1$|^kg[-]?i$/.test(compact)) {
+    return 'KG-1';
+  }
+  if (/^kg[- ]?2$|^kg\s*ii$|^kg[- ]?ii$|^k\.g\.?[- ]?2$|^k\.g\.?[- ]?ii$/i.test(lower) || /^kg[-]?2$|^kg[-]?ii$/.test(compact)) {
+    return 'KG-2';
+  }
+  if (/^kg[- ]?3$|^kg[- ]?iii$|^k\.g\.?[- ]?3$|^k\.g\.?[- ]?iii$/i.test(lower) || /^kg[-]?3$|^kg[-]?iii$/.test(compact)) {
+    return 'KG-3';
+  }
+
+  if (/^\d+$/.test(s)) {
+    return String(parseInt(s, 10));
+  }
+  return s;
+};
+
+export const gradesMatch = (gradeA, gradeB) =>
+  normalizeGradeForMatch(gradeA) === normalizeGradeForMatch(gradeB);
+
+/** Next grade on the school ladder, or null if already at the top / unknown. */
+export const getNextGrade = (grade) => {
+  const canon = normalizeGradeForMatch(grade);
+  const idx = GRADE_SEQUENCE.indexOf(canon);
+  if (idx === -1 || idx >= GRADE_SEQUENCE.length - 1) return null;
+  return GRADE_SEQUENCE[idx + 1];
+};
+
+export const formatGradeDisplay = (canon) => {
+  if (!canon) return '';
+  if (canon.startsWith('KG')) return canon.replace('-', ' ');
+  return canon;
+};
+
+const CANON_TO_ENROLLMENT_ROMAN = {
+  'KG-1': 'I',
+  'KG-2': 'II',
+  'KG-3': 'III',
+  1: 'I',
+  2: 'II',
+  3: 'III',
+  4: 'IV',
+  5: 'V',
+  6: 'VI',
+  7: 'VII',
+  8: 'VIII',
+  9: 'IX',
+  10: 'X',
+};
+
+function applyEnrollmentSegmentCase(roman, sample) {
+  if (!sample) return roman;
+  if (sample === sample.toUpperCase()) return roman.toUpperCase();
+  if (sample === sample.toLowerCase()) return roman.toLowerCase();
+  return roman;
+}
+
+/** Roman class segment for enrollment (3rd part after 2nd hyphen). */
+export const canonGradeToEnrollmentRoman = (grade) => {
+  const canon = normalizeGradeForMatch(grade);
+  return CANON_TO_ENROLLMENT_ROMAN[canon] || null;
+};
+
+/** Update enrollment class segment (e.g. VIII → IX) when grade changes. */
+export const updateEnrollmentClassInRegistration = (enrollment, newGrade) => {
+  if (!enrollment || String(enrollment).trim() === '') return enrollment;
+  const roman = canonGradeToEnrollmentRoman(newGrade);
+  if (!roman) return String(enrollment).trim();
+
+  const parts = String(enrollment).trim().split('-');
+  if (parts.length < 3) return String(enrollment).trim();
+
+  const newSegment = applyEnrollmentSegmentCase(roman, parts[2]);
+  if (parts[2] === newSegment) return String(enrollment).trim();
+
+  parts[2] = newSegment;
+  return parts.join('-');
+};
