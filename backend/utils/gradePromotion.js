@@ -24,15 +24,29 @@ export function normalizeGradeForMatch(grade) {
   if (s === '') return '';
 
   const lower = s.toLowerCase().replace(/\s+/g, ' ');
-  const compact = lower.replace(/\s/g, '').replace(/k\.g\.?/g, 'kg');
+  const compact = lower.replace(/\s/g, '').replace(/k\.g\.?/g, 'kg').replace(/\./g, '');
 
-  if (/^kg[- ]?1$|^kg[- ]?i$|^k\.g\.?[- ]?1$|^k\.g\.?[- ]?i$/i.test(lower) || /^kg[-]?1$|^kg[-]?i$/.test(compact)) {
+  if (
+    /^kg[- ]?1$|^kg[- ]?i$|^k\.g\.?[- ]?i$|^k\.g\.-i$/i.test(lower) ||
+    /^kg[-]?1$|^kg[-]?i$/.test(compact) ||
+    lower === 'kg i'
+  ) {
     return 'KG-1';
   }
-  if (/^kg[- ]?2$|^kg\s*ii$|^kg[- ]?ii$|^k\.g\.?[- ]?2$|^k\.g\.?[- ]?ii$/i.test(lower) || /^kg[-]?2$|^kg[-]?ii$/.test(compact)) {
+  if (
+    /^kg[- ]?2$|^kg\s*ii$|^kg[- ]?ii$|^k\.g\.?[- ]?2$|^k\.g\.?[- ]?ii$|^k\.g\.-ii$/i.test(lower) ||
+    /^kg[-]?2$|^kg[-]?ii$/.test(compact) ||
+    lower === 'kg ii' ||
+    lower === 'k.g-ii'
+  ) {
     return 'KG-2';
   }
-  if (/^kg[- ]?3$|^kg[- ]?iii$|^k\.g\.?[- ]?3$|^k\.g\.?[- ]?iii$/i.test(lower) || /^kg[-]?3$|^kg[-]?iii$/.test(compact)) {
+  if (
+    /^kg[- ]?3$|^kg[- ]?iii$|^k\.g\.?[- ]?3$|^k\.g\.?[- ]?iii$|^k\.g\.-iii$/i.test(lower) ||
+    /^kg[-]?3$|^kg[-]?iii$/.test(compact) ||
+    lower === 'kg iii' ||
+    lower === 'k.g-iii'
+  ) {
     return 'KG-3';
   }
 
@@ -55,12 +69,17 @@ export function getNextGrade(grade) {
 
 export function formatGradeLabel(canon) {
   if (!canon) return '';
-  if (canon.startsWith('KG')) return canon.replace('-', ' ');
+  if (canon === 'KG-1') return 'K.G-I';
+  if (canon === 'KG-2') return 'K.G-II';
+  if (canon === 'KG-3') return 'K.G-III';
   return canon;
 }
 
-/** Roman numerals for class segment in enrollment (grade 1–10). */
-const ARABIC_TO_ROMAN = {
+/** Canonical grade → 3rd enrollment segment (e.g. KG II, VIII, I). */
+const CANON_TO_ENROLLMENT_CLASS = {
+  'KG-1': 'KG I',
+  'KG-2': 'KG II',
+  'KG-3': 'KG III',
   1: 'I',
   2: 'II',
   3: 'III',
@@ -73,61 +92,57 @@ const ARABIC_TO_ROMAN = {
   10: 'X',
 };
 
-/** Canonical grade → Roman class code used in enrollment (3rd hyphen segment). */
-const CANON_TO_ENROLLMENT_ROMAN = {
-  'KG-1': 'I',
-  'KG-2': 'II',
-  'KG-3': 'III',
-  1: 'I',
-  2: 'II',
-  3: 'III',
-  4: 'IV',
-  5: 'V',
-  6: 'VI',
-  7: 'VII',
-  8: 'VIII',
-  9: 'IX',
-  10: 'X',
-};
+/**
+ * Parse enrollment: year-serial-CLASS-suffix
+ * CLASS may be "KG II" (one segment) or split as KG + II when stored as KG-II.
+ */
+export function splitEnrollment(enrollment) {
+  if (enrollment == null || String(enrollment).trim() === '') return null;
+  const parts = String(enrollment).trim().split('-');
+  if (parts.length < 3) return null;
 
-const ROMAN_TO_CANON = Object.fromEntries(
-  Object.entries(CANON_TO_ENROLLMENT_ROMAN).map(([canon, roman]) => [
-    roman.toUpperCase(),
-    canon,
-  ])
-);
+  if (parts.length >= 4 && /^kg$/i.test(parts[2].trim())) {
+    return {
+      prefix: [parts[0], parts[1]],
+      classSegment: `${parts[2]} ${parts[3]}`.trim(),
+      suffix: parts.slice(4).join('-'),
+    };
+  }
 
-function applySegmentCase(roman, sample) {
-  if (!sample || typeof sample !== 'string') return roman;
-  if (sample === sample.toUpperCase()) return roman.toUpperCase();
-  if (sample === sample.toLowerCase()) return roman.toLowerCase();
-  return roman;
+  return {
+    prefix: [parts[0], parts[1]],
+    classSegment: parts[2],
+    suffix: parts.slice(3).join('-'),
+  };
 }
 
-/** Map canonical grade to Roman class label for enrollment. */
-export function canonGradeToEnrollmentRoman(canonGrade) {
+export function joinEnrollment({ prefix, classSegment, suffix }) {
+  const head = `${prefix[0]}-${prefix[1]}-${classSegment}`;
+  return suffix ? `${head}-${suffix}` : head;
+}
+
+/** Map canonical grade to class segment used in enrollment. */
+export function canonGradeToEnrollmentClassSegment(canonGrade) {
   const canon = normalizeGradeForMatch(canonGrade);
-  return CANON_TO_ENROLLMENT_ROMAN[canon] || null;
+  return CANON_TO_ENROLLMENT_CLASS[canon] || null;
+}
+
+/** @deprecated alias */
+export function canonGradeToEnrollmentRoman(canonGrade) {
+  return canonGradeToEnrollmentClassSegment(canonGrade);
 }
 
 /**
- * Enrollment: year-serial-CLASS_ROMAN-suffix (4 parts, class is index 2).
- * Updates the class segment to match the given grade.
+ * Updates the class segment in enrollment when grade changes (e.g. KG II → I on KG-2 → class 1).
  */
 export function updateEnrollmentClassInRegistration(enrollment, newCanonGrade) {
-  if (enrollment == null || String(enrollment).trim() === '') return enrollment;
-  const roman = canonGradeToEnrollmentRoman(newCanonGrade);
-  if (!roman) return String(enrollment).trim();
+  const parsed = splitEnrollment(enrollment);
+  if (!parsed) return String(enrollment).trim();
 
-  const trimmed = String(enrollment).trim();
-  const parts = trimmed.split('-');
-  if (parts.length < 3) return trimmed;
+  const newClass = canonGradeToEnrollmentClassSegment(newCanonGrade);
+  if (!newClass) return String(enrollment).trim();
+  if (parsed.classSegment === newClass) return String(enrollment).trim();
 
-  const newSegment = applySegmentCase(roman, parts[2]);
-  if (parts[2] === newSegment) return trimmed;
-
-  parts[2] = newSegment;
-  return parts.join('-');
+  parsed.classSegment = newClass;
+  return joinEnrollment(parsed);
 }
-
-export { ROMAN_TO_CANON, ARABIC_TO_ROMAN };
