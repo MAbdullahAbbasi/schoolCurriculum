@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from './config/api';
@@ -11,6 +11,37 @@ import {
 import './CreateCourseMarks.css';
 
 const slotKey = (q, part) => (part === 0 ? `q${q}` : `q${q}-p${part}`);
+
+/** Label shown in objective dropdown — description only (not title). */
+const objectiveDropdownLabel = (topic) => {
+  const desc = String(topic?.description ?? '').trim();
+  if (desc) return desc;
+  return '— (no description)';
+};
+
+const resolveTopicsFromCurriculum = (curriculumData, topicKeys) => {
+  if (!Array.isArray(curriculumData) || !Array.isArray(topicKeys)) return [];
+  return topicKeys
+    .map((topicKey) => {
+      const lastDash = topicKey.lastIndexOf('-');
+      const gradeId = lastDash === -1 ? topicKey : topicKey.slice(0, lastDash);
+      const topicIndex = parseInt(topicKey.slice(lastDash + 1), 10);
+      const grade = curriculumData.find(
+        (g) => g._id === gradeId || String(g._id) === gradeId
+      );
+      if (!grade?.objectives?.[topicIndex]) return null;
+      const topic = grade.objectives[topicIndex];
+      return {
+        topicKey,
+        grade: grade.grade,
+        courseCode: topic.code || '',
+        topicName: topic.title || '',
+        description: topic.description || '',
+        subject: (topic.subject != null ? String(topic.subject).trim() : '') || '',
+      };
+    })
+    .filter(Boolean);
+};
 
 // Normalize grade for matching: any KG-2 variant -> "KG-2" (handles "KG II", "K.G-II", "KG-2", "Grade KG II", etc.)
 const normalizeGradeForMatch = (grade) => {
@@ -44,6 +75,29 @@ const CreateCourseMarks = () => {
   const [questionChoiceEnabled, setQuestionChoiceEnabled] = useState(false);
   const emptyChoiceGroup = () => ({ questions: [], attemptCount: 1 });
   const [choiceGroups, setChoiceGroups] = useState([emptyChoiceGroup()]);
+  const [topics, setTopics] = useState(resolvedTopics);
+
+  useEffect(() => {
+    const keys = resolvedTopics.map((t) => t.topicKey).filter(Boolean);
+    if (keys.length === 0) {
+      setTopics([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await axios.get(`${API_URL}/api/curriculum`);
+        if (cancelled) return;
+        const fresh = resolveTopicsFromCurriculum(res.data, keys);
+        setTopics(fresh.length > 0 ? fresh : resolvedTopics);
+      } catch {
+        if (!cancelled) setTopics(resolvedTopics);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [resolvedTopics]);
 
   const totalMarks = useMemo(() => Number(coursePayload?.totalMarks) || 0, [coursePayload]);
   const questionParts = useMemo(
@@ -123,8 +177,8 @@ const CreateCourseMarks = () => {
     choiceGroupsValidation.ok &&
     (!questionChoiceEnabled || (normalizedChoiceGroups.length > 0 && choiceGroupsValidation.groups.length > 0));
   const allObjectivesSelected = useMemo(
-    () => resolvedTopics.length > 0 && slots.every((sl) => objectiveSelection[sl.key]),
-    [slots, objectiveSelection, resolvedTopics.length]
+    () => topics.length > 0 && slots.every((sl) => objectiveSelection[sl.key]),
+    [slots, objectiveSelection, topics.length]
   );
 
   const handleMarksChange = (q, part, value) => {
@@ -205,7 +259,7 @@ const CreateCourseMarks = () => {
       );
       return;
     }
-    if (resolvedTopics.length === 0) {
+    if (topics.length === 0) {
       setCreateError('No objectives available. Please start from the curriculum and select objectives for this course.');
       return;
     }
@@ -215,14 +269,14 @@ const CreateCourseMarks = () => {
     }
 
     const topicMarks = {};
-    resolvedTopics.forEach((t) => { topicMarks[t.topicKey] = 0; });
+    topics.forEach((t) => { topicMarks[t.topicKey] = 0; });
     slots.forEach((sl) => {
       const selectedKey = objectiveSelection[sl.key];
       const m = Number(marksBySlot[sl.key]) || 0;
       if (selectedKey) topicMarks[selectedKey] = (topicMarks[selectedKey] || 0) + m;
     });
 
-    const topics = resolvedTopics.map((t) => ({
+    const courseTopics = topics.map((t) => ({
       courseCode: t.courseCode,
       topicName: t.topicName,
       description: t.description ?? '',
@@ -233,7 +287,7 @@ const CreateCourseMarks = () => {
     const questionTopicIndices = {};
     slots.forEach((sl) => {
       const selectedKey = objectiveSelection[sl.key];
-      const idx = resolvedTopics.findIndex((t) => t.topicKey === selectedKey);
+      const idx = topics.findIndex((t) => t.topicKey === selectedKey);
       if (idx >= 0) {
         const q = sl.questionIndex;
         if (!questionTopicIndices[q]) questionTopicIndices[q] = new Set();
@@ -253,7 +307,7 @@ const CreateCourseMarks = () => {
 
     const payload = {
       ...coursePayload,
-      topics,
+      topics: courseTopics,
       totalQuestions: totalQuestionsFromState,
       questions,
       ...(coursePayload.compulsoryQuestions != null && { compulsoryQuestions: coursePayload.compulsoryQuestions }),
@@ -275,7 +329,7 @@ const CreateCourseMarks = () => {
           const raw = studentsRes.data;
           const studentsList = Array.isArray(raw) ? raw : (raw?.data && Array.isArray(raw.data) ? raw.data : []);
           const courseGrades = new Set();
-          resolvedTopics.forEach((t) => {
+          topics.forEach((t) => {
             if (t.grade != null && t.grade !== '') {
               courseGrades.add(normalizeGradeForMatch(t.grade));
             }
@@ -333,6 +387,7 @@ const CreateCourseMarks = () => {
         <h2 className="create-course-marks-title page-local-header">Enter marks per question</h2>
         <p className="create-course-marks-hint">
           Enter marks for each question/part and select one objective per row. Only <strong>compulsory</strong> parts count toward the paper total; optional parts are still saved. With <strong>question choice</strong> (below), the paper total counts each choice group as one question’s worth — every question in a group must have the same <em>total</em> marks (sum of all parts).
+          {' '}Objective dropdowns show the <strong>Description</strong> from Objectives (not Title). Hover an option to read the full text.
         </p>
 
         <div className="create-course-marks-table-wrapper">
@@ -370,11 +425,18 @@ const CreateCourseMarks = () => {
                       aria-label={`Objective for ${sl.label}${sl.partLabel ? ` ${sl.partLabel}` : ''}`}
                     >
                       <option value="">Select objective</option>
-                      {resolvedTopics.map((t) => (
-                        <option key={t.topicKey} value={t.topicKey} title={t.description || t.topicName}>
-                          {t.description || t.topicName || t.courseCode || t.topicKey}
-                        </option>
-                      ))}
+                      {topics.map((t) => {
+                        const label = objectiveDropdownLabel(t);
+                        return (
+                          <option
+                            key={t.topicKey}
+                            value={t.topicKey}
+                            title={String(t.description || '').trim() || t.topicName}
+                          >
+                            {label}
+                          </option>
+                        );
+                      })}
                     </select>
                   </td>
                 </tr>
@@ -463,7 +525,7 @@ const CreateCourseMarks = () => {
             <span className="create-course-marks-sum-optional"> (all parts: {sumAllMarks})</span>
           )}
         </p>
-        {!allObjectivesSelected && resolvedTopics.length > 0 && slots.length > 0 && (
+        {!allObjectivesSelected && topics.length > 0 && slots.length > 0 && (
           <p className="create-course-marks-objectives-hint">Select an objective for every row to create the course.</p>
         )}
         {createError && (

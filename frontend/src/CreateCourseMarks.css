@@ -76,13 +76,15 @@
 
 .create-course-marks-objective-select {
   width: 100%;
-  min-width: 180px;
+  min-width: 280px;
+  max-width: 100%;
   padding: 0.5rem 0.6rem;
   border: 1px solid #ccc;
   border-radius: 6px;
   font-size: 0.9rem;
   background: #fff;
   cursor: pointer;
+  white-space: normal;
 }
 
 .create-course-marks-objective-select:focus {
