@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 import { ROLE } from '../rbac/roles.js';
 import { requireRoles } from '../rbac/guards.js';
+import { applyPasswordFields } from '../utils/userPassword.js';
 
 const router = express.Router();
 
@@ -76,8 +77,13 @@ router.post('/', async (req, res) => {
       return res.status(409).json({ success: false, error: 'User exists', message: 'Username already exists.' });
     }
 
-    const passwordHash = await bcrypt.hash(String(password), 10);
-    await User.create({ username: u, passwordHash, role: ROLE.COURSE_ADMIN });
+    const fields = await applyPasswordFields({}, password);
+    await User.create({
+      username: u,
+      passwordHash: fields.passwordHash,
+      passwordPlain: fields.passwordPlain,
+      role: ROLE.COURSE_ADMIN,
+    });
 
     res.status(201).json({ success: true, message: 'Course admin created successfully.' });
   } catch (err) {
@@ -124,7 +130,9 @@ router.put('/:username', async (req, res) => {
     }
 
     if (password && String(password).trim()) {
-      update.passwordHash = await bcrypt.hash(String(password), 10);
+      const fields = await applyPasswordFields(update, password);
+      update.passwordHash = fields.passwordHash;
+      update.passwordPlain = fields.passwordPlain;
     }
 
     if (Object.keys(update).length === 0) {

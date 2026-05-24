@@ -12,6 +12,7 @@ import { authMiddleware } from "./middleware/authMiddleware.js";
 import adminUserRoutes from "./routes/adminUserRoutes.js";
 import courseAdminManagementRoutes from "./routes/courseAdminManagementRoutes.js";
 import educatorManagementRoutes from "./routes/educatorManagementRoutes.js";
+import superAdminRoutes from "./routes/superAdminRoutes.js";
 
 dotenv.config();
 
@@ -252,6 +253,7 @@ app.use("/api/admin/course-admins", courseAdminManagementRoutes);
 
 // Admin-only: Educator management (EDUCATOR users)
 app.use("/api/admin/educators", educatorManagementRoutes);
+app.use("/api/super-admin", superAdminRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

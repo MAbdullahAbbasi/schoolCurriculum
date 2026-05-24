@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 import { ROLE } from '../rbac/roles.js';
 import { requireRoles } from '../rbac/guards.js';
+import { applyPasswordFields } from '../utils/userPassword.js';
 
 const router = express.Router();
 
@@ -71,10 +72,11 @@ router.post('/', async (req, res) => {
       });
     }
 
-    const passwordHash = await bcrypt.hash(String(password), SALT_ROUNDS);
+    const fields = await applyPasswordFields({}, password);
     const created = await User.create({
       username: u,
-      passwordHash,
+      passwordHash: fields.passwordHash,
+      passwordPlain: fields.passwordPlain,
       role: requestedRole,
     });
 
@@ -121,7 +123,9 @@ router.put('/:username', async (req, res) => {
       if (!String(password).trim()) {
         return res.status(400).json({ success: false, error: 'Invalid password', message: 'Password cannot be empty.' });
       }
-      update.passwordHash = await bcrypt.hash(String(password), SALT_ROUNDS);
+      const fields = await applyPasswordFields(update, password);
+      update.passwordHash = fields.passwordHash;
+      update.passwordPlain = fields.passwordPlain;
     }
 
     if (Object.keys(update).length === 0) {

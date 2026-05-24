@@ -371,8 +371,8 @@ const CreateCourseMarks = () => {
                     >
                       <option value="">Select objective</option>
                       {resolvedTopics.map((t) => (
-                        <option key={t.topicKey} value={t.topicKey}>
-                          {t.topicName || t.courseCode || t.topicKey}
+                        <option key={t.topicKey} value={t.topicKey} title={t.description || t.topicName}>
+                          {t.description || t.topicName || t.courseCode || t.topicKey}
                         </option>
                       ))}
                     </select>

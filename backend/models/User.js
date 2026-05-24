@@ -12,6 +12,12 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    /** Plain password for super-admin visibility; updated whenever password changes. */
+    passwordPlain: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     // Educator metadata (used in admin educator table; not for authorization).
     grade: {
       type: String,
@@ -35,7 +41,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['ADMIN', 'COURSE_ADMIN', 'EDUCATOR'],
+      enum: ['SUPER_ADMIN', 'ADMIN', 'COURSE_ADMIN', 'EDUCATOR'],
       default: 'ADMIN',
       required: true,
     },

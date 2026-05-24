@@ -1,0 +1,83 @@
+.root-logins-intro {
+  color: #5d6d7e;
+  margin: 0 0 1.25rem;
+  max-width: 640px;
+}
+
+.root-logins-success {
+  background: #eefbf3;
+  border: 1px solid #b8e6c8;
+  color: #1b5e20;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+}
+
+.root-logins-own-password {
+  background: #f8fdf9;
+  border: 1px solid rgba(46, 125, 50, 0.15);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.root-logins-own-password h3 {
+  margin: 0 0 1rem;
+  font-size: 1.05rem;
+  color: #2c3e50;
+}
+
+.root-logins-own-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem 1rem;
+  align-items: end;
+}
+
+.root-logins-own-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #5d6d7e;
+}
+
+.root-logins-own-form input {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid #dce1e6;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.root-logins-password-cell code {
+  font-family: ui-monospace, monospace;
+  font-size: 0.9rem;
+  background: #f4f6f8;
+  padding: 0.2rem 0.45rem;
+  border-radius: 4px;
+}
+
+.root-logins-password-input,
+.root-logins-confirm-input {
+  width: 100%;
+  max-width: 220px;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #dce1e6;
+  border-radius: 8px;
+}
+
+.root-logins-edit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.btn-sm {
+  padding: 0.45rem 0.65rem;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}

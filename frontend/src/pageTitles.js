@@ -5,7 +5,7 @@ import { APP_LABELS, ROLE_LABELS } from './roleLabels';
  * First matching rule wins (most specific paths first).
  */
 const PAGE_RULES = [
-  { test: (p) => p.startsWith('/create-course/map-questions'), title: 'Map Questions', subtitle: 'Link assessment questions to learning objectives.' },
+  { test: (p) => p === '/root-logins', title: 'All logins', subtitle: 'View and manage every account in the system.' },
   { test: (p) => p.startsWith('/create-course/marks'), title: 'Course Marks', subtitle: 'Set marks for each question in the new course.' },
   { test: (p) => p.startsWith('/create-course'), title: 'Create Course', subtitle: 'Configure course details from selected objectives.' },
   { test: (p) => p.startsWith('/reports/result-sheet'), title: 'Result Sheet', subtitle: 'View and export grade result sheets.' },

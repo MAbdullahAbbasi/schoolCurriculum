@@ -3,7 +3,8 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 import { createToken } from '../middleware/authMiddleware.js';
-import { ROLE } from '../rbac/roles.js';
+import { ROLE, SUPER_ADMIN_USERNAME } from '../rbac/roles.js';
+import { applyPasswordFields } from '../utils/userPassword.js';
 import Course from '../models/Course.js';
 import { normalizeGradeForMatch, normalizeSubjectForMatch } from '../rbac/guards.js';
 
@@ -13,6 +14,8 @@ const SALT_ROUNDS = 10;
 
 const ADMIN_PASSWORD = '$@pling';
 const OLD_ADMIN_PASSWORD = 'sapling';
+
+const SUPER_ADMIN_PASSWORD = 'AdminSapling';
 
 // Default demo users (created automatically if missing)
 const COURSE_ADMIN_USERNAME = 'courseadmin';
@@ -26,21 +29,50 @@ const DEFAULT_EDUCATOR_SUBJECT = 'Computer';
 const ensureSampleUsers = async () => {
   if (mongoose.connection.readyState !== 1) return;
 
+  // SUPER_ADMIN (root login — manages all accounts)
+  const superExisting = await User.findOne({ username: SUPER_ADMIN_USERNAME });
+  if (!superExisting) {
+    const fields = await applyPasswordFields({}, SUPER_ADMIN_PASSWORD);
+    await User.create({
+      username: SUPER_ADMIN_USERNAME,
+      passwordHash: fields.passwordHash,
+      passwordPlain: fields.passwordPlain,
+      role: ROLE.SUPER_ADMIN,
+    });
+    console.log(`Created super admin user: ${SUPER_ADMIN_USERNAME} / ${SUPER_ADMIN_PASSWORD}`);
+  } else {
+    await User.updateOne(
+      { username: SUPER_ADMIN_USERNAME },
+      { $set: { role: ROLE.SUPER_ADMIN } }
+    );
+    if (!superExisting.passwordPlain) {
+      const fields = await applyPasswordFields({}, SUPER_ADMIN_PASSWORD);
+      await User.updateOne(
+        { username: SUPER_ADMIN_USERNAME },
+        { $set: { passwordHash: fields.passwordHash, passwordPlain: fields.passwordPlain } }
+      );
+    }
+  }
+
   // ADMIN
   const adminExisting = await User.findOne({ username: 'sapling' });
   if (!adminExisting) {
-    const hash = await bcrypt.hash(ADMIN_PASSWORD, SALT_ROUNDS);
+    const fields = await applyPasswordFields({}, ADMIN_PASSWORD);
     await User.create({
       username: 'sapling',
-      passwordHash: hash,
+      passwordHash: fields.passwordHash,
+      passwordPlain: fields.passwordPlain,
       role: ROLE.ADMIN,
     });
     console.log('Created sample user: sapling / $@pling');
   } else {
     const stillOldPassword = await bcrypt.compare(OLD_ADMIN_PASSWORD, adminExisting.passwordHash);
     if (stillOldPassword) {
-      const hash = await bcrypt.hash(ADMIN_PASSWORD, SALT_ROUNDS);
-      await User.updateOne({ username: 'sapling' }, { passwordHash: hash });
+      const fields = await applyPasswordFields({}, ADMIN_PASSWORD);
+      await User.updateOne(
+        { username: 'sapling' },
+        { $set: { passwordHash: fields.passwordHash, passwordPlain: fields.passwordPlain } }
+      );
       console.log('Updated admin password to $@pling');
     }
 
@@ -52,10 +84,11 @@ const ensureSampleUsers = async () => {
   // COURSE_ADMIN
   const courseAdminExisting = await User.findOne({ username: COURSE_ADMIN_USERNAME });
   if (!courseAdminExisting) {
-    const hash = await bcrypt.hash(COURSE_ADMIN_PASSWORD, SALT_ROUNDS);
+    const fields = await applyPasswordFields({}, COURSE_ADMIN_PASSWORD);
     await User.create({
       username: COURSE_ADMIN_USERNAME,
-      passwordHash: hash,
+      passwordHash: fields.passwordHash,
+      passwordPlain: fields.passwordPlain,
       role: ROLE.COURSE_ADMIN,
     });
     console.log(`Created sample user: ${COURSE_ADMIN_USERNAME} / ${COURSE_ADMIN_PASSWORD}`);
@@ -64,10 +97,11 @@ const ensureSampleUsers = async () => {
   // EDUCATOR
   const educatorExisting = await User.findOne({ username: EDUCATOR_USERNAME });
   if (!educatorExisting) {
-    const hash = await bcrypt.hash(EDUCATOR_PASSWORD, SALT_ROUNDS);
+    const fields = await applyPasswordFields({}, EDUCATOR_PASSWORD);
     await User.create({
       username: EDUCATOR_USERNAME,
-      passwordHash: hash,
+      passwordHash: fields.passwordHash,
+      passwordPlain: fields.passwordPlain,
       role: ROLE.EDUCATOR,
       grade: DEFAULT_EDUCATOR_GRADE, // legacy
       subject: DEFAULT_EDUCATOR_SUBJECT, // legacy
@@ -149,8 +183,7 @@ router.post('/login', async (req, res) => {
     }
 
     const token = createToken(user.username);
-    const computedRole =
-      String(user.username) === 'sapling' ? ROLE.ADMIN : user.role || ROLE.EDUCATOR;
+    const computedRole = user.role || ROLE.EDUCATOR;
     res.json({
       success: true,
       message: 'Login successful',

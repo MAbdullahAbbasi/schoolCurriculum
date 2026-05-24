@@ -21,6 +21,7 @@ import { API_URL } from './config/api';
 import RolesDashboard from './RolesDashboard';
 import CourseAdmins from './CourseAdmins';
 import Educators from './Educators';
+import RootLogins from './RootLogins';
 
 const AUTH_KEY = 'curriculum_auth';
 const INACTIVITY_MS = 20 * 60 * 1000;   // 20 minutes
@@ -175,8 +176,18 @@ function App() {
             <Route
               path="/"
               element={
-                userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <Curriculum />
+                userRole === 'SUPER_ADMIN' ? (
+                  <Navigate to="/root-logins" replace />
+                ) : userRole === 'EDUCATOR' ? (
+                  <Navigate to="/record" replace />
+                ) : (
+                  <Curriculum />
+                )
               }
+            />
+            <Route
+              path="/root-logins"
+              element={userRole === 'SUPER_ADMIN' ? <RootLogins /> : <Navigate to="/" replace />}
             />
             <Route path="/create-course" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <CreateCourse />} />
             <Route path="/create-course/marks" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <CreateCourseMarks />} />

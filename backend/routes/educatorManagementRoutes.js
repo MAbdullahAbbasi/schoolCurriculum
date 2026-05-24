@@ -5,6 +5,7 @@ import User from '../models/User.js';
 import Course from '../models/Course.js';
 import { ROLE } from '../rbac/roles.js';
 import { normalizeGradeForMatch, normalizeSubjectForMatch, requireRoles } from '../rbac/guards.js';
+import { applyPasswordFields } from '../utils/userPassword.js';
 
 const router = express.Router();
 
@@ -177,9 +178,11 @@ router.post('/', async (req, res) => {
       });
     }
 
+    const fields = await applyPasswordFields({}, password);
     const created = await User.create({
       username: u,
-      passwordHash: await bcrypt.hash(String(password), SALT_ROUNDS),
+      passwordHash: fields.passwordHash,
+      passwordPlain: fields.passwordPlain,
       role: ROLE.EDUCATOR,
       educatorAssignments: cleanedPairs,
       // legacy fields for backwards compatibility
@@ -281,7 +284,9 @@ router.put('/:username', async (req, res) => {
     }
 
     if (password !== undefined && String(password).trim()) {
-      update.passwordHash = await bcrypt.hash(String(password), SALT_ROUNDS);
+      const fields = await applyPasswordFields(update, password);
+      update.passwordHash = fields.passwordHash;
+      update.passwordPlain = fields.passwordPlain;
     }
 
     if (Object.keys(update).length === 0) {

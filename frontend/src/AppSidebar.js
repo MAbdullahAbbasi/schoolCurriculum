@@ -62,6 +62,13 @@ const iconRoles = (
   </svg>
 );
 
+const iconRootLogins = (
+  <svg {...svgProps}>
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+  </svg>
+);
+
 const iconLogout = (
   <svg {...svgProps}>
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -87,6 +94,7 @@ const AppSidebar = ({ open, onClose }) => {
     }
   })();
 
+  const isRootAdmin = role === 'SUPER_ADMIN';
   const isAdmin = role === 'ADMIN';
   const isCourseAdmin = role === 'COURSE_ADMIN';
   const isSuperAdmin = isAdmin;
@@ -128,12 +136,13 @@ const AppSidebar = ({ open, onClose }) => {
         <p className="app-sidebar-tagline">{APP_LABELS.brandTagline}</p>
       </div>
       <nav className="app-sidebar-nav">
-        {canViewStudentsData && navBtn(APP_LABELS.seedlingData, iconStudentsData, '/students-data', ['/students-data'])}
-        {canViewObjectives && navBtn('Objectives', iconObjectives, '/', ['/', '/create-course'])}
-        {isSuperAdmin && navBtn(APP_LABELS.groveNav, iconRoles, '/roles', ['/roles', '/course-admins', '/educators'])}
-        {navBtn('Record', iconRecord, '/record', ['/record', '/studentRecord'])}
-        {canViewReports && navBtn('Reports', iconReports, '/reports', ['/reports'])}
-        {canViewGradingScheme && navBtn('Grading Scheme', iconGradingScheme, '/grading-scheme', ['/grading-scheme'])}
+        {isRootAdmin && navBtn('All logins', iconRootLogins, '/root-logins', ['/root-logins'])}
+        {!isRootAdmin && canViewStudentsData && navBtn(APP_LABELS.seedlingData, iconStudentsData, '/students-data', ['/students-data'])}
+        {!isRootAdmin && canViewObjectives && navBtn('Objectives', iconObjectives, '/', ['/', '/create-course'])}
+        {!isRootAdmin && isSuperAdmin && navBtn(APP_LABELS.groveNav, iconRoles, '/roles', ['/roles', '/course-admins', '/educators'])}
+        {!isRootAdmin && navBtn('Record', iconRecord, '/record', ['/record', '/studentRecord'])}
+        {!isRootAdmin && canViewReports && navBtn('Reports', iconReports, '/reports', ['/reports'])}
+        {!isRootAdmin && canViewGradingScheme && navBtn('Grading Scheme', iconGradingScheme, '/grading-scheme', ['/grading-scheme'])}
       </nav>
       <div className="app-sidebar-footer">
         <button type="button" className="sidebar-nav-btn sidebar-nav-logout" onClick={handleLogout}>
