@@ -129,6 +129,43 @@
   cursor: not-allowed;
 }
 
+.login-password-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.login-password-wrap input {
+  padding-right: 2.75rem;
+}
+
+.login-password-toggle {
+  position: absolute;
+  right: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #7f8c8d;
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+}
+
+.login-password-toggle:hover:not(:disabled) {
+  color: #2e7d32;
+  background: rgba(46, 125, 50, 0.08);
+}
+
+.login-password-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .login-error {
   margin: 0;
   padding: 0.6rem;

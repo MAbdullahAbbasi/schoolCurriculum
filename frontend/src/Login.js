@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { IconLogin } from './ButtonIcons';
+import { IconLogin, IconView, IconEyeOff } from './ButtonIcons';
 import axios from 'axios';
 import { API_URL } from './config/api';
 import { APP_LABELS, ROLE_LABELS } from './roleLabels';
@@ -8,6 +8,7 @@ import './Login.css';
 const Login = ({ onLoginSuccess }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -77,15 +78,27 @@ const Login = ({ onLoginSuccess }) => {
           </div>
           <div className="login-field">
             <label htmlFor="login-password">Password</label>
-            <input
-              id="login-password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter password"
-              autoComplete="current-password"
-              disabled={loading}
-            />
+            <div className="login-password-wrap">
+              <input
+                id="login-password"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter password"
+                autoComplete="current-password"
+                disabled={loading}
+              />
+              <button
+                type="button"
+                className="login-password-toggle"
+                onClick={() => setShowPassword((v) => !v)}
+                disabled={loading}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-pressed={showPassword}
+              >
+                {showPassword ? <IconEyeOff /> : <IconView />}
+              </button>
+            </div>
           </div>
           {error && <p className="login-error">{error}</p>}
           <button type="submit" className="login-submit" disabled={loading}>
