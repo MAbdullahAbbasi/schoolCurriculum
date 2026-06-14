@@ -48,7 +48,7 @@ const CreateCourse = () => {
 
   const resolvedTopics = useMemo(() => {
     if (!Array.isArray(selectedTopics) || !Array.isArray(curriculumData)) return [];
-    return selectedTopics.map(topicKey => {
+    const mapped = selectedTopics.map(topicKey => {
       const lastDash = topicKey.lastIndexOf('-');
       const gradeId = lastDash === -1 ? topicKey : topicKey.slice(0, lastDash);
       const topicIndexStr = lastDash === -1 ? '' : topicKey.slice(lastDash + 1);
@@ -65,6 +65,13 @@ const CreateCourse = () => {
         subject: (topic.subject != null ? String(topic.subject).trim() : '') || '',
       };
     }).filter(Boolean);
+
+    if (mapped.length === 0) return [];
+
+    const primarySubject = mapped[0].subject;
+    if (!primarySubject) return mapped;
+    const subLower = primarySubject.toLowerCase();
+    return mapped.filter((t) => String(t.subject || '').trim().toLowerCase() === subLower);
   }, [selectedTopics, curriculumData]);
 
   const handleQuestionPartChange = (questionIndex, field, value) => {
@@ -167,6 +174,11 @@ const CreateCourse = () => {
         setCreateError(`Q${i + 1}: Compulsory parts cannot exceed number of parts.`);
         return;
       }
+    }
+
+    if (resolvedTopics.length === 0) {
+      setCreateError('No objectives found for the selected subject. Go back and choose objectives from one subject only.');
+      return;
     }
 
     const coursePayload = {

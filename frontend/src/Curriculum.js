@@ -444,8 +444,23 @@ const Curriculum = () => {
     }
   };
 
+  // Resolve objective subject from a topic key (gradeId-index).
+  const getTopicSubject = (topicKey) => {
+    const lastDash = topicKey.lastIndexOf('-');
+    if (lastDash === -1) return '';
+    const gradeId = topicKey.slice(0, lastDash);
+    const topicIndex = parseInt(topicKey.slice(lastDash + 1), 10);
+    const grade = data.find((g) => g._id === gradeId || String(g._id) === gradeId);
+    const obj = grade?.objectives?.[topicIndex];
+    return String(obj?.subject ?? '').trim();
+  };
+
   // Handle create course button click
   const handleCreateCourseClick = () => {
+    if (!filters.subject || !String(filters.subject).trim()) {
+      alert('Please select a Subject filter first, then choose objectives for that subject only.');
+      return;
+    }
     setIsSelectionMode(true);
     setSelectedTopics([]);
   };
@@ -458,18 +473,35 @@ const Curriculum = () => {
   // Handle topic selection (when clicking on card in selection mode)
   const handleTopicSelect = (gradeId, courseIndex) => {
     const topicKey = `${gradeId}-${courseIndex}`;
+    const topicSubject = getTopicSubject(topicKey);
+    const filterSubject = String(filters.subject || '').trim();
     setSelectedTopics(prev => {
       if (prev.includes(topicKey)) {
         return prev.filter(key => key !== topicKey);
-      } else {
-        return [...prev, topicKey];
       }
+      if (filterSubject && topicSubject && topicSubject.toLowerCase() !== filterSubject.toLowerCase()) {
+        return prev;
+      }
+      if (prev.length > 0) {
+        const firstSub = getTopicSubject(prev[0]);
+        if (firstSub && topicSubject && firstSub.toLowerCase() !== topicSubject.toLowerCase()) {
+          return prev;
+        }
+      }
+      return [...prev, topicKey];
     });
   };
 
   // Handle Next button click – go to create course page
   const handleNextClick = () => {
     if (selectedTopics.length > 0) {
+      const subjects = new Set(
+        selectedTopics.map((key) => getTopicSubject(key).toLowerCase()).filter(Boolean)
+      );
+      if (subjects.size > 1) {
+        alert('Please select objectives from one subject only.');
+        return;
+      }
       navigate('/create-course', { state: { selectedTopics, data } });
       setIsSelectionMode(false);
     }
@@ -802,7 +834,8 @@ const Curriculum = () => {
         <div className="selection-mode-banner">
           <div className="selection-mode-content">
             <p className="selection-mode-text">
-              Select topics to include in your course. {selectedTopics.length > 0 && `(${selectedTopics.length} selected)`}
+              Select objectives for <strong>{filters.subject}</strong> to include in your course.
+              {selectedTopics.length > 0 && ` (${selectedTopics.length} selected)`}
             </p>
             <div className="selection-mode-actions">
               {selectedTopics.length > 0 && (

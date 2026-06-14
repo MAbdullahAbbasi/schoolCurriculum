@@ -7,6 +7,7 @@ import {
   pickBestQuestionPerGroup,
   normalizeChoiceGroups,
   isSlotCountedForStudent,
+  isPartCompulsory,
 } from './questionChoiceUtils.js';
 import { IconCancel, IconEdit, IconNotAttempted, IconSave } from './ButtonIcons';
 import './StudentRecordDetail.css';
@@ -53,13 +54,23 @@ const StudentRecordDetail = () => {
   const topics = useMemo(() => course?.topics || [], [course]);
   const courseQuestions = useMemo(() => (course?.questions || []).sort((a, b) => a.questionIndex - b.questionIndex), [course]);
   const questionPartMarks = useMemo(() => course?.questionPartMarks || [], [course]);
+  const questionParts = useMemo(() => course?.questionParts || [], [course]);
+  const hasOptionalParts = useMemo(
+    () =>
+      questionParts.some((p) => Number(p.numParts) > 0 && Number(p.compulsoryParts) < Number(p.numParts)),
+    [questionParts]
+  );
 
   const totalMarksForCourse = useMemo(() => {
     if (questionPartMarks.length > 0) {
-      return effectiveTotalFromQuestionPartMarks(questionPartMarks, course?.questionChoiceGroups);
+      return effectiveTotalFromQuestionPartMarks(
+        questionPartMarks,
+        course?.questionChoiceGroups,
+        questionParts
+      );
     }
     return topics.reduce((sum, t) => sum + (t.marks || 0), 0);
-  }, [topics, questionPartMarks, course?.questionChoiceGroups]);
+  }, [topics, questionPartMarks, questionParts, course?.questionChoiceGroups]);
 
   const slots = useMemo(() => {
     if (questionPartMarks.length > 0) {
@@ -72,12 +83,14 @@ const StudentRecordDetail = () => {
         const slotKey = part === 0 ? `q${q}` : `q${q}-p${part}`;
         const label = part === 0 ? `Q${q}` : `Q${q} Part ${part}`;
         const maxMarks = Number(m.marks) || 0;
+        const isCompulsory = isPartCompulsory(q, part, questionParts);
         return {
           slotKey,
           label,
           maxMarks,
           questionIndex: q,
           partIndex: part,
+          isCompulsory,
           topicIndices: [],
         };
       });
@@ -95,7 +108,7 @@ const StudentRecordDetail = () => {
         topicIndices: indices,
       };
     });
-  }, [courseQuestions, topics, questionPartMarks]);
+  }, [courseQuestions, topics, questionPartMarks, questionParts]);
 
   const compulsoryQuestions = useMemo(() => {
     const n = course?.compulsoryQuestions;
@@ -268,10 +281,22 @@ const StudentRecordDetail = () => {
   const getTotalForStudent = (registrationNumber) => {
     const leftOnChoice = computeLeftOnChoiceForStudent(registrationNumber);
     const qMRaw = questionMarks[registrationNumber] || {};
-    const qM = pickBestQuestionPerGroup(qMRaw, questionPartMarks, course?.questionChoiceGroups);
+    const qM = pickBestQuestionPerGroup(qMRaw, questionPartMarks, course?.questionChoiceGroups, questionParts);
     const na = notAttempted[registrationNumber] || new Set();
     return slots.reduce((sum, s) => {
+      if (!s.isCompulsory) return sum;
       if (na.has(s.slotKey) || leftOnChoice.includes(s.slotKey)) return sum;
+      if (
+        !isSlotCountedForStudent(
+          s,
+          qMRaw,
+          questionPartMarks,
+          course?.questionChoiceGroups,
+          questionParts
+        )
+      ) {
+        return sum;
+      }
       return sum + (Number(qM[s.slotKey]) || 0);
     }, 0);
   };
@@ -327,7 +352,12 @@ const StudentRecordDetail = () => {
     const studentsData = enrolledStudents.map((student) => {
       const reg = student.registrationNumber;
       const qMRaw = questionMarks[reg] || {};
-      const qMScoring = pickBestQuestionPerGroup(qMRaw, questionPartMarks, course?.questionChoiceGroups);
+      const qMScoring = pickBestQuestionPerGroup(
+        qMRaw,
+        questionPartMarks,
+        course?.questionChoiceGroups,
+        questionParts
+      );
       const na = Array.from(notAttempted[reg] || []);
       const leftOnChoice = computeLeftOnChoiceForStudent(reg);
       const total = getTotalForStudent(reg);
@@ -421,7 +451,12 @@ const StudentRecordDetail = () => {
             </div>
             <div className="info-item">
               <span className="info-label">Total Marks:</span>
-              <span className="info-value">{totalMarksForCourse}</span>
+              <span className="info-value">
+                {totalMarksForCourse}
+                {hasOptionalParts && (
+                  <span className="compulsory-parts-note"> (compulsory parts only)</span>
+                )}
+              </span>
             </div>
             {compulsoryQuestions != null && (
               <div className="info-item">
@@ -445,6 +480,11 @@ const StudentRecordDetail = () => {
           {questionChoiceSummary && (
             <p className="question-choice-hint">
               For each choice group, only the <strong>highest-scoring</strong> question(s) count toward the total (up to the attempt limit). Other questions in the group are shown dimmed and are not included in the total or saved marks.
+            </p>
+          )}
+          {hasOptionalParts && (
+            <p className="compulsory-hint">
+              Only <strong>compulsory</strong> parts count toward the paper total ({totalMarksForCourse} marks). Optional parts can still be marked but are not included in the total.
             </p>
           )}
           {compulsoryQuestions != null && (
@@ -474,8 +514,16 @@ const StudentRecordDetail = () => {
                     {slots.map((slot, idx) => (
                       <tr key={slot.slotKey}>
                         <td className="matrix-td-srno">{idx + 1}</td>
-                        <td className="matrix-td-objective">{slot.label}</td>
-                        <td className="matrix-td-max">{slot.maxMarks}</td>
+                        <td className="matrix-td-objective">
+                          {slot.label}
+                          {!slot.isCompulsory && (
+                            <span className="optional-part-badge"> (optional)</span>
+                          )}
+                        </td>
+                        <td className="matrix-td-max">
+                          {slot.maxMarks}
+                          {!slot.isCompulsory && <span className="optional-part-badge"> opt.</span>}
+                        </td>
                         {enrolledStudents.map((student, studentIndex) => {
                           const reg = student.registrationNumber;
                           const na = isNotAttempted(reg, slot.slotKey);
@@ -484,7 +532,8 @@ const StudentRecordDetail = () => {
                             slot,
                             qMRaw,
                             questionPartMarks,
-                            course?.questionChoiceGroups
+                            course?.questionChoiceGroups,
+                            questionParts
                           );
                           return (
                             <React.Fragment key={reg}>
@@ -547,7 +596,9 @@ const StudentRecordDetail = () => {
                     <tr className="matrix-total-row">
                       <td className="matrix-td-srno" />
                       <td className="matrix-td-objective total-label">
-                        Total (obtained{questionChoiceGroups.length > 0 ? ', best per choice group' : ''})
+                        Total (obtained
+                        {hasOptionalParts ? ', compulsory parts only' : ''}
+                        {questionChoiceGroups.length > 0 ? ', best per choice group' : ''})
                       </td>
                       <td className="matrix-td-max">{totalMarksForCourse}</td>
                       {enrolledStudents.map((student) => {

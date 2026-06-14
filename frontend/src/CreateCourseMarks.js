@@ -77,6 +77,17 @@ const CreateCourseMarks = () => {
   const [choiceGroups, setChoiceGroups] = useState([emptyChoiceGroup()]);
   const [topics, setTopics] = useState(resolvedTopics);
 
+  const courseSubject = useMemo(
+    () => (coursePayload?.subject && String(coursePayload.subject).trim()) || '',
+    [coursePayload?.subject]
+  );
+
+  const objectivesForDropdown = useMemo(() => {
+    if (!courseSubject) return topics;
+    const subLower = courseSubject.toLowerCase();
+    return topics.filter((t) => String(t.subject || '').trim().toLowerCase() === subLower);
+  }, [topics, courseSubject]);
+
   useEffect(() => {
     const keys = resolvedTopics.map((t) => t.topicKey).filter(Boolean);
     if (keys.length === 0) {
@@ -177,8 +188,8 @@ const CreateCourseMarks = () => {
     choiceGroupsValidation.ok &&
     (!questionChoiceEnabled || (normalizedChoiceGroups.length > 0 && choiceGroupsValidation.groups.length > 0));
   const allObjectivesSelected = useMemo(
-    () => topics.length > 0 && slots.every((sl) => objectiveSelection[sl.key]),
-    [slots, objectiveSelection, topics.length]
+    () => objectivesForDropdown.length > 0 && slots.every((sl) => objectiveSelection[sl.key]),
+    [slots, objectiveSelection, objectivesForDropdown.length]
   );
 
   const handleMarksChange = (q, part, value) => {
@@ -259,8 +270,8 @@ const CreateCourseMarks = () => {
       );
       return;
     }
-    if (topics.length === 0) {
-      setCreateError('No objectives available. Please start from the curriculum and select objectives for this course.');
+    if (objectivesForDropdown.length === 0) {
+      setCreateError('No objectives available for this course subject. Go back and select objectives from the same subject.');
       return;
     }
     if (!allObjectivesSelected) {
@@ -269,14 +280,14 @@ const CreateCourseMarks = () => {
     }
 
     const topicMarks = {};
-    topics.forEach((t) => { topicMarks[t.topicKey] = 0; });
+    objectivesForDropdown.forEach((t) => { topicMarks[t.topicKey] = 0; });
     slots.forEach((sl) => {
       const selectedKey = objectiveSelection[sl.key];
       const m = Number(marksBySlot[sl.key]) || 0;
       if (selectedKey) topicMarks[selectedKey] = (topicMarks[selectedKey] || 0) + m;
     });
 
-    const courseTopics = topics.map((t) => ({
+    const courseTopics = objectivesForDropdown.map((t) => ({
       courseCode: t.courseCode,
       topicName: t.topicName,
       description: t.description ?? '',
@@ -287,7 +298,7 @@ const CreateCourseMarks = () => {
     const questionTopicIndices = {};
     slots.forEach((sl) => {
       const selectedKey = objectiveSelection[sl.key];
-      const idx = topics.findIndex((t) => t.topicKey === selectedKey);
+      const idx = objectivesForDropdown.findIndex((t) => t.topicKey === selectedKey);
       if (idx >= 0) {
         const q = sl.questionIndex;
         if (!questionTopicIndices[q]) questionTopicIndices[q] = new Set();
@@ -329,7 +340,7 @@ const CreateCourseMarks = () => {
           const raw = studentsRes.data;
           const studentsList = Array.isArray(raw) ? raw : (raw?.data && Array.isArray(raw.data) ? raw.data : []);
           const courseGrades = new Set();
-          topics.forEach((t) => {
+          objectivesForDropdown.forEach((t) => {
             if (t.grade != null && t.grade !== '') {
               courseGrades.add(normalizeGradeForMatch(t.grade));
             }
@@ -387,7 +398,7 @@ const CreateCourseMarks = () => {
         <h2 className="create-course-marks-title page-local-header">Enter marks per question</h2>
         <p className="create-course-marks-hint">
           Enter marks for each question/part and select one objective per row. Only <strong>compulsory</strong> parts count toward the paper total; optional parts are still saved. With <strong>question choice</strong> (below), the paper total counts each choice group as one question’s worth — every question in a group must have the same <em>total</em> marks (sum of all parts).
-          {' '}Objective dropdowns show the <strong>Description</strong> from Objectives (not Title). Hover an option to read the full text.
+          {' '}Objective dropdowns show objectives for <strong>{courseSubject || 'this course'}</strong> only (Description from Objectives, not Title). Hover an option to read the full text.
         </p>
 
         <div className="create-course-marks-table-wrapper">
@@ -425,7 +436,7 @@ const CreateCourseMarks = () => {
                       aria-label={`Objective for ${sl.label}${sl.partLabel ? ` ${sl.partLabel}` : ''}`}
                     >
                       <option value="">Select objective</option>
-                      {topics.map((t) => {
+                      {objectivesForDropdown.map((t) => {
                         const label = objectiveDropdownLabel(t);
                         return (
                           <option
@@ -525,7 +536,7 @@ const CreateCourseMarks = () => {
             <span className="create-course-marks-sum-optional"> (all parts: {sumAllMarks})</span>
           )}
         </p>
-        {!allObjectivesSelected && topics.length > 0 && slots.length > 0 && (
+        {!allObjectivesSelected && objectivesForDropdown.length > 0 && slots.length > 0 && (
           <p className="create-course-marks-objectives-hint">Select an objective for every row to create the course.</p>
         )}
         {createError && (

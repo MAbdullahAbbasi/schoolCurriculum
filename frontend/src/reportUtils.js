@@ -107,7 +107,7 @@ export const getCourseTotalMarks = (course) => {
   if (!course) return 0;
   const qpm = course.questionPartMarks || [];
   if (qpm.length > 0) {
-    return effectiveTotalFromQuestionPartMarks(qpm, course.questionChoiceGroups);
+    return effectiveTotalFromQuestionPartMarks(qpm, course.questionChoiceGroups, course.questionParts);
   }
   const topics = course.topics || [];
   return topics.reduce((s, t) => s + (Number(t.marks) || 0), 0);

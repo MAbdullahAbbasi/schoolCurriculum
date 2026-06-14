@@ -139,17 +139,19 @@ router.post('/', requireCourseAccess, async (req, res) => {
     const questionPartMarks = (course?.questionPartMarks || []).sort(
       (a, b) => Number(a.questionIndex) - Number(b.questionIndex) || Number(a.partIndex) - Number(b.partIndex)
     );
+    const questionParts = course?.questionParts || [];
     const questionChoiceGroups = course?.questionChoiceGroups || [];
     const totalMarksCourse =
       questionPartMarks.length > 0
-        ? effectiveTotalFromQuestionPartMarks(questionPartMarks, questionChoiceGroups)
+        ? effectiveTotalFromQuestionPartMarks(questionPartMarks, questionChoiceGroups, questionParts)
         : topics.reduce((s, t) => s + (Number(t.marks) || 0), 0);
 
     function computeObjectiveMarksFromSlots(student) {
       const questionMarks = pickBestQuestionsPerGroup(
         student.questionMarks || {},
         questionPartMarks,
-        questionChoiceGroups
+        questionChoiceGroups,
+        questionParts
       );
       const notAttemptedSlots = student.notAttemptedSlots || [];
       const leftOnChoiceSlots = student.leftOnChoiceSlots || [];

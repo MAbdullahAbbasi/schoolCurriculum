@@ -15,6 +15,52 @@ export function perQuestionSlotTotals(questionPartMarks) {
   return map;
 }
 
+export function isPartCompulsory(questionIndex, partIndex, questionParts) {
+  const cfg = (questionParts || []).find((p) => Number(p.questionIndex) === Number(questionIndex));
+  const numParts = Number(cfg?.numParts) || 0;
+  const compulsory = Number(cfg?.compulsoryParts) || 0;
+  const part = Number(partIndex);
+  if (numParts <= 0) return true;
+  if (part <= 0) return true;
+  return part <= compulsory;
+}
+
+export function buildQuestionPartSlots(questionParts, questionPartMarks) {
+  return (questionPartMarks || []).map((m) => {
+    const q = Number(m.questionIndex);
+    const part = Number(m.partIndex);
+    const key = part === 0 ? `q${q}` : `q${q}-p${part}`;
+    return {
+      questionIndex: q,
+      partIndex: part,
+      key,
+      isCompulsory: isPartCompulsory(q, part, questionParts),
+      maxMarks: Number(m.marks) || 0,
+    };
+  });
+}
+
+function perQuestionCompulsoryTotalsFromMarks(questionParts, questionPartMarks) {
+  const slots = buildQuestionPartSlots(questionParts, questionPartMarks);
+  const map = {};
+  for (const sl of slots) {
+    if (!sl.isCompulsory) continue;
+    map[sl.questionIndex] = (map[sl.questionIndex] || 0) + sl.maxMarks;
+  }
+  return map;
+}
+
+function subtractForGroups(perQ, groups) {
+  let subtract = 0;
+  for (const g of groups) {
+    const vals = g.questions.map((q) => perQ[q] || 0);
+    const sumG = vals.reduce((a, b) => a + b, 0);
+    const perQuestion = vals[0] ?? 0;
+    subtract += sumG - g.attemptCount * perQuestion;
+  }
+  return subtract;
+}
+
 /**
  * @returns {{ questions: number[], attemptCount: number }[]}
  */
@@ -44,21 +90,23 @@ export function normalizeChoiceGroups(raw) {
   return out;
 }
 
-export function effectiveTotalFromQuestionPartMarks(questionPartMarks, questionChoiceGroups) {
+export function effectiveTotalFromQuestionPartMarks(questionPartMarks, questionChoiceGroups, questionParts) {
   const qpm = questionPartMarks || [];
-  const raw = qpm.reduce((s, m) => s + (Number(m.marks) || 0), 0);
   const groups = normalizeChoiceGroups(questionChoiceGroups);
+
+  if (Array.isArray(questionParts) && questionParts.length > 0) {
+    const perQ = perQuestionCompulsoryTotalsFromMarks(questionParts, qpm);
+    if (groups.length === 0) {
+      return Object.values(perQ).reduce((a, b) => a + b, 0);
+    }
+    const raw = Object.values(perQ).reduce((a, b) => a + b, 0);
+    return Math.max(0, raw - subtractForGroups(perQ, groups));
+  }
+
+  const raw = qpm.reduce((s, m) => s + (Number(m.marks) || 0), 0);
   if (groups.length === 0) return raw;
   const perQ = perQuestionSlotTotals(qpm);
-  let subtract = 0;
-  for (const g of groups) {
-    const vals = g.questions.map((q) => perQ[q] || 0);
-    const sumG = vals.reduce((a, b) => a + b, 0);
-    const perQuestion = vals[0] ?? 0;
-    const counted = g.attemptCount * perQuestion;
-    subtract += sumG - counted;
-  }
-  return Math.max(0, raw - subtract);
+  return Math.max(0, raw - subtractForGroups(perQ, groups));
 }
 
 export function validateQuestionChoiceGroups(groups, totalQuestionsNum, perQuestionTotals) {
@@ -103,7 +151,7 @@ export function validateQuestionChoiceGroups(groups, totalQuestionsNum, perQuest
 /**
  * For scoring: keep the top `attemptCount` questions by obtained marks per group; drop the rest.
  */
-export function pickBestQuestionsPerGroup(questionMarks, questionPartMarks, questionChoiceGroups) {
+export function pickBestQuestionsPerGroup(questionMarks, questionPartMarks, questionChoiceGroups, questionParts) {
   const groups = normalizeChoiceGroups(questionChoiceGroups);
   if (groups.length === 0) return { ...(questionMarks || {}) };
   const next = { ...(questionMarks || {}) };
@@ -119,6 +167,8 @@ export function pickBestQuestionsPerGroup(questionMarks, questionPartMarks, ques
   const obtainedForQuestion = (q, marks) => {
     let s = 0;
     for (const key of slotKeysForQuestion(q)) {
+      const part = key.includes('-p') ? Number(key.split('-p')[1]) : 0;
+      if (questionParts?.length && !isPartCompulsory(q, part, questionParts)) continue;
       const v = Number(marks[key]);
       if (!Number.isNaN(v) && v > 0) s += v;
     }
