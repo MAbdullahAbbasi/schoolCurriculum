@@ -22,7 +22,7 @@ const defaultFormData = {
 const CreateCourse = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { selectedTopics = [], data: curriculumData = [] } = location.state || {};
+  const { selectedTopics = [], data: curriculumData = [], resolvedTopics: preResolvedTopics = null } = location.state || {};
 
   const [formData, setFormData] = useState(defaultFormData);
   const [questionParts, setQuestionParts] = useState([]);
@@ -48,9 +48,12 @@ const CreateCourse = () => {
   }, [totalQuestionsNum]);
 
   const resolvedTopics = useMemo(() => {
+    if (Array.isArray(preResolvedTopics) && preResolvedTopics.length > 0) {
+      return preResolvedTopics;
+    }
     if (!Array.isArray(selectedTopics) || !Array.isArray(curriculumData)) return [];
     return resolveTopicsFromCurriculum(curriculumData, selectedTopics);
-  }, [selectedTopics, curriculumData]);
+  }, [selectedTopics, curriculumData, preResolvedTopics]);
 
   const handleQuestionPartChange = (questionIndex, field, value) => {
     setQuestionParts(prev => {

@@ -2,11 +2,23 @@
 
 const KEY_SEP = '::';
 
-export function makeObjectiveKey(gradeId, objective, topicIndex) {
+/** @param {string|object} gradeId
+ *  @param {number|object} objectiveOrSourceIndex - source index number, or objective with `_sourceIndex`
+ */
+export function makeObjectiveKey(gradeId, objectiveOrSourceIndex) {
   const gid = String(gradeId);
-  const code = String(objective?.code ?? '').trim();
-  if (code) return `${gid}${KEY_SEP}${code}`;
-  return `${gid}${KEY_SEP}i${topicIndex}`;
+  if (typeof objectiveOrSourceIndex === 'number' && Number.isFinite(objectiveOrSourceIndex)) {
+    return `${gid}${KEY_SEP}${objectiveOrSourceIndex}`;
+  }
+  if (objectiveOrSourceIndex && typeof objectiveOrSourceIndex === 'object') {
+    const idx = objectiveOrSourceIndex._sourceIndex;
+    if (idx != null && Number.isFinite(Number(idx))) {
+      return `${gid}${KEY_SEP}${Number(idx)}`;
+    }
+    const code = String(objectiveOrSourceIndex.code ?? '').trim();
+    if (code) return `${gid}${KEY_SEP}c${code}`;
+  }
+  return `${gid}${KEY_SEP}0`;
 }
 
 export function parseObjectiveKey(topicKey) {
@@ -16,9 +28,16 @@ export function parseObjectiveKey(topicKey) {
   if (sepIdx !== -1) {
     const gradeId = topicKey.slice(0, sepIdx);
     const rest = topicKey.slice(sepIdx + KEY_SEP.length);
+    if (/^\d+$/.test(rest)) {
+      return { gradeId, topicIndex: parseInt(rest, 10), code: null };
+    }
     if (/^i\d+$/.test(rest)) {
       return { gradeId, topicIndex: parseInt(rest.slice(1), 10), code: null };
     }
+    if (rest.startsWith('c')) {
+      return { gradeId, code: rest.slice(1), topicIndex: null };
+    }
+    // Legacy: code-only segment (no prefix)
     return { gradeId, code: rest, topicIndex: null };
   }
 
@@ -29,6 +48,17 @@ export function parseObjectiveKey(topicKey) {
   const topicIndex = parseInt(topicKey.slice(lastDash + 1), 10);
   if (Number.isNaN(topicIndex)) return null;
   return { gradeId, topicIndex, code: null };
+}
+
+export function annotateCurriculumSourceIndices(curriculumData) {
+  if (!Array.isArray(curriculumData)) return [];
+  return curriculumData.map((grade) => ({
+    ...grade,
+    objectives: (grade.objectives || []).map((obj, i) => ({
+      ...obj,
+      _sourceIndex: i,
+    })),
+  }));
 }
 
 export function resolveObjectiveFromCurriculum(curriculumData, topicKey) {
@@ -43,15 +73,15 @@ export function resolveObjectiveFromCurriculum(curriculumData, topicKey) {
   let topicIndex = parsed.topicIndex;
   let topic = null;
 
-  if (parsed.code != null) {
+  if (topicIndex != null && !Number.isNaN(topicIndex)) {
+    topic = grade.objectives[topicIndex];
+    if (!topic) return null;
+  } else if (parsed.code != null) {
     topicIndex = grade.objectives.findIndex(
       (o) => String(o?.code ?? '').trim() === parsed.code
     );
     if (topicIndex === -1) return null;
     topic = grade.objectives[topicIndex];
-  } else if (topicIndex != null && !Number.isNaN(topicIndex)) {
-    topic = grade.objectives[topicIndex];
-    if (!topic) return null;
   } else {
     return null;
   }
@@ -70,7 +100,13 @@ export function resolveObjectiveFromCurriculum(curriculumData, topicKey) {
 
 export function resolveTopicsFromCurriculum(curriculumData, topicKeys) {
   if (!Array.isArray(curriculumData) || !Array.isArray(topicKeys)) return [];
-  return topicKeys
-    .map((key) => resolveObjectiveFromCurriculum(curriculumData, key))
-    .filter(Boolean);
+  const seen = new Set();
+  const out = [];
+  for (const key of topicKeys) {
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    const resolved = resolveObjectiveFromCurriculum(curriculumData, key);
+    if (resolved) out.push(resolved);
+  }
+  return out;
 }

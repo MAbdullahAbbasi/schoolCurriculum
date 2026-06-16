@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from './config/api';
 import { IconAdd, IconCancel, IconClearFilters, IconCreate, IconDelete, IconEdit, IconNext, IconSave, IconSelectAll, IconUpload, IconUploadFile } from './ButtonIcons';
-import { makeObjectiveKey } from './objectiveKeyUtils';
+import { makeObjectiveKey, annotateCurriculumSourceIndices, resolveTopicsFromCurriculum } from './objectiveKeyUtils';
 import './Curriculum.css';
 
 const Curriculum = () => {
@@ -53,8 +53,9 @@ const Curriculum = () => {
       timeout: 30000,
     })
       .then(res => {
-        setData(res.data);
-        setFilteredData(res.data);
+        const annotated = annotateCurriculumSourceIndices(res.data);
+        setData(annotated);
+        setFilteredData(annotated);
         if (params.subject == null) {
           const subjectsSet = new Set();
           (res.data || []).forEach(grade => {
@@ -467,8 +468,8 @@ const Curriculum = () => {
   // };
 
   // Handle topic selection (when clicking on card in selection mode)
-  const handleTopicSelect = (gradeId, courseIndex, objective) => {
-    const topicKey = makeObjectiveKey(gradeId, objective, courseIndex);
+  const handleTopicSelect = (gradeId, objective) => {
+    const topicKey = makeObjectiveKey(gradeId, objective);
     setSelectedTopics(prev => {
       if (prev.includes(topicKey)) {
         return prev.filter(key => key !== topicKey);
@@ -480,7 +481,8 @@ const Curriculum = () => {
   // Handle Next button click – go to create course page
   const handleNextClick = () => {
     if (selectedTopics.length > 0) {
-      navigate('/create-course', { state: { selectedTopics, data } });
+      const resolved = resolveTopicsFromCurriculum(data, selectedTopics);
+      navigate('/create-course', { state: { selectedTopics, data, resolvedTopics: resolved } });
       setIsSelectionMode(false);
     }
   };
@@ -494,9 +496,7 @@ const Curriculum = () => {
   // Select or deselect all objectives from a single grade (for course creation); checkbox in "Add to course" header
   const handleSelectAllFromGrade = (grade, checked) => {
     if (!grade.objectives || grade.objectives.length === 0) return;
-    const keysForGrade = grade.objectives.map((obj, topicIndex) =>
-      makeObjectiveKey(grade._id, obj, topicIndex)
-    );
+    const keysForGrade = grade.objectives.map((obj) => makeObjectiveKey(grade._id, obj));
     setSelectedTopics(prev => {
       const set = new Set(prev);
       if (checked) keysForGrade.forEach(k => set.add(k));
@@ -510,9 +510,7 @@ const Curriculum = () => {
     const keysToAdd = [];
     filteredData.forEach(grade => {
       if (grade.objectives && grade.objectives.length > 0) {
-        grade.objectives.forEach((obj, topicIndex) =>
-          keysToAdd.push(makeObjectiveKey(grade._id, obj, topicIndex))
-        );
+        grade.objectives.forEach((obj) => keysToAdd.push(makeObjectiveKey(grade._id, obj)));
       }
     });
     setSelectedTopics(Array.from(new Set(keysToAdd)));
@@ -958,7 +956,7 @@ const Curriculum = () => {
                             <input
                               type="checkbox"
                               aria-label="Select all in grade for course"
-                              checked={grade.objectives.length > 0 && grade.objectives.every((obj, i) => selectedTopics.includes(makeObjectiveKey(grade._id, obj, i)))}
+                              checked={grade.objectives.length > 0 && grade.objectives.every((obj) => selectedTopics.includes(makeObjectiveKey(grade._id, obj)))}
                               onChange={(e) => handleSelectAllFromGrade(grade, e.target.checked)}
                             />
                           </th>
@@ -975,7 +973,7 @@ const Curriculum = () => {
                     <tbody>
                       {grade.objectives.map((topic, topicIndex) => {
                         const rowId = rowKey(grade.grade, topicIndex);
-                        const topicKey = makeObjectiveKey(grade._id, topic, topicIndex);
+                        const topicKey = makeObjectiveKey(grade._id, topic);
                         const isSelectedForCourse = selectedTopics.includes(topicKey);
                         const isEditing = editingObjectiveKey === rowId;
                         const isSaving = savingObjectiveKey === rowId;
@@ -998,7 +996,7 @@ const Curriculum = () => {
                                   type="checkbox"
                                   aria-label={`Add to course ${topic.code}`}
                                   checked={isSelectedForCourse}
-                                  onChange={() => handleTopicSelect(grade._id, topicIndex, topic)}
+                                  onChange={() => handleTopicSelect(grade._id, topic)}
                                 />
                               </td>
                             )}
