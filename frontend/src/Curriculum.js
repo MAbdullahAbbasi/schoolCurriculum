@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from './config/api';
 import { IconAdd, IconCancel, IconClearFilters, IconCreate, IconDelete, IconEdit, IconNext, IconSave, IconSelectAll, IconUpload, IconUploadFile } from './ButtonIcons';
+import { makeObjectiveKey, resolveObjectiveFromCurriculum } from './objectiveKeyUtils';
 import './Curriculum.css';
 
 const Curriculum = () => {
@@ -11,6 +12,8 @@ const Curriculum = () => {
   const [filteredData, setFilteredData] = useState([]);
   const [allSubjectsList, setAllSubjectsList] = useState([]); // all subject names from DB (for dropdown when filtering by subject)
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const initialLoadDone = React.useRef(false);
   
   // Filter states
   const [filters, setFilters] = useState({
@@ -74,8 +77,16 @@ const Curriculum = () => {
 
   // Fetch from API on mount and when subject filter changes (query DB by subject)
   useEffect(() => {
-    setLoading(true);
-    fetchCurriculum(filters.subject || undefined);
+    const isRefresh = initialLoadDone.current;
+    if (isRefresh) setIsRefreshing(true);
+    else setLoading(true);
+
+    fetchCurriculum(filters.subject || undefined)
+      .finally(() => {
+        if (isRefresh) setIsRefreshing(false);
+        else setLoading(false);
+        initialLoadDone.current = true;
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.subject]);
 
@@ -446,13 +457,8 @@ const Curriculum = () => {
 
   // Resolve objective subject from a topic key (gradeId-index).
   const getTopicSubject = (topicKey) => {
-    const lastDash = topicKey.lastIndexOf('-');
-    if (lastDash === -1) return '';
-    const gradeId = topicKey.slice(0, lastDash);
-    const topicIndex = parseInt(topicKey.slice(lastDash + 1), 10);
-    const grade = data.find((g) => g._id === gradeId || String(g._id) === gradeId);
-    const obj = grade?.objectives?.[topicIndex];
-    return String(obj?.subject ?? '').trim();
+    const resolved = resolveObjectiveFromCurriculum(data, topicKey);
+    return resolved?.subject ?? '';
   };
 
   // Handle create course button click
@@ -471,8 +477,8 @@ const Curriculum = () => {
   // };
 
   // Handle topic selection (when clicking on card in selection mode)
-  const handleTopicSelect = (gradeId, courseIndex) => {
-    const topicKey = `${gradeId}-${courseIndex}`;
+  const handleTopicSelect = (gradeId, courseIndex, objective) => {
+    const topicKey = makeObjectiveKey(gradeId, objective, courseIndex);
     const topicSubject = getTopicSubject(topicKey);
     const filterSubject = String(filters.subject || '').trim();
     setSelectedTopics(prev => {
@@ -516,7 +522,9 @@ const Curriculum = () => {
   // Select or deselect all objectives from a single grade (for course creation); checkbox in "Add to course" header
   const handleSelectAllFromGrade = (grade, checked) => {
     if (!grade.objectives || grade.objectives.length === 0) return;
-    const keysForGrade = grade.objectives.map((_, topicIndex) => `${grade._id}-${topicIndex}`);
+    const keysForGrade = grade.objectives.map((obj, topicIndex) =>
+      makeObjectiveKey(grade._id, obj, topicIndex)
+    );
     setSelectedTopics(prev => {
       const set = new Set(prev);
       if (checked) keysForGrade.forEach(k => set.add(k));
@@ -530,7 +538,9 @@ const Curriculum = () => {
     const keysToAdd = [];
     filteredData.forEach(grade => {
       if (grade.objectives && grade.objectives.length > 0) {
-        grade.objectives.forEach((_, topicIndex) => keysToAdd.push(`${grade._id}-${topicIndex}`));
+        grade.objectives.forEach((obj, topicIndex) =>
+          keysToAdd.push(makeObjectiveKey(grade._id, obj, topicIndex))
+        );
       }
     });
     setSelectedTopics(Array.from(new Set(keysToAdd)));
@@ -830,6 +840,9 @@ const Curriculum = () => {
         </div>
 
       {/* Selection Mode Banner */}
+      {isRefreshing && (
+        <p className="curriculum-refresh-hint" role="status">Updating objectives…</p>
+      )}
       {isSelectionMode && (
         <div className="selection-mode-banner">
           <div className="selection-mode-content">
@@ -973,7 +986,7 @@ const Curriculum = () => {
                             <input
                               type="checkbox"
                               aria-label="Select all in grade for course"
-                              checked={grade.objectives.length > 0 && grade.objectives.every((_, i) => selectedTopics.includes(`${grade._id}-${i}`))}
+                              checked={grade.objectives.length > 0 && grade.objectives.every((obj, i) => selectedTopics.includes(makeObjectiveKey(grade._id, obj, i)))}
                               onChange={(e) => handleSelectAllFromGrade(grade, e.target.checked)}
                             />
                           </th>
@@ -990,7 +1003,7 @@ const Curriculum = () => {
                     <tbody>
                       {grade.objectives.map((topic, topicIndex) => {
                         const rowId = rowKey(grade.grade, topicIndex);
-                        const topicKey = `${grade._id}-${topicIndex}`;
+                        const topicKey = makeObjectiveKey(grade._id, topic, topicIndex);
                         const isSelectedForCourse = selectedTopics.includes(topicKey);
                         const isEditing = editingObjectiveKey === rowId;
                         const isSaving = savingObjectiveKey === rowId;
@@ -1013,7 +1026,7 @@ const Curriculum = () => {
                                   type="checkbox"
                                   aria-label={`Add to course ${topic.code}`}
                                   checked={isSelectedForCourse}
-                                  onChange={() => handleTopicSelect(grade._id, topicIndex)}
+                                  onChange={() => handleTopicSelect(grade._id, topicIndex, topic)}
                                 />
                               </td>
                             )}

@@ -950,6 +950,16 @@
 }
 
 /* Selection Mode */
+.curriculum-refresh-hint {
+  margin: 0 0 1rem 0;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  color: #2c3e50;
+  background: #eef6ff;
+  border: 1px solid #b8d4f0;
+  border-radius: 8px;
+}
+
 .selection-mode-banner {
   position: sticky;
   top: 0;

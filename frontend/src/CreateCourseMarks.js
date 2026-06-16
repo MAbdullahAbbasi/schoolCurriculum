@@ -8,6 +8,7 @@ import {
   normalizeChoiceGroups,
   validateQuestionChoiceGroups,
 } from './questionChoiceUtils';
+import { resolveTopicsFromCurriculum } from './objectiveKeyUtils';
 import './CreateCourseMarks.css';
 
 const slotKey = (q, part) => (part === 0 ? `q${q}` : `q${q}-p${part}`);
@@ -17,30 +18,6 @@ const objectiveDropdownLabel = (topic) => {
   const desc = String(topic?.description ?? '').trim();
   if (desc) return desc;
   return '— (no description)';
-};
-
-const resolveTopicsFromCurriculum = (curriculumData, topicKeys) => {
-  if (!Array.isArray(curriculumData) || !Array.isArray(topicKeys)) return [];
-  return topicKeys
-    .map((topicKey) => {
-      const lastDash = topicKey.lastIndexOf('-');
-      const gradeId = lastDash === -1 ? topicKey : topicKey.slice(0, lastDash);
-      const topicIndex = parseInt(topicKey.slice(lastDash + 1), 10);
-      const grade = curriculumData.find(
-        (g) => g._id === gradeId || String(g._id) === gradeId
-      );
-      if (!grade?.objectives?.[topicIndex]) return null;
-      const topic = grade.objectives[topicIndex];
-      return {
-        topicKey,
-        grade: grade.grade,
-        courseCode: topic.code || '',
-        topicName: topic.title || '',
-        description: topic.description || '',
-        subject: (topic.subject != null ? String(topic.subject).trim() : '') || '',
-      };
-    })
-    .filter(Boolean);
 };
 
 // Normalize grade for matching: any KG-2 variant -> "KG-2" (handles "KG II", "K.G-II", "KG-2", "Grade KG II", etc.)

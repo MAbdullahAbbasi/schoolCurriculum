@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { IconCancel, IconNext } from './ButtonIcons';
+import { resolveTopicsFromCurriculum } from './objectiveKeyUtils';
 import './CreateCourse.css';
 
 const defaultFormData = {
@@ -48,23 +49,7 @@ const CreateCourse = () => {
 
   const resolvedTopics = useMemo(() => {
     if (!Array.isArray(selectedTopics) || !Array.isArray(curriculumData)) return [];
-    const mapped = selectedTopics.map(topicKey => {
-      const lastDash = topicKey.lastIndexOf('-');
-      const gradeId = lastDash === -1 ? topicKey : topicKey.slice(0, lastDash);
-      const topicIndexStr = lastDash === -1 ? '' : topicKey.slice(lastDash + 1);
-      const topicIndex = parseInt(topicIndexStr, 10);
-      const grade = curriculumData.find(g => g._id === gradeId || String(g._id) === gradeId);
-      if (!grade || !grade.objectives || !grade.objectives[topicIndex]) return null;
-      const topic = grade.objectives[topicIndex];
-      return {
-        topicKey,
-        grade: grade.grade,
-        courseCode: topic.code || '',
-        topicName: topic.title || '',
-        description: topic.description || '',
-        subject: (topic.subject != null ? String(topic.subject).trim() : '') || '',
-      };
-    }).filter(Boolean);
+    const mapped = resolveTopicsFromCurriculum(curriculumData, selectedTopics);
 
     if (mapped.length === 0) return [];
 
@@ -85,10 +70,10 @@ const CreateCourse = () => {
   };
 
   React.useEffect(() => {
-    if (resolvedTopics.length === 0) {
+    if (selectedTopics.length === 0) {
       navigate('/', { replace: true });
     }
-  }, [resolvedTopics.length, navigate]);
+  }, [selectedTopics.length, navigate]);
 
   const handleFormChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -211,15 +196,26 @@ const CreateCourse = () => {
     navigate(-1);
   };
 
-  if (resolvedTopics.length === 0 && selectedTopics.length > 0) {
-    return (
-      <div className="create-course-container">        <div className="create-course-loading">Loading...</div>
-      </div>
-    );
+  if (selectedTopics.length === 0) {
+    return null;
   }
 
   if (resolvedTopics.length === 0) {
-    return null;
+    return (
+      <div className="create-course-container">
+        <div className="create-course-content">
+          <h2 className="create-course-title page-local-header">Create Course</h2>
+          <p className="create-course-error" role="alert">
+            Could not match the selected objectives. Go back to Objectives, choose a subject filter, select objectives again, then continue.
+          </p>
+          <div className="create-course-actions">
+            <button type="button" className="create-course-cancel-btn" onClick={() => navigate('/', { replace: true })}>
+              <span className="btn-icon-wrap"><IconCancel />Back to Objectives</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
