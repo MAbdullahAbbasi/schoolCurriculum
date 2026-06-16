@@ -49,14 +49,7 @@ const CreateCourse = () => {
 
   const resolvedTopics = useMemo(() => {
     if (!Array.isArray(selectedTopics) || !Array.isArray(curriculumData)) return [];
-    const mapped = resolveTopicsFromCurriculum(curriculumData, selectedTopics);
-
-    if (mapped.length === 0) return [];
-
-    const primarySubject = mapped[0].subject;
-    if (!primarySubject) return mapped;
-    const subLower = primarySubject.toLowerCase();
-    return mapped.filter((t) => String(t.subject || '').trim().toLowerCase() === subLower);
+    return resolveTopicsFromCurriculum(curriculumData, selectedTopics);
   }, [selectedTopics, curriculumData]);
 
   const handleQuestionPartChange = (questionIndex, field, value) => {
@@ -162,7 +155,7 @@ const CreateCourse = () => {
     }
 
     if (resolvedTopics.length === 0) {
-      setCreateError('No objectives found for the selected subject. Go back and choose objectives from one subject only.');
+      setCreateError('No objectives found. Go back and select at least one objective.');
       return;
     }
 
@@ -206,7 +199,7 @@ const CreateCourse = () => {
         <div className="create-course-content">
           <h2 className="create-course-title page-local-header">Create Course</h2>
           <p className="create-course-error" role="alert">
-            Could not match the selected objectives. Go back to Objectives, choose a subject filter, select objectives again, then continue.
+            Could not match the selected objectives. Go back to Objectives, select objectives again, then continue.
           </p>
           <div className="create-course-actions">
             <button type="button" className="create-course-cancel-btn" onClick={() => navigate('/', { replace: true })}>

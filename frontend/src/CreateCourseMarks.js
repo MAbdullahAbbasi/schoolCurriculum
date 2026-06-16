@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from './config/api';
@@ -8,7 +8,6 @@ import {
   normalizeChoiceGroups,
   validateQuestionChoiceGroups,
 } from './questionChoiceUtils';
-import { resolveTopicsFromCurriculum } from './objectiveKeyUtils';
 import './CreateCourseMarks.css';
 
 const slotKey = (q, part) => (part === 0 ? `q${q}` : `q${q}-p${part}`);
@@ -52,40 +51,11 @@ const CreateCourseMarks = () => {
   const [questionChoiceEnabled, setQuestionChoiceEnabled] = useState(false);
   const emptyChoiceGroup = () => ({ questions: [], attemptCount: 1 });
   const [choiceGroups, setChoiceGroups] = useState([emptyChoiceGroup()]);
-  const [topics, setTopics] = useState(resolvedTopics);
 
-  const courseSubject = useMemo(
-    () => (coursePayload?.subject && String(coursePayload.subject).trim()) || '',
-    [coursePayload?.subject]
+  const topics = useMemo(
+    () => (Array.isArray(resolvedTopics) ? resolvedTopics : []),
+    [resolvedTopics]
   );
-
-  const objectivesForDropdown = useMemo(() => {
-    if (!courseSubject) return topics;
-    const subLower = courseSubject.toLowerCase();
-    return topics.filter((t) => String(t.subject || '').trim().toLowerCase() === subLower);
-  }, [topics, courseSubject]);
-
-  useEffect(() => {
-    const keys = resolvedTopics.map((t) => t.topicKey).filter(Boolean);
-    if (keys.length === 0) {
-      setTopics([]);
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await axios.get(`${API_URL}/api/curriculum`);
-        if (cancelled) return;
-        const fresh = resolveTopicsFromCurriculum(res.data, keys);
-        setTopics(fresh.length > 0 ? fresh : resolvedTopics);
-      } catch {
-        if (!cancelled) setTopics(resolvedTopics);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [resolvedTopics]);
 
   const totalMarks = useMemo(() => Number(coursePayload?.totalMarks) || 0, [coursePayload]);
   const questionParts = useMemo(
@@ -165,8 +135,8 @@ const CreateCourseMarks = () => {
     choiceGroupsValidation.ok &&
     (!questionChoiceEnabled || (normalizedChoiceGroups.length > 0 && choiceGroupsValidation.groups.length > 0));
   const allObjectivesSelected = useMemo(
-    () => objectivesForDropdown.length > 0 && slots.every((sl) => objectiveSelection[sl.key]),
-    [slots, objectiveSelection, objectivesForDropdown.length]
+    () => topics.length > 0 && slots.every((sl) => objectiveSelection[sl.key]),
+    [slots, objectiveSelection, topics.length]
   );
 
   const handleMarksChange = (q, part, value) => {
@@ -247,8 +217,8 @@ const CreateCourseMarks = () => {
       );
       return;
     }
-    if (objectivesForDropdown.length === 0) {
-      setCreateError('No objectives available for this course subject. Go back and select objectives from the same subject.');
+    if (topics.length === 0) {
+      setCreateError('No objectives available. Go back and select objectives for this course.');
       return;
     }
     if (!allObjectivesSelected) {
@@ -257,14 +227,14 @@ const CreateCourseMarks = () => {
     }
 
     const topicMarks = {};
-    objectivesForDropdown.forEach((t) => { topicMarks[t.topicKey] = 0; });
+    topics.forEach((t) => { topicMarks[t.topicKey] = 0; });
     slots.forEach((sl) => {
       const selectedKey = objectiveSelection[sl.key];
       const m = Number(marksBySlot[sl.key]) || 0;
       if (selectedKey) topicMarks[selectedKey] = (topicMarks[selectedKey] || 0) + m;
     });
 
-    const courseTopics = objectivesForDropdown.map((t) => ({
+    const courseTopics = topics.map((t) => ({
       courseCode: t.courseCode,
       topicName: t.topicName,
       description: t.description ?? '',
@@ -275,7 +245,7 @@ const CreateCourseMarks = () => {
     const questionTopicIndices = {};
     slots.forEach((sl) => {
       const selectedKey = objectiveSelection[sl.key];
-      const idx = objectivesForDropdown.findIndex((t) => t.topicKey === selectedKey);
+      const idx = topics.findIndex((t) => t.topicKey === selectedKey);
       if (idx >= 0) {
         const q = sl.questionIndex;
         if (!questionTopicIndices[q]) questionTopicIndices[q] = new Set();
@@ -317,7 +287,7 @@ const CreateCourseMarks = () => {
           const raw = studentsRes.data;
           const studentsList = Array.isArray(raw) ? raw : (raw?.data && Array.isArray(raw.data) ? raw.data : []);
           const courseGrades = new Set();
-          objectivesForDropdown.forEach((t) => {
+          topics.forEach((t) => {
             if (t.grade != null && t.grade !== '') {
               courseGrades.add(normalizeGradeForMatch(t.grade));
             }
@@ -375,7 +345,7 @@ const CreateCourseMarks = () => {
         <h2 className="create-course-marks-title page-local-header">Enter marks per question</h2>
         <p className="create-course-marks-hint">
           Enter marks for each question/part and select one objective per row. Only <strong>compulsory</strong> parts count toward the paper total; optional parts are still saved. With <strong>question choice</strong> (below), the paper total counts each choice group as one question’s worth — every question in a group must have the same <em>total</em> marks (sum of all parts).
-          {' '}Objective dropdowns show objectives for <strong>{courseSubject || 'this course'}</strong> only (Description from Objectives, not Title). Hover an option to read the full text.
+          {' '}Objective dropdowns show the selected objectives (Description from Objectives, not Title). Hover an option to read the full text.
         </p>
 
         <div className="create-course-marks-table-wrapper">
@@ -413,7 +383,7 @@ const CreateCourseMarks = () => {
                       aria-label={`Objective for ${sl.label}${sl.partLabel ? ` ${sl.partLabel}` : ''}`}
                     >
                       <option value="">Select objective</option>
-                      {objectivesForDropdown.map((t) => {
+                      {topics.map((t) => {
                         const label = objectiveDropdownLabel(t);
                         return (
                           <option
@@ -513,7 +483,7 @@ const CreateCourseMarks = () => {
             <span className="create-course-marks-sum-optional"> (all parts: {sumAllMarks})</span>
           )}
         </p>
-        {!allObjectivesSelected && objectivesForDropdown.length > 0 && slots.length > 0 && (
+        {!allObjectivesSelected && topics.length > 0 && slots.length > 0 && (
           <p className="create-course-marks-objectives-hint">Select an objective for every row to create the course.</p>
         )}
         {createError && (
