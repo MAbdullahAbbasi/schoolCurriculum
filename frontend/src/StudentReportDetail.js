@@ -188,16 +188,15 @@ const StudentReportDetail = () => {
           return;
         }
 
-        const enrolledCodes = filterCoursesForReport(coursesList, {
+        const gradeCourseCodes = filterCoursesForReport(coursesList, {
           grade: currentStudent.grade,
-          gradingScheme: gradingSchemePeriodFromState,
         })
           .map((c) => c.code)
           .filter(Boolean);
 
         const byCourse = {};
         await Promise.all(
-          enrolledCodes.map(async (code) => {
+          gradeCourseCodes.map(async (code) => {
             try {
               const res = await axios.get(
                 `${API_URL}/api/records/course/${encodeURIComponent(code)}`
@@ -229,6 +228,7 @@ const StudentReportDetail = () => {
     const list = filterCoursesForReport(courses, {
       grade: student?.grade,
       gradingScheme: gradingSchemePeriodFromState,
+      recordsByCourse,
     })
       .map((course) => {
         const record = recordsByCourse[course.code] || null;

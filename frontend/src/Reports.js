@@ -132,16 +132,25 @@ const Reports = () => {
       });
   }, [students, selectedGrade]);
 
-  // Courses for this grade whose starting date falls within the selected grading scheme period
+  // All courses for the selected grade (before grading scheme / session filter)
+  const allCourseCodesForGrade = useMemo(() => {
+    if (!selectedGrade) return [];
+    return filterCoursesForReport(courses, { grade: selectedGrade })
+      .map((c) => c.code)
+      .filter(Boolean);
+  }, [courses, selectedGrade]);
+
+  // Courses for this grade that belong to the selected grading scheme session
   const courseCodesForGrade = useMemo(() => {
     if (!selectedGrade || !selectedGradingScheme) return [];
     return filterCoursesForReport(courses, {
       grade: selectedGrade,
       gradingScheme: selectedGradingScheme,
+      recordsByCourse,
     })
       .map((c) => c.code)
       .filter(Boolean);
-  }, [courses, selectedGrade, selectedGradingScheme]);
+  }, [courses, selectedGrade, selectedGradingScheme, recordsByCourse]);
 
   // Top 3 students by aggregate marks across all courses for this grade
   const topThreeStudents = useMemo(() => {
@@ -201,7 +210,7 @@ const Reports = () => {
   }, []);
 
   useEffect(() => {
-    if (!selectedGrade || courseCodesForGrade.length === 0) {
+    if (!selectedGrade || allCourseCodesForGrade.length === 0) {
       setRecordsByCourse({});
       return;
     }
@@ -209,7 +218,7 @@ const Reports = () => {
     const fetchRecords = async () => {
       const byCourse = {};
       await Promise.all(
-        courseCodesForGrade.map(async (code) => {
+        allCourseCodesForGrade.map(async (code) => {
           if (cancelled) return;
           try {
             const res = await axios.get(`${API_URL}/api/records/course/${encodeURIComponent(code)}`);
@@ -223,7 +232,7 @@ const Reports = () => {
     };
     fetchRecords();
     return () => { cancelled = true; };
-  }, [selectedGrade, courseCodesForGrade]);
+  }, [selectedGrade, allCourseCodesForGrade]);
 
   // Fetch all course records sequentially (for Download All) to avoid partial failures from parallel requests
   const fetchAllRecordsForGrade = async (courseCodes) => {
@@ -422,14 +431,14 @@ const Reports = () => {
 
   const handleDownloadAllReports = async () => {
     if (!selectedGrade || studentsInGrade.length === 0) return;
-    if (courseCodesForGrade.length === 0) {
+    if (allCourseCodesForGrade.length === 0) {
       setError('No courses found for this grade.');
       return;
     }
     try {
       setDownloadingAll(true);
       setError(null);
-      const recordsByCourseForZip = await fetchAllRecordsForGrade(courseCodesForGrade);
+      const recordsByCourseForZip = await fetchAllRecordsForGrade(allCourseCodesForGrade);
       const dataOverride = {
         recordsByCourse: recordsByCourseForZip,
         allStudents: students,
@@ -537,7 +546,7 @@ const Reports = () => {
           <div className="reports-prompt">Please select a grading scheme above to view reports.</div>
         )}
 
-        {selectedGrade && selectedGradingSchemeId && courseCodesForGrade.length === 0 && (
+        {selectedGrade && selectedGradingSchemeId && allCourseCodesForGrade.length > 0 && courseCodesForGrade.length === 0 && (
           <div className="reports-prompt reports-prompt-warning">
             No courses found for Grade {selectedGrade} within the selected grading scheme period ({formatGradingSchemeOptionLabel(selectedGradingScheme)}).
           </div>

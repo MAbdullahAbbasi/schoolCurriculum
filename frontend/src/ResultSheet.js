@@ -51,15 +51,23 @@ const ResultSheet = () => {
 
   const tableRef = useRef(null);
 
+  const allCourseCodesForGrade = useMemo(() => {
+    if (!selectedGrade) return [];
+    return filterCoursesForReport(courses, { grade: selectedGrade })
+      .map((c) => c.code)
+      .filter(Boolean);
+  }, [courses, selectedGrade]);
+
   const courseCodesForGrade = useMemo(() => {
     if (!selectedGrade) return [];
     return filterCoursesForReport(courses, {
       grade: selectedGrade,
       gradingScheme: gradingSchemePeriod,
+      recordsByCourse,
     })
       .map((c) => c.code)
       .filter(Boolean);
-  }, [courses, selectedGrade, gradingSchemePeriod]);
+  }, [courses, selectedGrade, gradingSchemePeriod, recordsByCourse]);
 
   const coursesForGrade = useMemo(() => {
     return (courses || []).filter((c) => courseCodesForGrade.includes(c.code));
@@ -100,7 +108,7 @@ const ResultSheet = () => {
   }, []);
 
   useEffect(() => {
-    if (!selectedGrade || courseCodesForGrade.length === 0) {
+    if (!selectedGrade || allCourseCodesForGrade.length === 0) {
       setRecordsByCourse({});
       return;
     }
@@ -108,7 +116,7 @@ const ResultSheet = () => {
     const fetchRecords = async () => {
       const byCourse = {};
       await Promise.all(
-        courseCodesForGrade.map(async (code) => {
+        allCourseCodesForGrade.map(async (code) => {
           if (cancelled) return;
           try {
             const res = await axios.get(`${API_URL}/api/records/course/${encodeURIComponent(code)}`);
@@ -122,7 +130,7 @@ const ResultSheet = () => {
     };
     fetchRecords();
     return () => { cancelled = true; };
-  }, [selectedGrade, courseCodesForGrade]);
+  }, [selectedGrade, allCourseCodesForGrade]);
 
   // Matrix: subject rows, student columns. Each cell has { marks, percentage } for that subject. Rows sorted by SUBJECT_ORDER.
   const { subjectRows, studentTotals, studentPercentages } = useMemo(() => {
