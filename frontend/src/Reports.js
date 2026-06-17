@@ -13,7 +13,7 @@ import {
   StudentReportMarksheet,
   StudentReportObjectiveSection,
 } from './StudentReportDocument';
-import { buildStudentReportData, normalizeGradingSchemeRows, getCourseTotalMarks } from './reportUtils';
+import { buildStudentReportData, normalizeGradingSchemeRows, getCourseTotalMarks, getGradeFromPercentageWithScheme, formatDateDisplay } from './reportUtils';
 import logoLeft from './assets/logoleft.jpg';
 import './Reports.css';
 
@@ -62,6 +62,23 @@ const percentageToGrade = (pct) => {
   return 'F';
 };
 
+const formatGradingSchemeOptionLabel = (scheme) => {
+  const name = String(scheme?.name || 'Grading scheme').trim();
+  const start = formatDateDisplay(scheme?.startDate);
+  const end = formatDateDisplay(scheme?.endDate);
+  if (start !== '—' && end !== '—') return `${name} (${start} – ${end})`;
+  if (start !== '—') return `${name} (from ${start})`;
+  return name;
+};
+
+const gradeFromPercentage = (percentage, schemeRows) => {
+  if (schemeRows?.length > 0) {
+    const g = getGradeFromPercentageWithScheme(percentage, schemeRows);
+    if (g && g !== '—') return g;
+  }
+  return percentageToGrade(percentage);
+};
+
 // Sort order: KG classes first, then numeric grades ascending
 const gradeSortOrder = (g) => {
   const s = String(g).trim();
@@ -78,7 +95,8 @@ const Reports = () => {
   const [students, setStudents] = useState([]);
   const [courses, setCourses] = useState([]);
   const [recordsByCourse, setRecordsByCourse] = useState({});
-  const [latestGradingSchemeRows, setLatestGradingSchemeRows] = useState([]);
+  const [gradingSchemes, setGradingSchemes] = useState([]);
+  const [selectedGradingSchemeId, setSelectedGradingSchemeId] = useState('');
   const [curriculumList, setCurriculumList] = useState([]);
   const [selectedGrade, setSelectedGrade] = useState('');
   const [loading, setLoading] = useState(true);
@@ -95,8 +113,18 @@ const Reports = () => {
     return Array.from(set).sort((a, b) => gradeSortOrder(a) - gradeSortOrder(b));
   }, [students]);
 
+  const selectedGradingSchemeRows = useMemo(() => {
+    if (gradingSchemes.length === 0) return [];
+    const scheme = selectedGradingSchemeId
+      ? gradingSchemes.find((s) => String(s._id) === String(selectedGradingSchemeId))
+      : gradingSchemes[0];
+    return normalizeGradingSchemeRows(scheme?.rows || []);
+  }, [gradingSchemes, selectedGradingSchemeId]);
+
   const handleViewReport = (student) => {
-    navigate(`/reports/student/${encodeURIComponent(student.registrationNumber)}`, { state: { student } });
+    navigate(`/reports/student/${encodeURIComponent(student.registrationNumber)}`, {
+      state: { student, gradingSchemeRows: selectedGradingSchemeRows },
+    });
   };
 
   const studentsInGrade = useMemo(() => {
@@ -149,7 +177,7 @@ const Reports = () => {
         }
       });
       const percentage = totalMax > 0 ? Math.round((obtained / totalMax) * 10000) / 100 : 0;
-      const grade = percentageToGrade(percentage);
+      const grade = gradeFromPercentage(percentage, selectedGradingSchemeRows);
       return { student, obtained: Math.round(obtained * 100) / 100, totalMax, percentage, grade };
     });
     rankList.sort((a, b) => {
@@ -158,7 +186,7 @@ const Reports = () => {
       return (a.student.studentName || '').localeCompare(b.student.studentName || '');
     });
     return rankList.slice(0, 3);
-  }, [selectedGrade, studentsInGrade, courses, courseCodesForGrade, recordsByCourse]);
+  }, [selectedGrade, studentsInGrade, courses, courseCodesForGrade, recordsByCourse, selectedGradingSchemeRows]);
 
   useEffect(() => {
     const fetchStudentsAndCourses = async () => {
@@ -174,7 +202,10 @@ const Reports = () => {
         setStudents(Array.isArray(studentsRes.data) ? studentsRes.data : (studentsRes.data?.data || []));
         setCourses(coursesRes.data?.success ? (coursesRes.data.data || []) : []);
         const gradingSchemesList = gradingSchemesRes.data?.success ? gradingSchemesRes.data.data || [] : [];
-        setLatestGradingSchemeRows(normalizeGradingSchemeRows(gradingSchemesList[0]?.rows || []));
+        setGradingSchemes(gradingSchemesList);
+        if (gradingSchemesList.length > 0) {
+          setSelectedGradingSchemeId(String(gradingSchemesList[0]._id));
+        }
         setCurriculumList(Array.isArray(curriculumRes.data) ? curriculumRes.data : []);
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -265,7 +296,7 @@ const Reports = () => {
       allStudents: dataOverride?.allStudents ?? students,
       courses: dataOverride?.courses ?? courses,
       recordsByCourse: records,
-      gradingSchemeRows: dataOverride?.gradingSchemeRows ?? latestGradingSchemeRows,
+      gradingSchemeRows: dataOverride?.gradingSchemeRows ?? selectedGradingSchemeRows,
       registrationNumber: student.registrationNumber,
       curriculumList: dataOverride?.curriculumList ?? curriculumList,
     });
@@ -419,7 +450,7 @@ const Reports = () => {
         recordsByCourse: recordsByCourseForZip,
         allStudents: students,
         courses,
-        gradingSchemeRows: latestGradingSchemeRows,
+        gradingSchemeRows: selectedGradingSchemeRows,
         curriculumList,
       };
       const zip = new JSZip();
@@ -457,30 +488,61 @@ const Reports = () => {
     <div className="reports-container">      <div className="reports-content">
         <div className="page-local-header-block">
           <h2 className="reports-title">Reports</h2>
-          <p className="reports-subtitle">Select a grade to view students and download reports.</p>
+          <p className="reports-subtitle">Select a grade and grading scheme to view students and download reports.</p>
         </div>
 
-        <div className="reports-select-wrapper">
-          <label htmlFor="reports-grade-select" className="reports-select-label">
-            Grade
-          </label>
-          <select
-            id="reports-grade-select"
-            className="reports-select"
-            value={selectedGrade}
-            onChange={(e) => setSelectedGrade(e.target.value)}
-          >
-            <option value="">Select a grade</option>
-            {gradesFromDb.map((g) => (
-              <option key={g} value={g}>
-                Grade {g}
-              </option>
-            ))}
-          </select>
+        <div className="reports-filters">
+          <div className="reports-select-wrapper">
+            <label htmlFor="reports-grade-select" className="reports-select-label">
+              Grade
+            </label>
+            <select
+              id="reports-grade-select"
+              className="reports-select"
+              value={selectedGrade}
+              onChange={(e) => setSelectedGrade(e.target.value)}
+            >
+              <option value="">Select a grade</option>
+              {gradesFromDb.map((g) => (
+                <option key={g} value={g}>
+                  Grade {g}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="reports-select-wrapper">
+            <label htmlFor="reports-grading-scheme-select" className="reports-select-label">
+              Grading scheme
+            </label>
+            <select
+              id="reports-grading-scheme-select"
+              className="reports-select"
+              value={selectedGradingSchemeId}
+              onChange={(e) => setSelectedGradingSchemeId(e.target.value)}
+              disabled={gradingSchemes.length === 0}
+            >
+              {gradingSchemes.length === 0 ? (
+                <option value="">No grading schemes defined</option>
+              ) : (
+                gradingSchemes.map((scheme) => (
+                  <option key={scheme._id} value={String(scheme._id)}>
+                    {formatGradingSchemeOptionLabel(scheme)}
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
         </div>
 
         {!selectedGrade && (
           <div className="reports-prompt">Please select a grade above to view students.</div>
+        )}
+
+        {selectedGrade && gradingSchemes.length === 0 && (
+          <div className="reports-prompt reports-prompt-warning">
+            No grading scheme found. Define one from the Grading Scheme page so reports use the correct grade mapping.
+          </div>
         )}
 
         {selectedGrade && (

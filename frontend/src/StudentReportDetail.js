@@ -112,6 +112,7 @@ const StudentReportDetail = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const studentFromState = location.state?.student;
+  const gradingSchemeRowsFromState = location.state?.gradingSchemeRows;
 
   const [student, setStudent] = useState(studentFromState || null);
   const [allStudents, setAllStudents] = useState([]);
@@ -147,17 +148,25 @@ const StudentReportDetail = () => {
         const studentsList = Array.isArray(studentsRes.data) ? studentsRes.data : [];
         const gradingSchemesList = gradingSchemesRes.data?.success ? gradingSchemesRes.data.data || [] : [];
         const curriculumList = Array.isArray(curriculumRes.data) ? curriculumRes.data : [];
-        const latestScheme = gradingSchemesList[0] || null;
-        const normalizedLatestSchemeRows = Array.isArray(latestScheme?.rows)
-          ? latestScheme.rows.map((row) => ({
-              percentage: row?.percentage ?? row?.marks ?? '',
-              grade: row?.grade ?? '',
-            }))
-          : getGradingSchemeFromStorage();
+        let normalizedSchemeRows = [];
+        if (Array.isArray(gradingSchemeRowsFromState) && gradingSchemeRowsFromState.length > 0) {
+          normalizedSchemeRows = gradingSchemeRowsFromState.map((row) => ({
+            percentage: row?.percentage ?? row?.marks ?? '',
+            grade: row?.grade ?? '',
+          }));
+        } else {
+          const latestScheme = gradingSchemesList[0] || null;
+          normalizedSchemeRows = Array.isArray(latestScheme?.rows)
+            ? latestScheme.rows.map((row) => ({
+                percentage: row?.percentage ?? row?.marks ?? '',
+                grade: row?.grade ?? '',
+              }))
+            : getGradingSchemeFromStorage();
+        }
 
         setCourses(coursesList);
         setAllStudents(studentsList);
-        setLatestGradingSchemeRows(normalizedLatestSchemeRows);
+        setLatestGradingSchemeRows(normalizedSchemeRows);
         setCurriculumList(curriculumList);
 
         let currentStudent = studentFromState && String(studentFromState.registrationNumber) === decodedRegNo

@@ -25,7 +25,26 @@
 }
 
 .reports-select-wrapper {
+  margin-bottom: 0;
+}
+
+.reports-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem 2rem;
   margin-bottom: 2rem;
+}
+
+.reports-filters .reports-select-wrapper {
+  flex: 1 1 280px;
+  max-width: 400px;
+}
+
+.reports-prompt-warning {
+  margin-bottom: 1.5rem;
+  background: #fff8e6;
+  border-color: #f0d78c;
+  color: #856404;
 }
 
 .reports-select-label {
