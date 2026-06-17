@@ -113,6 +113,7 @@ const StudentReportDetail = () => {
   const location = useLocation();
   const studentFromState = location.state?.student;
   const gradingSchemeRowsFromState = location.state?.gradingSchemeRows;
+  const selectedGradingSchemeFromState = location.state?.selectedGradingScheme ?? null;
 
   const [student, setStudent] = useState(studentFromState || null);
   const [allStudents, setAllStudents] = useState([]);
@@ -224,22 +225,27 @@ const StudentReportDetail = () => {
     const normalizedStudentGrade = normalizeGradeForMatch(student?.grade);
     if (!normalizedStudentGrade || !Array.isArray(courses)) return [];
 
-    const list = filterCoursesForReport(courses, { grade: student?.grade })
+    const list = filterCoursesForReport(courses, {
+      grade: student?.grade,
+      gradingScheme: selectedGradingSchemeFromState,
+    })
       .map((course) => {
         const record = recordsByCourse[course.code] || null;
         const studentEntry = record?.students?.find(
           (s) => String(s.registrationNumber) === decodedRegNo
         );
+        if (!studentEntry) return null;
         const objectiveMarks = studentEntry?.objectiveMarks || {};
         return { course, record, objectiveMarks };
-      });
+      })
+      .filter(Boolean);
 
     return [...list].sort((a, b) => {
       const labelA = (a.course.subject && String(a.course.subject).trim()) || a.course.courseName || a.course.code || '';
       const labelB = (b.course.subject && String(b.course.subject).trim()) || b.course.courseName || b.course.code || '';
       return getSubjectSortIndex(labelA) - getSubjectSortIndex(labelB);
     });
-  }, [courses, recordsByCourse, student, decodedRegNo]);
+  }, [courses, recordsByCourse, student, decodedRegNo, selectedGradingSchemeFromState]);
 
   const currentStudentGrade = normalizeGradeForMatch(student?.grade);
   const gradeByRegistration = useMemo(

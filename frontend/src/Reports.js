@@ -104,6 +104,13 @@ const Reports = () => {
       state: {
         student,
         gradingSchemeRows: selectedGradingSchemeRows,
+        selectedGradingScheme: selectedGradingScheme
+          ? {
+              name: selectedGradingScheme.name,
+              startDate: selectedGradingScheme.startDate,
+              endDate: selectedGradingScheme.endDate,
+            }
+          : null,
         selectedGradingSchemeId,
         selectedGrade,
       },
@@ -124,6 +131,16 @@ const Reports = () => {
   }, [students, selectedGrade]);
 
   const courseCodesForGrade = useMemo(() => {
+    if (!selectedGrade || !selectedGradingScheme) return [];
+    return filterCoursesForReport(courses, {
+      grade: selectedGrade,
+      gradingScheme: selectedGradingScheme,
+    })
+      .map((c) => c.code)
+      .filter(Boolean);
+  }, [courses, selectedGrade, selectedGradingScheme]);
+
+  const allCourseCodesForGrade = useMemo(() => {
     if (!selectedGrade) return [];
     return filterCoursesForReport(courses, { grade: selectedGrade })
       .map((c) => c.code)
@@ -267,6 +284,7 @@ const Reports = () => {
       courses: dataOverride?.courses ?? courses,
       recordsByCourse: records,
       gradingSchemeRows: dataOverride?.gradingSchemeRows ?? selectedGradingSchemeRows,
+      gradingScheme: dataOverride?.gradingScheme ?? selectedGradingScheme,
       registrationNumber: student.registrationNumber,
       curriculumList: dataOverride?.curriculumList ?? curriculumList,
     });
@@ -421,6 +439,7 @@ const Reports = () => {
         allStudents: students,
         courses,
         gradingSchemeRows: selectedGradingSchemeRows,
+        gradingScheme: selectedGradingScheme,
         curriculumList,
       };
       const zip = new JSZip();
@@ -522,7 +541,14 @@ const Reports = () => {
           <div className="reports-prompt">Please select a grading scheme above to view reports.</div>
         )}
 
-        {selectedGrade && selectedGradingSchemeId && (
+        {selectedGrade && selectedGradingSchemeId && allCourseCodesForGrade.length > 0 && courseCodesForGrade.length === 0 && (
+          <div className="reports-prompt reports-prompt-warning">
+            No courses match exam session &quot;{formatGradingSchemeOptionLabel(selectedGradingScheme)}&quot; for Grade {selectedGrade}.
+            Course names should include the exam month and year (e.g. Feb 2026).
+          </div>
+        )}
+
+        {selectedGrade && selectedGradingSchemeId && courseCodesForGrade.length > 0 && (
           <>
             {studentsInGrade.length > 0 && topThreeStudents.length > 0 && (
               <div className="reports-top-three-card">
@@ -568,7 +594,19 @@ const Reports = () => {
               <button
                 type="button"
                 className="reports-result-sheet-btn"
-                onClick={() => navigate('/reports/result-sheet', { state: { selectedGrade, selectedGradingSchemeId } })}
+                onClick={() => navigate('/reports/result-sheet', {
+                  state: {
+                    selectedGrade,
+                    selectedGradingSchemeId,
+                    selectedGradingScheme: selectedGradingScheme
+                      ? {
+                          name: selectedGradingScheme.name,
+                          startDate: selectedGradingScheme.startDate,
+                          endDate: selectedGradingScheme.endDate,
+                        }
+                      : null,
+                  },
+                })}
                 disabled={studentsInGrade.length === 0}
                 title="View result sheet for this grade"
                 aria-label="View result sheet for this grade"

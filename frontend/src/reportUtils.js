@@ -182,10 +182,104 @@ export const courseMatchesGrade = (course, selectedGrade) => {
   return false;
 };
 
-export const filterCoursesForReport = (courses, { grade } = {}) => {
+const MONTH_TOKEN_TO_NUM = {
+  january: 1,
+  february: 2,
+  march: 3,
+  april: 4,
+  may: 5,
+  june: 6,
+  july: 7,
+  august: 8,
+  september: 9,
+  october: 10,
+  november: 11,
+  december: 12,
+  jan: 1,
+  feb: 2,
+  mar: 3,
+  apr: 4,
+  jun: 6,
+  jul: 7,
+  aug: 8,
+  sep: 9,
+  sept: 9,
+  oct: 10,
+  nov: 11,
+  dec: 12,
+};
+
+const MONTH_TOKENS_BY_LENGTH = Object.keys(MONTH_TOKEN_TO_NUM).sort((a, b) => b.length - a.length);
+
+const parseYearFromText = (text) => {
+  const match = String(text || '').match(/\b(20\d{2})\b/);
+  return match ? Number(match[1]) : null;
+};
+
+const parseMonthFromText = (text) => {
+  const lower = String(text || '').toLowerCase();
+  for (const token of MONTH_TOKENS_BY_LENGTH) {
+    const re = new RegExp(`(^|[^a-z])${token}([^a-z]|$)`, 'i');
+    if (re.test(lower)) return MONTH_TOKEN_TO_NUM[token];
+  }
+  return null;
+};
+
+const parseMonthYearFromDate = (value) => {
+  if (value == null || value === '') return { month: null, year: null };
+  const iso = String(value).trim().match(/^(\d{4})-(\d{2})/);
+  if (iso) {
+    return { month: Number(iso[2]), year: Number(iso[1]) };
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return { month: null, year: null };
+  return { month: date.getUTCMonth() + 1, year: date.getUTCFullYear() };
+};
+
+export const getGradingSchemeSession = (gradingScheme) => {
+  if (!gradingScheme) return { month: null, year: null };
+  const name = String(gradingScheme.name || '');
+  const fromDate = parseMonthYearFromDate(gradingScheme.startDate);
+  return {
+    month: parseMonthFromText(name) || fromDate.month,
+    year: parseYearFromText(name) || fromDate.year,
+  };
+};
+
+export const getCourseSession = (course) => {
+  const label = String(course?.courseName || course?.code || '');
+  const fromName = {
+    month: parseMonthFromText(label),
+    year: parseYearFromText(label),
+  };
+  if (fromName.month && fromName.year) return fromName;
+  const fromDate = parseMonthYearFromDate(course?.startingDate);
+  return {
+    month: fromName.month || fromDate.month,
+    year: fromName.year || fromDate.year,
+  };
+};
+
+export const courseMatchesGradingSchemeSession = (course, gradingScheme) => {
+  if (!gradingScheme) return true;
+  const schemeSession = getGradingSchemeSession(gradingScheme);
+  if (!schemeSession.month && !schemeSession.year) return true;
+
+  const courseSession = getCourseSession(course);
+  if (schemeSession.year) {
+    if (!courseSession.year || courseSession.year !== schemeSession.year) return false;
+  }
+  if (schemeSession.month) {
+    if (!courseSession.month || courseSession.month !== schemeSession.month) return false;
+  }
+  return true;
+};
+
+export const filterCoursesForReport = (courses, { grade, gradingScheme } = {}) => {
   if (!Array.isArray(courses)) return [];
   return courses.filter((course) => {
     if (grade && !courseMatchesGrade(course, grade)) return false;
+    if (gradingScheme && !courseMatchesGradingSchemeSession(course, gradingScheme)) return false;
     return true;
   });
 };
@@ -325,6 +419,7 @@ export const buildStudentReportData = ({
   courses,
   recordsByCourse,
   gradingSchemeRows,
+  gradingScheme = null,
   registrationNumber,
   curriculumList = [],
 }) => {
@@ -334,15 +429,16 @@ export const buildStudentReportData = ({
   const normalizedStudentGrade = normalizeGradeForMatch(student?.grade);
   let enrolledCoursesWithMarks = (!normalizedStudentGrade || !Array.isArray(courses))
     ? []
-    : filterCoursesForReport(courses, { grade: student?.grade })
+    : filterCoursesForReport(courses, { grade: student?.grade, gradingScheme })
         .map((course) => {
           const record = recordsByCourse?.[course.code] || null;
           const studentEntry = record?.students?.find(
             (s) => String(s.registrationNumber) === decodedRegNo
           );
           const objectiveMarks = studentEntry?.objectiveMarks || {};
-          return { course, record, objectiveMarks };
-        });
+          return { course, record, objectiveMarks, studentEntry };
+        })
+        .filter(({ studentEntry }) => studentEntry != null);
 
   enrolledCoursesWithMarks = [...enrolledCoursesWithMarks].sort((a, b) => {
     const labelA = (a.course.subject && String(a.course.subject).trim()) || a.course.courseName || a.course.code || '';

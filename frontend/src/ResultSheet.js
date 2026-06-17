@@ -40,6 +40,7 @@ const ResultSheet = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const selectedGrade = location.state?.selectedGrade ?? '';
+  const selectedGradingScheme = location.state?.selectedGradingScheme ?? null;
 
   const [students, setStudents] = useState([]);
   const [courses, setCourses] = useState([]);
@@ -52,10 +53,13 @@ const ResultSheet = () => {
 
   const courseCodesForGrade = useMemo(() => {
     if (!selectedGrade) return [];
-    return filterCoursesForReport(courses, { grade: selectedGrade })
+    return filterCoursesForReport(courses, {
+      grade: selectedGrade,
+      gradingScheme: selectedGradingScheme,
+    })
       .map((c) => c.code)
       .filter(Boolean);
-  }, [courses, selectedGrade]);
+  }, [courses, selectedGrade, selectedGradingScheme]);
 
   const coursesForGrade = useMemo(() => {
     return (courses || []).filter((c) => courseCodesForGrade.includes(c.code));
