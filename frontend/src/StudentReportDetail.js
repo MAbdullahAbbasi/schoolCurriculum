@@ -149,11 +149,13 @@ const StudentReportDetail = () => {
         const gradingSchemesList = gradingSchemesRes.data?.success ? gradingSchemesRes.data.data || [] : [];
         const curriculumList = Array.isArray(curriculumRes.data) ? curriculumRes.data : [];
         let normalizedSchemeRows = [];
-        if (Array.isArray(gradingSchemeRowsFromState) && gradingSchemeRowsFromState.length > 0) {
-          normalizedSchemeRows = gradingSchemeRowsFromState.map((row) => ({
-            percentage: row?.percentage ?? row?.marks ?? '',
-            grade: row?.grade ?? '',
-          }));
+        if (gradingSchemeRowsFromState != null) {
+          normalizedSchemeRows = Array.isArray(gradingSchemeRowsFromState)
+            ? gradingSchemeRowsFromState.map((row) => ({
+                percentage: row?.percentage ?? row?.marks ?? '',
+                grade: row?.grade ?? '',
+              }))
+            : [];
         } else {
           const latestScheme = gradingSchemesList[0] || null;
           normalizedSchemeRows = Array.isArray(latestScheme?.rows)
@@ -362,7 +364,12 @@ const StudentReportDetail = () => {
   };
 
   const handleBack = () => {
-    navigate('/reports');
+    navigate('/reports', {
+      state: {
+        selectedGrade: location.state?.selectedGrade || student?.grade || '',
+        selectedGradingSchemeId: location.state?.selectedGradingSchemeId || '',
+      },
+    });
   };
 
   if (loading) {

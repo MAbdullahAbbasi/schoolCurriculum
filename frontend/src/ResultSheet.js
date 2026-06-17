@@ -185,7 +185,12 @@ const ResultSheet = () => {
   }, [coursesForGrade, recordsByCourse, studentsInGrade]);
 
   const handleBack = () => {
-    navigate('/reports', { state: { selectedGrade } });
+    navigate('/reports', {
+      state: {
+        selectedGrade,
+        selectedGradingSchemeId: location.state?.selectedGradingSchemeId || '',
+      },
+    });
   };
 
   const triggerBlobDownload = (filename, blob) => {

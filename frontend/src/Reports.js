@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -49,19 +49,6 @@ const normalizeGradeForMatch = (grade) => {
   return s;
 };
 
-const percentageToGrade = (pct) => {
-  if (pct >= 90) return 'A+';
-  if (pct >= 85) return 'A';
-  if (pct >= 80) return 'B+';
-  if (pct >= 75) return 'B';
-  if (pct >= 70) return 'C+';
-  if (pct >= 65) return 'C';
-  if (pct >= 60) return 'D+';
-  if (pct >= 55) return 'D';
-  if (pct >= 50) return 'E';
-  return 'F';
-};
-
 const formatGradingSchemeOptionLabel = (scheme) => {
   const name = String(scheme?.name || 'Grading scheme').trim();
   const start = formatDateDisplay(scheme?.startDate);
@@ -71,13 +58,8 @@ const formatGradingSchemeOptionLabel = (scheme) => {
   return name;
 };
 
-const gradeFromPercentage = (percentage, schemeRows) => {
-  if (schemeRows?.length > 0) {
-    const g = getGradeFromPercentageWithScheme(percentage, schemeRows);
-    if (g && g !== '—') return g;
-  }
-  return percentageToGrade(percentage);
-};
+const gradeFromPercentage = (percentage, schemeRows) =>
+  getGradeFromPercentageWithScheme(percentage, schemeRows);
 
 // Sort order: KG classes first, then numeric grades ascending
 const gradeSortOrder = (g) => {
@@ -92,13 +74,16 @@ const gradeSortOrder = (g) => {
 
 const Reports = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [students, setStudents] = useState([]);
   const [courses, setCourses] = useState([]);
   const [recordsByCourse, setRecordsByCourse] = useState({});
   const [gradingSchemes, setGradingSchemes] = useState([]);
-  const [selectedGradingSchemeId, setSelectedGradingSchemeId] = useState('');
+  const [selectedGradingSchemeId, setSelectedGradingSchemeId] = useState(
+    () => location.state?.selectedGradingSchemeId || ''
+  );
   const [curriculumList, setCurriculumList] = useState([]);
-  const [selectedGrade, setSelectedGrade] = useState('');
+  const [selectedGrade, setSelectedGrade] = useState(() => location.state?.selectedGrade || '');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [downloadingRegNo, setDownloadingRegNo] = useState('');
@@ -114,16 +99,19 @@ const Reports = () => {
   }, [students]);
 
   const selectedGradingSchemeRows = useMemo(() => {
-    if (gradingSchemes.length === 0) return [];
-    const scheme = selectedGradingSchemeId
-      ? gradingSchemes.find((s) => String(s._id) === String(selectedGradingSchemeId))
-      : gradingSchemes[0];
+    if (!selectedGradingSchemeId) return [];
+    const scheme = gradingSchemes.find((s) => String(s._id) === String(selectedGradingSchemeId));
     return normalizeGradingSchemeRows(scheme?.rows || []);
   }, [gradingSchemes, selectedGradingSchemeId]);
 
   const handleViewReport = (student) => {
     navigate(`/reports/student/${encodeURIComponent(student.registrationNumber)}`, {
-      state: { student, gradingSchemeRows: selectedGradingSchemeRows },
+      state: {
+        student,
+        gradingSchemeRows: selectedGradingSchemeRows,
+        selectedGradingSchemeId,
+        selectedGrade,
+      },
     });
   };
 
@@ -203,9 +191,6 @@ const Reports = () => {
         setCourses(coursesRes.data?.success ? (coursesRes.data.data || []) : []);
         const gradingSchemesList = gradingSchemesRes.data?.success ? gradingSchemesRes.data.data || [] : [];
         setGradingSchemes(gradingSchemesList);
-        if (gradingSchemesList.length > 0) {
-          setSelectedGradingSchemeId(String(gradingSchemesList[0]._id));
-        }
         setCurriculumList(Array.isArray(curriculumRes.data) ? curriculumRes.data : []);
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -525,11 +510,14 @@ const Reports = () => {
               {gradingSchemes.length === 0 ? (
                 <option value="">No grading schemes defined</option>
               ) : (
-                gradingSchemes.map((scheme) => (
-                  <option key={scheme._id} value={String(scheme._id)}>
-                    {formatGradingSchemeOptionLabel(scheme)}
-                  </option>
-                ))
+                <>
+                  <option value="">Select a grading scheme</option>
+                  {gradingSchemes.map((scheme) => (
+                    <option key={scheme._id} value={String(scheme._id)}>
+                      {formatGradingSchemeOptionLabel(scheme)}
+                    </option>
+                  ))}
+                </>
               )}
             </select>
           </div>
@@ -545,7 +533,11 @@ const Reports = () => {
           </div>
         )}
 
-        {selectedGrade && (
+        {selectedGrade && gradingSchemes.length > 0 && !selectedGradingSchemeId && (
+          <div className="reports-prompt">Please select a grading scheme above to view reports.</div>
+        )}
+
+        {selectedGrade && selectedGradingSchemeId && (
           <>
             {studentsInGrade.length > 0 && topThreeStudents.length > 0 && (
               <div className="reports-top-three-card">
@@ -591,7 +583,7 @@ const Reports = () => {
               <button
                 type="button"
                 className="reports-result-sheet-btn"
-                onClick={() => navigate('/reports/result-sheet', { state: { selectedGrade } })}
+                onClick={() => navigate('/reports/result-sheet', { state: { selectedGrade, selectedGradingSchemeId } })}
                 disabled={studentsInGrade.length === 0}
                 title="View result sheet for this grade"
                 aria-label="View result sheet for this grade"

@@ -310,8 +310,7 @@ export const buildStudentReportData = ({
   curriculumList = [],
 }) => {
   const decodedRegNo = String(registrationNumber || student?.registrationNumber || '');
-  const latestGradingSchemeRows = normalizeGradingSchemeRows(gradingSchemeRows);
-  const effectiveSchemeRows = latestGradingSchemeRows.length > 0 ? latestGradingSchemeRows : getGradingSchemeFromStorage();
+  const effectiveSchemeRows = normalizeGradingSchemeRows(gradingSchemeRows);
 
   const normalizedStudentGrade = normalizeGradeForMatch(student?.grade);
   let enrolledCoursesWithMarks = (!normalizedStudentGrade || !Array.isArray(courses))
