@@ -171,6 +171,48 @@ export const formatDateDisplay = (value) => {
   return date.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
+const toDayTimestamp = (value) => {
+  if (!value) return NaN;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return NaN;
+  date.setHours(0, 0, 0, 0);
+  return date.getTime();
+};
+
+export const isDateWithinRange = (date, rangeStart, rangeEnd) => {
+  const day = toDayTimestamp(date);
+  const start = toDayTimestamp(rangeStart);
+  const end = toDayTimestamp(rangeEnd);
+  if (!Number.isFinite(day) || !Number.isFinite(start) || !Number.isFinite(end)) return false;
+  return day >= start && day <= end;
+};
+
+export const courseMatchesGradingScheme = (course, gradingScheme) => {
+  if (!gradingScheme?.startDate || !gradingScheme?.endDate) return true;
+  if (!course?.startingDate) return false;
+  return isDateWithinRange(course.startingDate, gradingScheme.startDate, gradingScheme.endDate);
+};
+
+export const courseMatchesGrade = (course, selectedGrade) => {
+  if (!selectedGrade) return false;
+  const normalized = normalizeGradeForMatch(selectedGrade);
+  if (!normalized) return false;
+  const topics = course.topics || [];
+  for (const t of topics) {
+    if (t.grade != null && normalizeGradeForMatch(t.grade) === normalized) return true;
+  }
+  return false;
+};
+
+export const filterCoursesForReport = (courses, { grade, gradingScheme } = {}) => {
+  if (!Array.isArray(courses)) return [];
+  return courses.filter((course) => {
+    if (grade && !courseMatchesGrade(course, grade)) return false;
+    if (gradingScheme && !courseMatchesGradingScheme(course, gradingScheme)) return false;
+    return true;
+  });
+};
+
 export const getAgeInMonths = (dateOfBirth) => {
   if (!dateOfBirth) return null;
   const dob = new Date(dateOfBirth);
@@ -306,6 +348,7 @@ export const buildStudentReportData = ({
   courses,
   recordsByCourse,
   gradingSchemeRows,
+  gradingScheme = null,
   registrationNumber,
   curriculumList = [],
 }) => {
@@ -315,18 +358,7 @@ export const buildStudentReportData = ({
   const normalizedStudentGrade = normalizeGradeForMatch(student?.grade);
   let enrolledCoursesWithMarks = (!normalizedStudentGrade || !Array.isArray(courses))
     ? []
-    : courses
-        .filter((course) => {
-          const topics = course.topics || [];
-          const courseGrades = new Set();
-          topics.forEach((t) => {
-            if (t.grade != null && t.grade !== '') {
-              courseGrades.add(normalizeGradeForMatch(t.grade));
-            }
-          });
-          if (courseGrades.size === 0) return true;
-          return courseGrades.has(normalizedStudentGrade);
-        })
+    : filterCoursesForReport(courses, { grade: student?.grade, gradingScheme })
         .map((course) => {
           const record = recordsByCourse?.[course.code] || null;
           const studentEntry = record?.students?.find(

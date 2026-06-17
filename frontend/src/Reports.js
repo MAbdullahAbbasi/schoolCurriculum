@@ -13,7 +13,14 @@ import {
   StudentReportMarksheet,
   StudentReportObjectiveSection,
 } from './StudentReportDocument';
-import { buildStudentReportData, normalizeGradingSchemeRows, getCourseTotalMarks, getGradeFromPercentageWithScheme, formatDateDisplay } from './reportUtils';
+import {
+  buildStudentReportData,
+  normalizeGradingSchemeRows,
+  getCourseTotalMarks,
+  getGradeFromPercentageWithScheme,
+  formatDateDisplay,
+  filterCoursesForReport,
+} from './reportUtils';
 import logoLeft from './assets/logoleft.jpg';
 import './Reports.css';
 
@@ -33,21 +40,6 @@ const getWatermarkDataUrl = () =>
     img.onerror = reject;
     img.src = logoLeft;
   });
-
-// Normalize grade for matching (e.g. K.G-II, KG-2 -> same)
-const normalizeGradeForMatch = (grade) => {
-  if (grade == null || grade === '') return '';
-  let s = String(grade).trim();
-  if (s === '') return '';
-  s = s.replace(/^(grade|class)\s+/i, '').trim();
-  if (s === '') return '';
-  const lower = s.toLowerCase().replace(/\s+/g, ' ');
-  const compact = lower.replace(/\s/g, '').replace(/k\.g\.?/g, 'kg');
-  if (/^kg[- ]?1$|^kg[- ]?i$|^k\.g\.?[- ]?1$|^k\.g\.?[- ]?i$/i.test(lower) || /^kg[-]?1$|^kg[-]?i$/.test(compact)) return 'KG-1';
-  if (/^kg[- ]?2$|^kg\s*ii$|^kg[- ]?ii$|^k\.g\.?[- ]?2$|^k\.g\.?[- ]?ii$/i.test(lower) || /^kg[-]?2$|^kg[-]?ii$/.test(compact)) return 'KG-2';
-  if (/^kg[- ]?3$|^kg[- ]?iii$|^k\.g\.?[- ]?3$|^k\.g\.?[- ]?iii$/i.test(lower) || /^kg[-]?3$|^kg[-]?iii$/.test(compact)) return 'KG-3';
-  return s;
-};
 
 const formatGradingSchemeOptionLabel = (scheme) => {
   const name = String(scheme?.name || 'Grading scheme').trim();
@@ -98,17 +90,29 @@ const Reports = () => {
     return Array.from(set).sort((a, b) => gradeSortOrder(a) - gradeSortOrder(b));
   }, [students]);
 
-  const selectedGradingSchemeRows = useMemo(() => {
-    if (!selectedGradingSchemeId) return [];
-    const scheme = gradingSchemes.find((s) => String(s._id) === String(selectedGradingSchemeId));
-    return normalizeGradingSchemeRows(scheme?.rows || []);
+  const selectedGradingScheme = useMemo(() => {
+    if (!selectedGradingSchemeId) return null;
+    return gradingSchemes.find((s) => String(s._id) === String(selectedGradingSchemeId)) || null;
   }, [gradingSchemes, selectedGradingSchemeId]);
+
+  const selectedGradingSchemeRows = useMemo(() => {
+    return normalizeGradingSchemeRows(selectedGradingScheme?.rows || []);
+  }, [selectedGradingScheme]);
+
+  const gradingSchemePeriod = useMemo(() => {
+    if (!selectedGradingScheme?.startDate || !selectedGradingScheme?.endDate) return null;
+    return {
+      startDate: selectedGradingScheme.startDate,
+      endDate: selectedGradingScheme.endDate,
+    };
+  }, [selectedGradingScheme]);
 
   const handleViewReport = (student) => {
     navigate(`/reports/student/${encodeURIComponent(student.registrationNumber)}`, {
       state: {
         student,
         gradingSchemeRows: selectedGradingSchemeRows,
+        gradingSchemePeriod,
         selectedGradingSchemeId,
         selectedGrade,
       },
@@ -128,22 +132,16 @@ const Reports = () => {
       });
   }, [students, selectedGrade]);
 
-  // Courses that belong to the selected grade (topic grades match)
+  // Courses for this grade whose starting date falls within the selected grading scheme period
   const courseCodesForGrade = useMemo(() => {
-    if (!selectedGrade) return [];
-    const normalized = normalizeGradeForMatch(selectedGrade);
-    if (!normalized) return [];
-    return (courses || [])
-      .filter((course) => {
-        const topics = course.topics || [];
-        for (const t of topics) {
-          if (t.grade != null && normalizeGradeForMatch(t.grade) === normalized) return true;
-        }
-        return false;
-      })
+    if (!selectedGrade || !selectedGradingScheme) return [];
+    return filterCoursesForReport(courses, {
+      grade: selectedGrade,
+      gradingScheme: selectedGradingScheme,
+    })
       .map((c) => c.code)
       .filter(Boolean);
-  }, [courses, selectedGrade]);
+  }, [courses, selectedGrade, selectedGradingScheme]);
 
   // Top 3 students by aggregate marks across all courses for this grade
   const topThreeStudents = useMemo(() => {
@@ -282,6 +280,7 @@ const Reports = () => {
       courses: dataOverride?.courses ?? courses,
       recordsByCourse: records,
       gradingSchemeRows: dataOverride?.gradingSchemeRows ?? selectedGradingSchemeRows,
+      gradingScheme: dataOverride?.gradingScheme ?? selectedGradingScheme,
       registrationNumber: student.registrationNumber,
       curriculumList: dataOverride?.curriculumList ?? curriculumList,
     });
@@ -436,6 +435,7 @@ const Reports = () => {
         allStudents: students,
         courses,
         gradingSchemeRows: selectedGradingSchemeRows,
+        gradingScheme: selectedGradingScheme,
         curriculumList,
       };
       const zip = new JSZip();
@@ -537,7 +537,13 @@ const Reports = () => {
           <div className="reports-prompt">Please select a grading scheme above to view reports.</div>
         )}
 
-        {selectedGrade && selectedGradingSchemeId && (
+        {selectedGrade && selectedGradingSchemeId && courseCodesForGrade.length === 0 && (
+          <div className="reports-prompt reports-prompt-warning">
+            No courses found for Grade {selectedGrade} within the selected grading scheme period ({formatGradingSchemeOptionLabel(selectedGradingScheme)}).
+          </div>
+        )}
+
+        {selectedGrade && selectedGradingSchemeId && courseCodesForGrade.length > 0 && (
           <>
             {studentsInGrade.length > 0 && topThreeStudents.length > 0 && (
               <div className="reports-top-three-card">
@@ -583,7 +589,9 @@ const Reports = () => {
               <button
                 type="button"
                 className="reports-result-sheet-btn"
-                onClick={() => navigate('/reports/result-sheet', { state: { selectedGrade, selectedGradingSchemeId } })}
+                onClick={() => navigate('/reports/result-sheet', {
+                  state: { selectedGrade, selectedGradingSchemeId, gradingSchemePeriod },
+                })}
                 disabled={studentsInGrade.length === 0}
                 title="View result sheet for this grade"
                 aria-label="View result sheet for this grade"

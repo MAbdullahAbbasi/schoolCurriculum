@@ -5,22 +5,8 @@ import { API_URL } from './config/api';
 import { IconBack } from './ButtonIcons';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { getCourseTotalMarks } from './reportUtils';
+import { getCourseTotalMarks, filterCoursesForReport } from './reportUtils';
 import './ResultSheet.css';
-
-const normalizeGradeForMatch = (grade) => {
-  if (grade == null || grade === '') return '';
-  let s = String(grade).trim();
-  if (s === '') return '';
-  s = s.replace(/^(grade|class)\s+/i, '').trim();
-  if (s === '') return '';
-  const lower = s.toLowerCase().replace(/\s+/g, ' ');
-  const compact = lower.replace(/\s/g, '').replace(/k\.g\.?/g, 'kg');
-  if (/^kg[- ]?1$|^kg[- ]?i$|^k\.g\.?[- ]?1$|^k\.g\.?[- ]?i$/i.test(lower) || /^kg[-]?1$|^kg[-]?i$/.test(compact)) return 'KG-1';
-  if (/^kg[- ]?2$|^kg\s*ii$|^kg[- ]?ii$|^k\.g\.?[- ]?2$|^k\.g\.?[- ]?ii$/i.test(lower) || /^kg[-]?2$|^kg[-]?ii$/.test(compact)) return 'KG-2';
-  if (/^kg[- ]?3$|^kg[- ]?iii$|^k\.g\.?[- ]?3$|^k\.g\.?[- ]?iii$/i.test(lower) || /^kg[-]?3$|^kg[-]?iii$/.test(compact)) return 'KG-3';
-  return s;
-};
 
 // Registration number has 4 parts separated by 3 hyphens: year - serialNumber - part3 - part4
 const getSerialFromRegistration = (regNo) => {
@@ -54,6 +40,7 @@ const ResultSheet = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const selectedGrade = location.state?.selectedGrade ?? '';
+  const gradingSchemePeriod = location.state?.gradingSchemePeriod ?? null;
 
   const [students, setStudents] = useState([]);
   const [courses, setCourses] = useState([]);
@@ -66,19 +53,13 @@ const ResultSheet = () => {
 
   const courseCodesForGrade = useMemo(() => {
     if (!selectedGrade) return [];
-    const normalized = normalizeGradeForMatch(selectedGrade);
-    if (!normalized) return [];
-    return (courses || [])
-      .filter((course) => {
-        const topics = course.topics || [];
-        for (const t of topics) {
-          if (t.grade != null && normalizeGradeForMatch(t.grade) === normalized) return true;
-        }
-        return false;
-      })
+    return filterCoursesForReport(courses, {
+      grade: selectedGrade,
+      gradingScheme: gradingSchemePeriod,
+    })
       .map((c) => c.code)
       .filter(Boolean);
-  }, [courses, selectedGrade]);
+  }, [courses, selectedGrade, gradingSchemePeriod]);
 
   const coursesForGrade = useMemo(() => {
     return (courses || []).filter((c) => courseCodesForGrade.includes(c.code));
@@ -189,6 +170,7 @@ const ResultSheet = () => {
       state: {
         selectedGrade,
         selectedGradingSchemeId: location.state?.selectedGradingSchemeId || '',
+        gradingSchemePeriod,
       },
     });
   };

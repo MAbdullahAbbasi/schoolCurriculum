@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from './config/api';
 import { IconBack } from './ButtonIcons';
-import { formatGradingSchemeForDisplay, getCourseTotalMarks, getSubjectSortIndex } from './reportUtils';
+import { formatGradingSchemeForDisplay, getCourseTotalMarks, getSubjectSortIndex, filterCoursesForReport } from './reportUtils';
 import logoLeft from './assets/logoleft.jpg';
 import logoRight from './assets/logoright.jpg';
 import './StudentReportDetail.css';
@@ -113,6 +113,7 @@ const StudentReportDetail = () => {
   const location = useLocation();
   const studentFromState = location.state?.student;
   const gradingSchemeRowsFromState = location.state?.gradingSchemeRows;
+  const gradingSchemePeriodFromState = location.state?.gradingSchemePeriod ?? null;
 
   const [student, setStudent] = useState(studentFromState || null);
   const [allStudents, setAllStudents] = useState([]);
@@ -187,18 +188,10 @@ const StudentReportDetail = () => {
           return;
         }
 
-        const enrolledCodes = coursesList
-          .filter((course) => {
-            const topics = course.topics || [];
-            const courseGrades = new Set();
-            topics.forEach((t) => {
-              if (t.grade != null && t.grade !== '') {
-                courseGrades.add(normalizeGradeForMatch(t.grade));
-              }
-            });
-            if (courseGrades.size === 0) return true;
-            return courseGrades.has(normalizedStudentGrade);
-          })
+        const enrolledCodes = filterCoursesForReport(coursesList, {
+          grade: currentStudent.grade,
+          gradingScheme: gradingSchemePeriodFromState,
+        })
           .map((c) => c.code)
           .filter(Boolean);
 
@@ -233,18 +226,10 @@ const StudentReportDetail = () => {
     const normalizedStudentGrade = normalizeGradeForMatch(student?.grade);
     if (!normalizedStudentGrade || !Array.isArray(courses)) return [];
 
-    const list = courses
-      .filter((course) => {
-        const topics = course.topics || [];
-        const courseGrades = new Set();
-        topics.forEach((t) => {
-          if (t.grade != null && t.grade !== '') {
-            courseGrades.add(normalizeGradeForMatch(t.grade));
-          }
-        });
-        if (courseGrades.size === 0) return true;
-        return courseGrades.has(normalizedStudentGrade);
-      })
+    const list = filterCoursesForReport(courses, {
+      grade: student?.grade,
+      gradingScheme: gradingSchemePeriodFromState,
+    })
       .map((course) => {
         const record = recordsByCourse[course.code] || null;
         const studentEntry = record?.students?.find(
@@ -259,7 +244,7 @@ const StudentReportDetail = () => {
       const labelB = (b.course.subject && String(b.course.subject).trim()) || b.course.courseName || b.course.code || '';
       return getSubjectSortIndex(labelA) - getSubjectSortIndex(labelB);
     });
-  }, [courses, recordsByCourse, student, decodedRegNo]);
+  }, [courses, recordsByCourse, student, decodedRegNo, gradingSchemePeriodFromState]);
 
   const currentStudentGrade = normalizeGradeForMatch(student?.grade);
   const gradeByRegistration = useMemo(
@@ -368,6 +353,7 @@ const StudentReportDetail = () => {
       state: {
         selectedGrade: location.state?.selectedGrade || student?.grade || '',
         selectedGradingSchemeId: location.state?.selectedGradingSchemeId || '',
+        gradingSchemePeriod: gradingSchemePeriodFromState,
       },
     });
   };
