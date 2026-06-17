@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from './config/api';
 import { IconBack } from './ButtonIcons';
-import { formatGradingSchemeForDisplay, getCourseTotalMarks, getSubjectSortIndex, filterCoursesForReport } from './reportUtils';
+import { formatGradingSchemeForDisplay, getCourseTotalMarks, getSubjectSortIndex, filterCoursesForReport, studentHasCourseRecord } from './reportUtils';
 import logoLeft from './assets/logoleft.jpg';
 import logoRight from './assets/logoright.jpg';
 import './StudentReportDetail.css';
@@ -113,7 +113,6 @@ const StudentReportDetail = () => {
   const location = useLocation();
   const studentFromState = location.state?.student;
   const gradingSchemeRowsFromState = location.state?.gradingSchemeRows;
-  const selectedGradingSchemeFromState = location.state?.selectedGradingScheme ?? null;
 
   const [student, setStudent] = useState(studentFromState || null);
   const [allStudents, setAllStudents] = useState([]);
@@ -227,14 +226,15 @@ const StudentReportDetail = () => {
 
     const list = filterCoursesForReport(courses, {
       grade: student?.grade,
-      gradingScheme: selectedGradingSchemeFromState,
+      recordsByCourse,
+      registrationNumber: decodedRegNo,
     })
       .map((course) => {
         const record = recordsByCourse[course.code] || null;
         const studentEntry = record?.students?.find(
           (s) => String(s.registrationNumber) === decodedRegNo
         );
-        if (!studentEntry) return null;
+        if (!studentHasCourseRecord(studentEntry)) return null;
         const objectiveMarks = studentEntry?.objectiveMarks || {};
         return { course, record, objectiveMarks };
       })
@@ -245,7 +245,7 @@ const StudentReportDetail = () => {
       const labelB = (b.course.subject && String(b.course.subject).trim()) || b.course.courseName || b.course.code || '';
       return getSubjectSortIndex(labelA) - getSubjectSortIndex(labelB);
     });
-  }, [courses, recordsByCourse, student, decodedRegNo, selectedGradingSchemeFromState]);
+  }, [courses, recordsByCourse, student, decodedRegNo]);
 
   const currentStudentGrade = normalizeGradeForMatch(student?.grade);
   const gradeByRegistration = useMemo(
