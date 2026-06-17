@@ -99,20 +99,11 @@ const Reports = () => {
     return normalizeGradingSchemeRows(selectedGradingScheme?.rows || []);
   }, [selectedGradingScheme]);
 
-  const gradingSchemePeriod = useMemo(() => {
-    if (!selectedGradingScheme?.startDate || !selectedGradingScheme?.endDate) return null;
-    return {
-      startDate: selectedGradingScheme.startDate,
-      endDate: selectedGradingScheme.endDate,
-    };
-  }, [selectedGradingScheme]);
-
   const handleViewReport = (student) => {
     navigate(`/reports/student/${encodeURIComponent(student.registrationNumber)}`, {
       state: {
         student,
         gradingSchemeRows: selectedGradingSchemeRows,
-        gradingSchemePeriod,
         selectedGradingSchemeId,
         selectedGrade,
       },
@@ -132,25 +123,12 @@ const Reports = () => {
       });
   }, [students, selectedGrade]);
 
-  // All courses for the selected grade (before grading scheme / session filter)
-  const allCourseCodesForGrade = useMemo(() => {
+  const courseCodesForGrade = useMemo(() => {
     if (!selectedGrade) return [];
     return filterCoursesForReport(courses, { grade: selectedGrade })
       .map((c) => c.code)
       .filter(Boolean);
   }, [courses, selectedGrade]);
-
-  // Courses for this grade that belong to the selected grading scheme session
-  const courseCodesForGrade = useMemo(() => {
-    if (!selectedGrade || !selectedGradingScheme) return [];
-    return filterCoursesForReport(courses, {
-      grade: selectedGrade,
-      gradingScheme: selectedGradingScheme,
-      recordsByCourse,
-    })
-      .map((c) => c.code)
-      .filter(Boolean);
-  }, [courses, selectedGrade, selectedGradingScheme, recordsByCourse]);
 
   // Top 3 students by aggregate marks across all courses for this grade
   const topThreeStudents = useMemo(() => {
@@ -210,7 +188,7 @@ const Reports = () => {
   }, []);
 
   useEffect(() => {
-    if (!selectedGrade || allCourseCodesForGrade.length === 0) {
+    if (!selectedGrade || courseCodesForGrade.length === 0) {
       setRecordsByCourse({});
       return;
     }
@@ -218,7 +196,7 @@ const Reports = () => {
     const fetchRecords = async () => {
       const byCourse = {};
       await Promise.all(
-        allCourseCodesForGrade.map(async (code) => {
+        courseCodesForGrade.map(async (code) => {
           if (cancelled) return;
           try {
             const res = await axios.get(`${API_URL}/api/records/course/${encodeURIComponent(code)}`);
@@ -232,7 +210,7 @@ const Reports = () => {
     };
     fetchRecords();
     return () => { cancelled = true; };
-  }, [selectedGrade, allCourseCodesForGrade]);
+  }, [selectedGrade, courseCodesForGrade]);
 
   // Fetch all course records sequentially (for Download All) to avoid partial failures from parallel requests
   const fetchAllRecordsForGrade = async (courseCodes) => {
@@ -289,7 +267,6 @@ const Reports = () => {
       courses: dataOverride?.courses ?? courses,
       recordsByCourse: records,
       gradingSchemeRows: dataOverride?.gradingSchemeRows ?? selectedGradingSchemeRows,
-      gradingScheme: dataOverride?.gradingScheme ?? selectedGradingScheme,
       registrationNumber: student.registrationNumber,
       curriculumList: dataOverride?.curriculumList ?? curriculumList,
     });
@@ -431,20 +408,19 @@ const Reports = () => {
 
   const handleDownloadAllReports = async () => {
     if (!selectedGrade || studentsInGrade.length === 0) return;
-    if (allCourseCodesForGrade.length === 0) {
+    if (courseCodesForGrade.length === 0) {
       setError('No courses found for this grade.');
       return;
     }
     try {
       setDownloadingAll(true);
       setError(null);
-      const recordsByCourseForZip = await fetchAllRecordsForGrade(allCourseCodesForGrade);
+      const recordsByCourseForZip = await fetchAllRecordsForGrade(courseCodesForGrade);
       const dataOverride = {
         recordsByCourse: recordsByCourseForZip,
         allStudents: students,
         courses,
         gradingSchemeRows: selectedGradingSchemeRows,
-        gradingScheme: selectedGradingScheme,
         curriculumList,
       };
       const zip = new JSZip();
@@ -507,7 +483,7 @@ const Reports = () => {
 
           <div className="reports-select-wrapper">
             <label htmlFor="reports-grading-scheme-select" className="reports-select-label">
-              Grading scheme
+              Grading scheme (grade mapping)
             </label>
             <select
               id="reports-grading-scheme-select"
@@ -546,13 +522,7 @@ const Reports = () => {
           <div className="reports-prompt">Please select a grading scheme above to view reports.</div>
         )}
 
-        {selectedGrade && selectedGradingSchemeId && allCourseCodesForGrade.length > 0 && courseCodesForGrade.length === 0 && (
-          <div className="reports-prompt reports-prompt-warning">
-            No courses found for Grade {selectedGrade} within the selected grading scheme period ({formatGradingSchemeOptionLabel(selectedGradingScheme)}).
-          </div>
-        )}
-
-        {selectedGrade && selectedGradingSchemeId && courseCodesForGrade.length > 0 && (
+        {selectedGrade && selectedGradingSchemeId && (
           <>
             {studentsInGrade.length > 0 && topThreeStudents.length > 0 && (
               <div className="reports-top-three-card">
@@ -598,9 +568,7 @@ const Reports = () => {
               <button
                 type="button"
                 className="reports-result-sheet-btn"
-                onClick={() => navigate('/reports/result-sheet', {
-                  state: { selectedGrade, selectedGradingSchemeId, gradingSchemePeriod },
-                })}
+                onClick={() => navigate('/reports/result-sheet', { state: { selectedGrade, selectedGradingSchemeId } })}
                 disabled={studentsInGrade.length === 0}
                 title="View result sheet for this grade"
                 aria-label="View result sheet for this grade"

@@ -171,56 +171,6 @@ export const formatDateDisplay = (value) => {
   return date.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
-const parseDateToDayKey = (value) => {
-  if (value == null || value === '') return NaN;
-  const s = String(value).trim();
-  const isoMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (isoMatch) {
-    return Number(isoMatch[1]) * 10000 + Number(isoMatch[2]) * 100 + Number(isoMatch[3]);
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return NaN;
-  return date.getUTCFullYear() * 10000 + (date.getUTCMonth() + 1) * 100 + date.getUTCDate();
-};
-
-export const isDateWithinRange = (date, rangeStart, rangeEnd) => {
-  const day = parseDateToDayKey(date);
-  const start = parseDateToDayKey(rangeStart);
-  const end = parseDateToDayKey(rangeEnd);
-  if (!Number.isFinite(day) || !Number.isFinite(start) || !Number.isFinite(end)) return false;
-  return day >= start && day <= end;
-};
-
-export const getCourseSessionDateCandidates = (course, record = null) => {
-  const candidates = [];
-  const push = (value) => {
-    if (value == null || value === '') return;
-    if (Number.isFinite(parseDateToDayKey(value))) candidates.push(value);
-  };
-
-  push(course?.startingDate);
-  push(course?.startDate);
-
-  const codeMatch = String(course?.code || '').match(/^CRS-(\d{4})(\d{2})(\d{2})-/i);
-  if (codeMatch) {
-    push(`${codeMatch[1]}-${codeMatch[2]}-${codeMatch[3]}`);
-  }
-
-  push(course?.createdAt);
-  push(course?.updatedAt);
-  push(record?.updatedAt);
-  push(record?.createdAt);
-
-  return candidates;
-};
-
-export const courseMatchesGradingScheme = (course, gradingScheme, record = null) => {
-  if (!gradingScheme?.startDate || !gradingScheme?.endDate) return true;
-  const candidates = getCourseSessionDateCandidates(course, record);
-  if (candidates.length === 0) return true;
-  return candidates.some((d) => isDateWithinRange(d, gradingScheme.startDate, gradingScheme.endDate));
-};
-
 export const courseMatchesGrade = (course, selectedGrade) => {
   if (!selectedGrade) return false;
   const normalized = normalizeGradeForMatch(selectedGrade);
@@ -232,14 +182,10 @@ export const courseMatchesGrade = (course, selectedGrade) => {
   return false;
 };
 
-export const filterCoursesForReport = (courses, { grade, gradingScheme, recordsByCourse } = {}) => {
+export const filterCoursesForReport = (courses, { grade } = {}) => {
   if (!Array.isArray(courses)) return [];
   return courses.filter((course) => {
     if (grade && !courseMatchesGrade(course, grade)) return false;
-    if (gradingScheme) {
-      const record = recordsByCourse?.[course.code] || null;
-      if (!courseMatchesGradingScheme(course, gradingScheme, record)) return false;
-    }
     return true;
   });
 };
@@ -379,7 +325,6 @@ export const buildStudentReportData = ({
   courses,
   recordsByCourse,
   gradingSchemeRows,
-  gradingScheme = null,
   registrationNumber,
   curriculumList = [],
 }) => {
@@ -389,11 +334,7 @@ export const buildStudentReportData = ({
   const normalizedStudentGrade = normalizeGradeForMatch(student?.grade);
   let enrolledCoursesWithMarks = (!normalizedStudentGrade || !Array.isArray(courses))
     ? []
-    : filterCoursesForReport(courses, {
-        grade: student?.grade,
-        gradingScheme,
-        recordsByCourse,
-      })
+    : filterCoursesForReport(courses, { grade: student?.grade })
         .map((course) => {
           const record = recordsByCourse?.[course.code] || null;
           const studentEntry = record?.students?.find(
