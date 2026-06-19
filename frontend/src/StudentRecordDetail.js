@@ -68,11 +68,12 @@ const StudentRecordDetail = () => {
       return effectiveTotalFromQuestionPartMarks(
         questionPartMarks,
         course?.questionChoiceGroups,
-        questionParts
+        questionParts,
+        course?.compulsoryQuestions
       );
     }
     return topics.reduce((sum, t) => sum + (t.marks || 0), 0);
-  }, [topics, questionPartMarks, questionParts, course?.questionChoiceGroups]);
+  }, [topics, questionPartMarks, questionParts, course?.questionChoiceGroups, course?.compulsoryQuestions]);
 
   const slots = useMemo(() => {
     if (questionPartMarks.length > 0) {
@@ -476,8 +477,8 @@ const StudentRecordDetail = () => {
             </div>
             {compulsoryQuestions != null && (
               <div className="info-item">
-                <span className="info-label">Compulsory questions:</span>
-                <span className="info-value">{compulsoryQuestions} of {slots.length}</span>
+                <span className="info-label">Questions counted toward total:</span>
+                <span className="info-value">Best {compulsoryQuestions} scoring (of {slots.filter((s, i, arr) => arr.findIndex((x) => x.questionIndex === s.questionIndex) === i).length} questions)</span>
               </div>
             )}
             {questionChoiceSummary && (
@@ -505,7 +506,7 @@ const StudentRecordDetail = () => {
           )}
           {compulsoryQuestions != null && (
             <p className="compulsory-hint">
-              Enter marks for at least {compulsoryQuestions} question(s). Remaining questions can be left on choice (stored as &quot;Left on choice&quot;) if compulsory are attempted.
+              Student may attempt any questions. Only the best {compulsoryQuestions} scoring questions count toward the total. Extra attempted questions are shown as &quot;Not counted&quot;.
             </p>
           )}
 
@@ -552,15 +553,19 @@ const StudentRecordDetail = () => {
                             questionParts,
                             compulsoryQuestions
                           );
+                          const hasChoiceScoring =
+                            questionChoiceGroups.length > 0 || compulsoryQuestions != null;
+                          const notCountedTitle =
+                            !countsTowardTotal && !na && hasChoiceScoring
+                              ? questionChoiceGroups.length > 0
+                                ? 'Not counted — a higher-scoring question in this choice group is used instead'
+                                : `Not counted — only the best ${compulsoryQuestions} scoring questions count toward the total`
+                              : undefined;
                           return (
                             <React.Fragment key={reg}>
                               <td
                                 className={`matrix-td-mark ${!countsTowardTotal && !na ? 'matrix-mark-not-counted' : ''}`}
-                                title={
-                                  !countsTowardTotal && !na && questionChoiceGroups.length > 0
-                                    ? 'Not counted — a higher-scoring question in this choice group is used instead'
-                                    : undefined
-                                }
+                                title={notCountedTitle}
                               >
                                 {isEditMode ? (
                                   na ? (
@@ -582,7 +587,7 @@ const StudentRecordDetail = () => {
                                         data-student-index={studentIndex}
                                       />
                                       <span className="matrix-mark-max-hint">Max: {slot.maxMarks}</span>
-                                      {!countsTowardTotal && questionChoiceGroups.length > 0 && (
+                                      {!countsTowardTotal && hasChoiceScoring && (
                                         <span className="matrix-mark-not-counted-label">Not counted</span>
                                       )}
                                     </div>
@@ -615,7 +620,11 @@ const StudentRecordDetail = () => {
                       <td className="matrix-td-objective total-label">
                         Total (obtained
                         {hasOptionalParts ? ', compulsory parts only' : ''}
-                        {questionChoiceGroups.length > 0 ? ', best per choice group' : ''})
+                        {questionChoiceGroups.length > 0
+                          ? ', best per choice group'
+                          : compulsoryQuestions != null
+                            ? `, best ${compulsoryQuestions} scoring`
+                            : ''})
                       </td>
                       <td className="matrix-td-max">{totalMarksForCourse}</td>
                       {enrolledStudents.map((student) => {

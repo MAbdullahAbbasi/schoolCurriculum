@@ -90,9 +90,19 @@ export function normalizeChoiceGroups(raw) {
   return out;
 }
 
-export function effectiveTotalFromQuestionPartMarks(questionPartMarks, questionChoiceGroups, questionParts) {
+export function effectiveTotalFromQuestionPartMarks(
+  questionPartMarks,
+  questionChoiceGroups,
+  questionParts,
+  compulsoryQuestions = null
+) {
   const qpm = questionPartMarks || [];
-  const groups = normalizeChoiceGroups(questionChoiceGroups);
+  const allQ = new Set();
+  for (const m of qpm) {
+    const q = Number(m.questionIndex);
+    if (Number.isFinite(q) && q >= 1) allQ.add(q);
+  }
+  const groups = resolveEffectiveChoiceGroups(questionChoiceGroups, compulsoryQuestions, allQ);
 
   if (Array.isArray(questionParts) && questionParts.length > 0) {
     const perQ = perQuestionCompulsoryTotalsFromMarks(questionParts, qpm);
@@ -148,25 +158,46 @@ export function validateQuestionChoiceGroups(groups, totalQuestionsNum, perQuest
   return { ok: true, groups: gnorm };
 }
 
-function resolveCompulsoryQuestionCount(compulsoryQuestions, allQ) {
-  if (compulsoryQuestions == null || compulsoryQuestions === '') return null;
-  const n = Math.floor(Number(compulsoryQuestions));
+function resolveQuestionsToCount(questionsToCount, allQ) {
+  if (questionsToCount == null || questionsToCount === '') return null;
+  const n = Math.floor(Number(questionsToCount));
   if (!Number.isFinite(n) || n < 1) return null;
   if (allQ.size === 0) return n;
-  return Math.min(n, Math.max(...allQ));
+  return Math.min(n, allQ.size);
 }
 
-function obtainedForQuestion(q, marks, questionPartMarks, questionParts) {
+function questionIndexList(allQ) {
+  return [...allQ].sort((a, b) => a - b);
+}
+
+export function resolveEffectiveChoiceGroups(questionChoiceGroups, questionsToCount, allQ) {
+  const explicit = normalizeChoiceGroups(questionChoiceGroups);
+  if (explicit.length > 0) return explicit;
+  const count = resolveQuestionsToCount(questionsToCount, allQ);
+  const allArr = questionIndexList(allQ);
+  if (count == null || allArr.length <= count) return [];
+  return [{ questions: allArr, attemptCount: count }];
+}
+
+function obtainedForQuestion(q, marks, questionPartMarks) {
   let s = 0;
   for (const m of questionPartMarks || []) {
     if (Number(m.questionIndex) !== q) continue;
     const part = Number(m.partIndex);
     const key = part === 0 ? `q${q}` : `q${q}-p${part}`;
-    if (questionParts?.length && !isPartCompulsory(q, part, questionParts)) continue;
     const v = Number(marks[key]);
     if (!Number.isNaN(v) && v > 0) s += v;
   }
   return s;
+}
+
+function keepTopScoringQuestions(questions, countToKeep, marks, questionPartMarks) {
+  const ranked = questions
+    .map((q) => ({ q, score: obtainedForQuestion(q, marks, questionPartMarks) }))
+    .filter((r) => r.score > 0)
+    .sort((a, b) => b.score - a.score || a.q - b.q);
+  const keep = Math.min(countToKeep, ranked.length);
+  return new Set(ranked.slice(0, keep).map((r) => r.q));
 }
 
 export function getKeptQuestionIndices(
@@ -176,7 +207,6 @@ export function getKeptQuestionIndices(
   questionParts,
   compulsoryQuestions = null
 ) {
-  const groups = normalizeChoiceGroups(questionChoiceGroups);
   const allQ = new Set();
   for (const m of questionPartMarks || []) {
     const q = Number(m.questionIndex);
@@ -185,50 +215,29 @@ export function getKeptQuestionIndices(
   if (allQ.size === 0) return new Set();
 
   const marks = questionMarks || {};
-  const compulsoryCount = resolveCompulsoryQuestionCount(compulsoryQuestions, allQ);
+  const allArr = questionIndexList(allQ);
+  const groups = resolveEffectiveChoiceGroups(questionChoiceGroups, compulsoryQuestions, allQ);
+
+  if (groups.length === 0) {
+    return allQ;
+  }
+
   const kept = new Set();
   const inAnyGroup = new Set();
   groups.forEach((g) => g.questions.forEach((q) => inAnyGroup.add(q)));
 
-  if (compulsoryCount != null) {
-    for (const q of allQ) {
-      if (q <= compulsoryCount) kept.add(q);
-    }
-  }
-
-  for (const q of allQ) {
-    if (inAnyGroup.has(q)) continue;
-    if (compulsoryCount != null && q <= compulsoryCount) continue;
-    if (compulsoryCount != null && q > compulsoryCount) {
-      if (obtainedForQuestion(q, marks, questionPartMarks, questionParts) > 0) {
-        kept.add(q);
-      }
-      continue;
-    }
-    kept.add(q);
-  }
-
   for (const g of groups) {
-    const compulsoryInGroup =
-      compulsoryCount != null ? g.questions.filter((q) => q <= compulsoryCount) : [];
-    const optionalInGroup =
-      compulsoryCount != null ? g.questions.filter((q) => q > compulsoryCount) : g.questions;
-
-    compulsoryInGroup.forEach((q) => kept.add(q));
-
-    const pool = optionalInGroup.length > 0 ? optionalInGroup : compulsoryCount != null ? [] : g.questions;
-    if (pool.length === 0) continue;
-
-    const ranked = pool
-      .map((q) => ({ q, score: obtainedForQuestion(q, marks, questionPartMarks, questionParts) }))
-      .sort((a, b) => b.score - a.score || a.q - b.q);
-    const attemptCount = Math.min(g.attemptCount, pool.length);
-    ranked.slice(0, attemptCount).forEach((r) => kept.add(r.q));
+    const top = keepTopScoringQuestions(g.questions, g.attemptCount, marks, questionPartMarks);
+    top.forEach((q) => kept.add(q));
   }
 
-  if (groups.length === 0 && compulsoryCount == null) {
-    return allQ;
+  for (const q of allArr) {
+    if (inAnyGroup.has(q)) continue;
+    if (obtainedForQuestion(q, marks, questionPartMarks) > 0) {
+      kept.add(q);
+    }
   }
+
   return kept;
 }
 

@@ -549,12 +549,12 @@ const StudentsRecord = () => {
                   />
                 </div>
                 <div className="course-edit-field">
-                  <label className="course-edit-label">Compulsory questions</label>
+                  <label className="course-edit-label">Questions to count (best N)</label>
                   <input
                     type="number"
                     min="1"
                     className="course-edit-input"
-                    placeholder="e.g. 4 of 6"
+                    placeholder="e.g. 4 of 6 — best scoring count"
                     value={editForm.compulsoryQuestions ?? ''}
                     onChange={(e) => updateEditField('compulsoryQuestions', e.target.value)}
                   />

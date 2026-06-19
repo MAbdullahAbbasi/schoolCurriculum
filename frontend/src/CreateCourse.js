@@ -148,7 +148,7 @@ const CreateCourse = () => {
     if (String(formData.compulsoryQuestions ?? '').trim() !== '') {
       compulsoryQuestionsNum = parseInt(formData.compulsoryQuestions, 10);
       if (Number.isNaN(compulsoryQuestionsNum) || compulsoryQuestionsNum < 1 || compulsoryQuestionsNum > totalQuestionsNum) {
-        setCreateError(`Compulsory questions must be between 1 and ${totalQuestionsNum}.`);
+        setCreateError(`Questions to count must be between 1 and ${totalQuestionsNum}.`);
         return;
       }
     }
@@ -345,7 +345,7 @@ const CreateCourse = () => {
             </div>
 
             <div className="form-field">
-              <label htmlFor="compulsory-questions" className="form-label">Compulsory questions</label>
+              <label htmlFor="compulsory-questions" className="form-label">Questions to count toward total</label>
               <input
                 type="number"
                 id="compulsory-questions"
@@ -357,7 +357,7 @@ const CreateCourse = () => {
                 onChange={(e) => handleFormChange('compulsoryQuestions', e.target.value)}
               />
               <span className="form-hint">
-                How many questions every student must attempt (e.g. 4 of 6). Remaining questions are optional — marks count only when entered.
+                Student may attempt any questions. If they attempt more than this number, only the highest-scoring ones count (e.g. best 4 of 6).
               </span>
             </div>
 

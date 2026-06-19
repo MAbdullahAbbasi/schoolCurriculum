@@ -147,7 +147,12 @@ router.post('/', requireCourseAccess, async (req, res) => {
     const compulsoryQuestions = course?.compulsoryQuestions ?? null;
     const totalMarksCourse =
       questionPartMarks.length > 0
-        ? effectiveTotalFromQuestionPartMarks(questionPartMarks, questionChoiceGroups, questionParts)
+        ? effectiveTotalFromQuestionPartMarks(
+            questionPartMarks,
+            questionChoiceGroups,
+            questionParts,
+            compulsoryQuestions
+          )
         : topics.reduce((s, t) => s + (Number(t.marks) || 0), 0);
 
     function computeObjectiveMarksFromSlots(student) {
