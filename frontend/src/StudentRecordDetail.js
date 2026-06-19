@@ -8,6 +8,8 @@ import {
   normalizeChoiceGroups,
   isSlotCountedForStudent,
   isPartCompulsory,
+  computeObtainedTotalForStudent,
+  computeEffectiveMaxForStudent,
 } from './questionChoiceUtils.js';
 import { IconCancel, IconEdit, IconNotAttempted, IconSave } from './ButtonIcons';
 import './StudentRecordDetail.css';
@@ -268,37 +270,49 @@ const StudentRecordDetail = () => {
     if (compulsoryQuestions == null || compulsoryQuestions < 1) return [];
     const qM = questionMarks[registrationNumber] || {};
     const na = notAttempted[registrationNumber] || new Set();
-    const withMarks = slots.filter((s) => {
-      if (na.has(s.slotKey)) return false;
+    const questionsWithMarks = new Set();
+    slots.forEach((s) => {
+      if (na.has(s.slotKey)) return;
       const v = qM[s.slotKey];
-      return v != null && Number(v) > 0;
+      if (v != null && Number(v) > 0) questionsWithMarks.add(s.questionIndex);
     });
-    if (withMarks.length < compulsoryQuestions) return [];
-    const noMarksNotNA = slots.filter((s) => !na.has(s.slotKey) && !(Number(qM[s.slotKey]) > 0));
-    return noMarksNotNA.map((s) => s.slotKey);
+    if (questionsWithMarks.size < compulsoryQuestions) return [];
+    return slots
+      .filter((s) => !na.has(s.slotKey) && !(Number(qM[s.slotKey]) > 0))
+      .map((s) => s.slotKey);
   };
 
   const getTotalForStudent = (registrationNumber) => {
     const leftOnChoice = computeLeftOnChoiceForStudent(registrationNumber);
     const qMRaw = questionMarks[registrationNumber] || {};
-    const qM = pickBestQuestionPerGroup(qMRaw, questionPartMarks, course?.questionChoiceGroups, questionParts);
-    const na = notAttempted[registrationNumber] || new Set();
-    return slots.reduce((sum, s) => {
-      if (!s.isCompulsory) return sum;
-      if (na.has(s.slotKey) || leftOnChoice.includes(s.slotKey)) return sum;
-      if (
-        !isSlotCountedForStudent(
-          s,
-          qMRaw,
-          questionPartMarks,
-          course?.questionChoiceGroups,
-          questionParts
-        )
-      ) {
-        return sum;
-      }
-      return sum + (Number(qM[s.slotKey]) || 0);
-    }, 0);
+    const na = Array.from(notAttempted[registrationNumber] || []);
+    return computeObtainedTotalForStudent({
+      slots,
+      questionMarks: qMRaw,
+      notAttemptedSlots: na,
+      leftOnChoiceSlots: leftOnChoice,
+      questionPartMarks,
+      questionChoiceGroups: course?.questionChoiceGroups,
+      questionParts,
+      compulsoryQuestions,
+    });
+  };
+
+  const getEffectiveMaxForStudent = (registrationNumber) => {
+    const leftOnChoice = computeLeftOnChoiceForStudent(registrationNumber);
+    const qMRaw = questionMarks[registrationNumber] || {};
+    const na = Array.from(notAttempted[registrationNumber] || []);
+    return computeEffectiveMaxForStudent({
+      slots,
+      questionMarks: qMRaw,
+      notAttemptedSlots: na,
+      leftOnChoiceSlots: leftOnChoice,
+      baseCompulsoryMax: totalMarksForCourse,
+      questionPartMarks,
+      questionChoiceGroups: course?.questionChoiceGroups,
+      questionParts,
+      compulsoryQuestions,
+    });
   };
 
   const handleMarkKeyDown = (e, slotIndex, studentIndex) => {
@@ -356,12 +370,14 @@ const StudentRecordDetail = () => {
         qMRaw,
         questionPartMarks,
         course?.questionChoiceGroups,
-        questionParts
+        questionParts,
+        compulsoryQuestions
       );
       const na = Array.from(notAttempted[reg] || []);
       const leftOnChoice = computeLeftOnChoiceForStudent(reg);
       const total = getTotalForStudent(reg);
-      const percentage = totalMarksForCourse > 0 ? Math.round((total / totalMarksForCourse) * 10000) / 100 : 0;
+      const effectiveMax = getEffectiveMaxForStudent(reg);
+      const percentage = effectiveMax > 0 ? Math.round((total / effectiveMax) * 10000) / 100 : 0;
       const grade = calculateGrade(percentage);
 
       const questionMarksPayload = {};
@@ -533,7 +549,8 @@ const StudentRecordDetail = () => {
                             qMRaw,
                             questionPartMarks,
                             course?.questionChoiceGroups,
-                            questionParts
+                            questionParts,
+                            compulsoryQuestions
                           );
                           return (
                             <React.Fragment key={reg}>

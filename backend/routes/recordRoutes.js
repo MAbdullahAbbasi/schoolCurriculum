@@ -7,6 +7,9 @@ import { requireCourseAccess, requireRoles } from '../rbac/guards.js';
 import {
   effectiveTotalFromQuestionPartMarks,
   pickBestQuestionsPerGroup,
+  computeObtainedTotalForStudent,
+  computeEffectiveMaxForStudent,
+  getKeptQuestionIndices,
 } from '../utils/questionChoiceMarks.js';
 
 const router = express.Router();
@@ -141,6 +144,7 @@ router.post('/', requireCourseAccess, async (req, res) => {
     );
     const questionParts = course?.questionParts || [];
     const questionChoiceGroups = course?.questionChoiceGroups || [];
+    const compulsoryQuestions = course?.compulsoryQuestions ?? null;
     const totalMarksCourse =
       questionPartMarks.length > 0
         ? effectiveTotalFromQuestionPartMarks(questionPartMarks, questionChoiceGroups, questionParts)
@@ -151,10 +155,18 @@ router.post('/', requireCourseAccess, async (req, res) => {
         student.questionMarks || {},
         questionPartMarks,
         questionChoiceGroups,
-        questionParts
+        questionParts,
+        compulsoryQuestions
       );
       const notAttemptedSlots = student.notAttemptedSlots || [];
       const leftOnChoiceSlots = student.leftOnChoiceSlots || [];
+      const keptQuestions = getKeptQuestionIndices(
+        student.questionMarks || {},
+        questionPartMarks,
+        questionChoiceGroups,
+        questionParts,
+        compulsoryQuestions
+      );
       const objMarks = {};
       topics.forEach((_, idx) => { objMarks[String(idx)] = 0; });
 
@@ -164,6 +176,7 @@ router.post('/', requireCourseAccess, async (req, res) => {
           const part = Number(m.partIndex);
           const slotKey = part === 0 ? `q${q}` : `q${q}-p${part}`;
           const slotMax = Number(m.marks) || 0;
+          if (!keptQuestions.has(q)) continue;
           const qObj = courseQuestions.find((qu) => Number(qu.questionIndex) === q);
           const indices = (qObj?.topicIndices || []).map((i) => Number(i));
           const partIdx = part === 0 ? 0 : part - 1;
@@ -191,6 +204,7 @@ router.post('/', requireCourseAccess, async (req, res) => {
         }
       } else {
         for (let q = 1; q <= (courseQuestions.length || 0); q++) {
+          if (!keptQuestions.has(q)) continue;
           const slotKey = `q${q}`;
           const qObj = courseQuestions.find((qu) => Number(qu.questionIndex) === q);
           if (!qObj || !(qObj.topicIndices && qObj.topicIndices.length)) continue;
@@ -215,8 +229,26 @@ router.post('/', requireCourseAccess, async (req, res) => {
         }
       }
 
-      const totalObtained = Object.values(objMarks).reduce((s, v) => s + Number(v), 0);
-      let percentage = totalMarksCourse > 0 ? Math.round((totalObtained / totalMarksCourse) * 10000) / 100 : 0;
+      const totalObtained = computeObtainedTotalForStudent({
+        questionPartMarks,
+        questionMarks: student.questionMarks || {},
+        notAttemptedSlots,
+        leftOnChoiceSlots,
+        questionChoiceGroups,
+        questionParts,
+        compulsoryQuestions,
+      });
+      const effectiveMax = computeEffectiveMaxForStudent({
+        questionPartMarks,
+        questionMarks: student.questionMarks || {},
+        notAttemptedSlots,
+        leftOnChoiceSlots,
+        questionChoiceGroups,
+        questionParts,
+        compulsoryQuestions,
+      });
+      const totalMarksForPct = effectiveMax > 0 ? effectiveMax : totalMarksCourse;
+      let percentage = totalMarksForPct > 0 ? Math.round((totalObtained / totalMarksForPct) * 10000) / 100 : 0;
       percentage = Math.max(0, Math.min(100, percentage));
       let grade = 'F';
       if (percentage >= 90) grade = 'A+';

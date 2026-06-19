@@ -175,59 +175,199 @@ function obtainedForQuestion(q, marks, questionPartMarks, questionParts) {
   return s;
 }
 
+const resolveCompulsoryQuestionCount = (compulsoryQuestions, allQ) => {
+  if (compulsoryQuestions == null || compulsoryQuestions === '') return null;
+  const n = Math.floor(Number(compulsoryQuestions));
+  if (!Number.isFinite(n) || n < 1) return null;
+  if (allQ.size === 0) return n;
+  return Math.min(n, Math.max(...allQ));
+};
+
 /** Question indices (1-based) whose marks count toward the total for this student. */
-export function getKeptQuestionIndices(questionMarks, questionPartMarks, questionChoiceGroups, questionParts) {
+export function getKeptQuestionIndices(
+  questionMarks,
+  questionPartMarks,
+  questionChoiceGroups,
+  questionParts,
+  compulsoryQuestions = null
+) {
   const groups = normalizeChoiceGroups(questionChoiceGroups);
   const allQ = new Set();
   for (const m of questionPartMarks || []) {
     const q = Number(m.questionIndex);
     if (Number.isFinite(q) && q >= 1) allQ.add(q);
   }
+  if (allQ.size === 0) return new Set();
+
+  const marks = questionMarks || {};
+  const compulsoryCount = resolveCompulsoryQuestionCount(compulsoryQuestions, allQ);
+  const kept = new Set();
   const inAnyGroup = new Set();
   groups.forEach((g) => g.questions.forEach((q) => inAnyGroup.add(q)));
 
-  const kept = new Set();
-  for (const q of allQ) {
-    if (!inAnyGroup.has(q)) kept.add(q);
+  if (compulsoryCount != null) {
+    for (const q of allQ) {
+      if (q <= compulsoryCount) kept.add(q);
+    }
   }
-  if (groups.length === 0) return kept.size > 0 ? kept : allQ;
 
-  const marks = questionMarks || {};
+  for (const q of allQ) {
+    if (inAnyGroup.has(q)) continue;
+    if (compulsoryCount != null && q <= compulsoryCount) continue;
+    if (compulsoryCount != null && q > compulsoryCount) {
+      if (obtainedForQuestion(q, marks, questionPartMarks, questionParts) > 0) {
+        kept.add(q);
+      }
+      continue;
+    }
+    kept.add(q);
+  }
+
   for (const g of groups) {
-    const ranked = g.questions
+    const compulsoryInGroup =
+      compulsoryCount != null ? g.questions.filter((q) => q <= compulsoryCount) : [];
+    const optionalInGroup =
+      compulsoryCount != null ? g.questions.filter((q) => q > compulsoryCount) : g.questions;
+
+    compulsoryInGroup.forEach((q) => kept.add(q));
+
+    const pool = optionalInGroup.length > 0 ? optionalInGroup : compulsoryCount != null ? [] : g.questions;
+    if (pool.length === 0) continue;
+
+    const ranked = pool
       .map((q) => ({ q, score: obtainedForQuestion(q, marks, questionPartMarks, questionParts) }))
       .sort((a, b) => b.score - a.score || a.q - b.q);
-    ranked.slice(0, g.attemptCount).forEach((r) => kept.add(r.q));
+    const attemptCount = Math.min(g.attemptCount, pool.length);
+    ranked.slice(0, attemptCount).forEach((r) => kept.add(r.q));
+  }
+
+  if (groups.length === 0 && compulsoryCount == null) {
+    return allQ;
   }
   return kept;
 }
 
-export function isSlotCountedForStudent(slot, questionMarks, questionPartMarks, questionChoiceGroups, questionParts) {
+export function isSlotCountedForStudent(
+  slot,
+  questionMarks,
+  questionPartMarks,
+  questionChoiceGroups,
+  questionParts,
+  compulsoryQuestions = null
+) {
+  const slotKey = slot?.slotKey ?? slot?.key;
   const q = slot?.questionIndex;
   const part = slot?.partIndex;
-  if (questionParts?.length && part != null && !isPartCompulsory(q, part, questionParts)) {
-    return false;
-  }
+  const marks = questionMarks || {};
+  const hasMarks = slotKey != null && Number(marks[slotKey]) > 0;
+  const isOptionalPart =
+    questionParts?.length && part != null && !isPartCompulsory(q, part, questionParts);
+  if (isOptionalPart && !hasMarks) return false;
   if (q == null) return true;
-  const kept = getKeptQuestionIndices(questionMarks, questionPartMarks, questionChoiceGroups, questionParts);
+  const kept = getKeptQuestionIndices(
+    marks,
+    questionPartMarks,
+    questionChoiceGroups,
+    questionParts,
+    compulsoryQuestions
+  );
   return kept.has(q);
 }
 
-export function pickBestQuestionsPerGroup(questionMarks, questionPartMarks, questionChoiceGroups, questionParts) {
-  const groups = normalizeChoiceGroups(questionChoiceGroups);
-  if (groups.length === 0) return { ...(questionMarks || {}) };
-  const next = { ...(questionMarks || {}) };
-  for (const g of groups) {
-    const ranked = g.questions
-      .map((q) => ({ q, score: obtainedForQuestion(q, next, questionPartMarks, questionParts) }))
-      .sort((a, b) => b.score - a.score);
-    const keep = new Set(ranked.slice(0, g.attemptCount).map((r) => r.q));
-    for (const q of g.questions) {
-      if (keep.has(q)) continue;
-      for (const key of slotKeysForQuestion(questionPartMarks, q)) {
-        delete next[key];
-      }
+export function computeObtainedTotalForStudent({
+  slots,
+  questionMarks,
+  notAttemptedSlots = [],
+  leftOnChoiceSlots = [],
+  questionPartMarks,
+  questionChoiceGroups,
+  questionParts,
+  compulsoryQuestions = null,
+}) {
+  const na = new Set(notAttemptedSlots || []);
+  const leftOnChoice = new Set(leftOnChoiceSlots || []);
+  const qMRaw = questionMarks || {};
+
+  return (slots || []).reduce((sum, s) => {
+    const key = s.slotKey ?? s.key;
+    if (!key || na.has(key) || leftOnChoice.has(key)) return sum;
+    if (
+      !isSlotCountedForStudent(
+        s,
+        qMRaw,
+        questionPartMarks,
+        questionChoiceGroups,
+        questionParts,
+        compulsoryQuestions
+      )
+    ) {
+      return sum;
     }
+    return sum + (Number(qMRaw[key]) || 0);
+  }, 0);
+}
+
+export function computeEffectiveMaxForStudent({
+  slots,
+  questionMarks,
+  notAttemptedSlots = [],
+  leftOnChoiceSlots = [],
+  baseCompulsoryMax,
+  questionPartMarks,
+  questionChoiceGroups,
+  questionParts,
+  compulsoryQuestions = null,
+}) {
+  const na = new Set(notAttemptedSlots || []);
+  const leftOnChoice = new Set(leftOnChoiceSlots || []);
+  const qMRaw = questionMarks || {};
+  let max = 0;
+
+  for (const s of slots || []) {
+    const key = s.slotKey ?? s.key;
+    if (!key || na.has(key) || leftOnChoice.has(key)) continue;
+    if (
+      !isSlotCountedForStudent(
+        s,
+        qMRaw,
+        questionPartMarks,
+        questionChoiceGroups,
+        questionParts,
+        compulsoryQuestions
+      )
+    ) {
+      continue;
+    }
+    max += Number(s.maxMarks) || 0;
+  }
+
+  if (max <= 0 && Number(baseCompulsoryMax) > 0) {
+    return Number(baseCompulsoryMax);
+  }
+  return max;
+}
+
+export function pickBestQuestionsPerGroup(
+  questionMarks,
+  questionPartMarks,
+  questionChoiceGroups,
+  questionParts,
+  compulsoryQuestions = null
+) {
+  const kept = getKeptQuestionIndices(
+    questionMarks,
+    questionPartMarks,
+    questionChoiceGroups,
+    questionParts,
+    compulsoryQuestions
+  );
+  const next = { ...(questionMarks || {}) };
+  for (const m of questionPartMarks || []) {
+    const q = Number(m.questionIndex);
+    if (!Number.isFinite(q) || q < 1 || kept.has(q)) continue;
+    const part = Number(m.partIndex);
+    const key = part === 0 ? `q${q}` : `q${q}-p${part}`;
+    delete next[key];
   }
   return next;
 }

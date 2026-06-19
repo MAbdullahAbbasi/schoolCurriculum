@@ -107,6 +107,7 @@ const StudentsRecord = () => {
         label: w.label || '',
         percentage: w.percentage ?? 0,
       })) : [],
+      compulsoryQuestions: course.compulsoryQuestions != null ? String(course.compulsoryQuestions) : '',
     });
   };
 
@@ -215,6 +216,9 @@ const StudentsRecord = () => {
         label: String(w.label || '').trim(),
         percentage: Number(w.percentage) || 0,
       })),
+      ...(String(editForm.compulsoryQuestions ?? '').trim() !== ''
+        ? { compulsoryQuestions: Number(editForm.compulsoryQuestions) }
+        : { compulsoryQuestions: null }),
     };
 
     try {
@@ -542,6 +546,17 @@ const StudentsRecord = () => {
                     className="course-edit-input"
                     value={editForm.startingDate}
                     onChange={(e) => updateEditField('startingDate', e.target.value)}
+                  />
+                </div>
+                <div className="course-edit-field">
+                  <label className="course-edit-label">Compulsory questions</label>
+                  <input
+                    type="number"
+                    min="1"
+                    className="course-edit-input"
+                    placeholder="e.g. 4 of 6"
+                    value={editForm.compulsoryQuestions ?? ''}
+                    onChange={(e) => updateEditField('compulsoryQuestions', e.target.value)}
                   />
                 </div>
               </div>

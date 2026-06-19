@@ -148,43 +148,217 @@ export function validateQuestionChoiceGroups(groups, totalQuestionsNum, perQuest
   return { ok: true, groups: gnorm };
 }
 
-/**
- * For scoring: keep the top `attemptCount` questions by obtained marks per group; drop the rest.
- */
-export function pickBestQuestionsPerGroup(questionMarks, questionPartMarks, questionChoiceGroups, questionParts) {
+function resolveCompulsoryQuestionCount(compulsoryQuestions, allQ) {
+  if (compulsoryQuestions == null || compulsoryQuestions === '') return null;
+  const n = Math.floor(Number(compulsoryQuestions));
+  if (!Number.isFinite(n) || n < 1) return null;
+  if (allQ.size === 0) return n;
+  return Math.min(n, Math.max(...allQ));
+}
+
+function obtainedForQuestion(q, marks, questionPartMarks, questionParts) {
+  let s = 0;
+  for (const m of questionPartMarks || []) {
+    if (Number(m.questionIndex) !== q) continue;
+    const part = Number(m.partIndex);
+    const key = part === 0 ? `q${q}` : `q${q}-p${part}`;
+    if (questionParts?.length && !isPartCompulsory(q, part, questionParts)) continue;
+    const v = Number(marks[key]);
+    if (!Number.isNaN(v) && v > 0) s += v;
+  }
+  return s;
+}
+
+export function getKeptQuestionIndices(
+  questionMarks,
+  questionPartMarks,
+  questionChoiceGroups,
+  questionParts,
+  compulsoryQuestions = null
+) {
   const groups = normalizeChoiceGroups(questionChoiceGroups);
-  if (groups.length === 0) return { ...(questionMarks || {}) };
-  const next = { ...(questionMarks || {}) };
-  const slotKeysForQuestion = (q) => {
-    const keys = [];
-    for (const m of questionPartMarks || []) {
-      if (Number(m.questionIndex) !== q) continue;
-      const part = Number(m.partIndex);
-      keys.push(part === 0 ? `q${q}` : `q${q}-p${part}`);
+  const allQ = new Set();
+  for (const m of questionPartMarks || []) {
+    const q = Number(m.questionIndex);
+    if (Number.isFinite(q) && q >= 1) allQ.add(q);
+  }
+  if (allQ.size === 0) return new Set();
+
+  const marks = questionMarks || {};
+  const compulsoryCount = resolveCompulsoryQuestionCount(compulsoryQuestions, allQ);
+  const kept = new Set();
+  const inAnyGroup = new Set();
+  groups.forEach((g) => g.questions.forEach((q) => inAnyGroup.add(q)));
+
+  if (compulsoryCount != null) {
+    for (const q of allQ) {
+      if (q <= compulsoryCount) kept.add(q);
     }
-    return keys;
-  };
-  const obtainedForQuestion = (q, marks) => {
-    let s = 0;
-    for (const key of slotKeysForQuestion(q)) {
-      const part = key.includes('-p') ? Number(key.split('-p')[1]) : 0;
-      if (questionParts?.length && !isPartCompulsory(q, part, questionParts)) continue;
-      const v = Number(marks[key]);
-      if (!Number.isNaN(v) && v > 0) s += v;
-    }
-    return s;
-  };
-  for (const g of groups) {
-    const ranked = g.questions
-      .map((q) => ({ q, score: obtainedForQuestion(q, next) }))
-      .sort((a, b) => b.score - a.score || a.q - b.q);
-    const keep = new Set(ranked.slice(0, g.attemptCount).map((r) => r.q));
-    for (const q of g.questions) {
-      if (keep.has(q)) continue;
-      for (const key of slotKeysForQuestion(q)) {
-        delete next[key];
+  }
+
+  for (const q of allQ) {
+    if (inAnyGroup.has(q)) continue;
+    if (compulsoryCount != null && q <= compulsoryCount) continue;
+    if (compulsoryCount != null && q > compulsoryCount) {
+      if (obtainedForQuestion(q, marks, questionPartMarks, questionParts) > 0) {
+        kept.add(q);
       }
+      continue;
     }
+    kept.add(q);
+  }
+
+  for (const g of groups) {
+    const compulsoryInGroup =
+      compulsoryCount != null ? g.questions.filter((q) => q <= compulsoryCount) : [];
+    const optionalInGroup =
+      compulsoryCount != null ? g.questions.filter((q) => q > compulsoryCount) : g.questions;
+
+    compulsoryInGroup.forEach((q) => kept.add(q));
+
+    const pool = optionalInGroup.length > 0 ? optionalInGroup : compulsoryCount != null ? [] : g.questions;
+    if (pool.length === 0) continue;
+
+    const ranked = pool
+      .map((q) => ({ q, score: obtainedForQuestion(q, marks, questionPartMarks, questionParts) }))
+      .sort((a, b) => b.score - a.score || a.q - b.q);
+    const attemptCount = Math.min(g.attemptCount, pool.length);
+    ranked.slice(0, attemptCount).forEach((r) => kept.add(r.q));
+  }
+
+  if (groups.length === 0 && compulsoryCount == null) {
+    return allQ;
+  }
+  return kept;
+}
+
+function isSlotCountedForStudent(
+  slotKey,
+  questionIndex,
+  partIndex,
+  questionMarks,
+  questionPartMarks,
+  questionChoiceGroups,
+  questionParts,
+  compulsoryQuestions = null
+) {
+  const marks = questionMarks || {};
+  const hasMarks = slotKey != null && Number(marks[slotKey]) > 0;
+  const isOptionalPart =
+    questionParts?.length && partIndex != null && !isPartCompulsory(questionIndex, partIndex, questionParts);
+  if (isOptionalPart && !hasMarks) return false;
+  if (questionIndex == null) return true;
+  const kept = getKeptQuestionIndices(
+    marks,
+    questionPartMarks,
+    questionChoiceGroups,
+    questionParts,
+    compulsoryQuestions
+  );
+  return kept.has(questionIndex);
+}
+
+export function computeObtainedTotalForStudent({
+  questionPartMarks,
+  questionMarks,
+  notAttemptedSlots = [],
+  leftOnChoiceSlots = [],
+  questionChoiceGroups,
+  questionParts,
+  compulsoryQuestions = null,
+}) {
+  const na = new Set(notAttemptedSlots || []);
+  const leftOnChoice = new Set(leftOnChoiceSlots || []);
+  const qMRaw = questionMarks || {};
+  let sum = 0;
+
+  for (const m of questionPartMarks || []) {
+    const q = Number(m.questionIndex);
+    const part = Number(m.partIndex);
+    const slotKey = part === 0 ? `q${q}` : `q${q}-p${part}`;
+    if (na.has(slotKey) || leftOnChoice.has(slotKey)) continue;
+    if (
+      !isSlotCountedForStudent(
+        slotKey,
+        q,
+        part,
+        qMRaw,
+        questionPartMarks,
+        questionChoiceGroups,
+        questionParts,
+        compulsoryQuestions
+      )
+    ) {
+      continue;
+    }
+    sum += Number(qMRaw[slotKey]) || 0;
+  }
+  return sum;
+}
+
+export function computeEffectiveMaxForStudent({
+  questionPartMarks,
+  questionMarks,
+  notAttemptedSlots = [],
+  leftOnChoiceSlots = [],
+  questionChoiceGroups,
+  questionParts,
+  compulsoryQuestions = null,
+}) {
+  const na = new Set(notAttemptedSlots || []);
+  const leftOnChoice = new Set(leftOnChoiceSlots || []);
+  const qMRaw = questionMarks || {};
+  let max = 0;
+
+  for (const m of questionPartMarks || []) {
+    const q = Number(m.questionIndex);
+    const part = Number(m.partIndex);
+    const slotKey = part === 0 ? `q${q}` : `q${q}-p${part}`;
+    const slotMax = Number(m.marks) || 0;
+    if (na.has(slotKey) || leftOnChoice.has(slotKey)) continue;
+    if (
+      !isSlotCountedForStudent(
+        slotKey,
+        q,
+        part,
+        qMRaw,
+        questionPartMarks,
+        questionChoiceGroups,
+        questionParts,
+        compulsoryQuestions
+      )
+    ) {
+      continue;
+    }
+    max += slotMax;
+  }
+  return max;
+}
+
+/**
+ * For scoring: keep marks only for questions that count toward this student's total.
+ */
+export function pickBestQuestionsPerGroup(
+  questionMarks,
+  questionPartMarks,
+  questionChoiceGroups,
+  questionParts,
+  compulsoryQuestions = null
+) {
+  const kept = getKeptQuestionIndices(
+    questionMarks,
+    questionPartMarks,
+    questionChoiceGroups,
+    questionParts,
+    compulsoryQuestions
+  );
+  const next = { ...(questionMarks || {}) };
+  for (const m of questionPartMarks || []) {
+    const q = Number(m.questionIndex);
+    if (!Number.isFinite(q) || q < 1 || kept.has(q)) continue;
+    const part = Number(m.partIndex);
+    const key = part === 0 ? `q${q}` : `q${q}-p${part}`;
+    delete next[key];
   }
   return next;
 }

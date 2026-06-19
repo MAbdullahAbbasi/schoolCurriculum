@@ -17,6 +17,7 @@ const defaultFormData = {
   startDate: '',
   totalMarks: '',
   totalQuestions: '',
+  compulsoryQuestions: '',
 };
 
 const CreateCourse = () => {
@@ -143,6 +144,15 @@ const CreateCourse = () => {
       return;
     }
 
+    let compulsoryQuestionsNum = null;
+    if (String(formData.compulsoryQuestions ?? '').trim() !== '') {
+      compulsoryQuestionsNum = parseInt(formData.compulsoryQuestions, 10);
+      if (Number.isNaN(compulsoryQuestionsNum) || compulsoryQuestionsNum < 1 || compulsoryQuestionsNum > totalQuestionsNum) {
+        setCreateError(`Compulsory questions must be between 1 and ${totalQuestionsNum}.`);
+        return;
+      }
+    }
+
     const partsConfig = questionParts.slice(0, totalQuestionsNum).map((row, i) => ({
       questionIndex: i + 1,
       numParts: row.numParts === '' ? 0 : Math.max(0, parseInt(String(row.numParts).trim(), 10) || 0),
@@ -176,6 +186,7 @@ const CreateCourse = () => {
       startingDate: formData.startDate,
       totalMarks: totalMarksNum,
       totalQuestions: totalQuestionsNum,
+      ...(compulsoryQuestionsNum != null && { compulsoryQuestions: compulsoryQuestionsNum }),
     };
 
     navigate('/create-course/marks', {
@@ -331,6 +342,23 @@ const CreateCourse = () => {
                 onChange={(e) => handleFormChange('totalQuestions', e.target.value)}
               />
               <span className="form-hint">Enter number of questions. Then set parts per question below and press Next.</span>
+            </div>
+
+            <div className="form-field">
+              <label htmlFor="compulsory-questions" className="form-label">Compulsory questions</label>
+              <input
+                type="number"
+                id="compulsory-questions"
+                min="1"
+                step="1"
+                className="total-questions-input"
+                placeholder={totalQuestionsNum > 0 ? `e.g. 4 of ${totalQuestionsNum}` : 'e.g. 4'}
+                value={formData.compulsoryQuestions}
+                onChange={(e) => handleFormChange('compulsoryQuestions', e.target.value)}
+              />
+              <span className="form-hint">
+                How many questions every student must attempt (e.g. 4 of 6). Remaining questions are optional — marks count only when entered.
+              </span>
             </div>
 
           </div>
