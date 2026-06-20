@@ -171,6 +171,138 @@ export const formatDateDisplay = (value) => {
   return date.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
+const MONTH_TOKEN_TO_NUM = {
+  january: 1,
+  february: 2,
+  march: 3,
+  april: 4,
+  may: 5,
+  june: 6,
+  july: 7,
+  august: 8,
+  september: 9,
+  october: 10,
+  november: 11,
+  december: 12,
+  jan: 1,
+  feb: 2,
+  mar: 3,
+  apr: 4,
+  jun: 6,
+  jul: 7,
+  aug: 8,
+  sep: 9,
+  sept: 9,
+  oct: 10,
+  nov: 11,
+  dec: 12,
+};
+
+const MONTH_TOKENS_BY_LENGTH = Object.keys(MONTH_TOKEN_TO_NUM).sort((a, b) => b.length - a.length);
+
+const parseYearFromText = (text) => {
+  const match = String(text || '').match(/\b(20\d{2})\b/);
+  return match ? Number(match[1]) : null;
+};
+
+const parseMonthFromText = (text) => {
+  const lower = String(text || '').toLowerCase();
+  for (const token of MONTH_TOKENS_BY_LENGTH) {
+    const re = new RegExp(`(^|[^a-z])${token}([^a-z]|$)`, 'i');
+    if (re.test(lower)) return MONTH_TOKEN_TO_NUM[token];
+  }
+  return null;
+};
+
+const parseMonthYearFromDate = (value) => {
+  if (value == null || value === '') return { month: null, year: null };
+  const iso = String(value).trim().match(/^(\d{4})-(\d{2})/);
+  if (iso) {
+    return { month: Number(iso[2]), year: Number(iso[1]) };
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return { month: null, year: null };
+  return { month: date.getUTCMonth() + 1, year: date.getUTCFullYear() };
+};
+
+/** Exam session (month/year) from grading scheme name and start date. */
+export const getGradingSchemeSession = (gradingScheme) => {
+  if (!gradingScheme) return { month: null, year: null };
+  const name = String(gradingScheme.name || '');
+  const fromDate = parseMonthYearFromDate(gradingScheme.startDate);
+  return {
+    month: parseMonthFromText(name) || fromDate.month,
+    year: parseYearFromText(name) || fromDate.year,
+  };
+};
+
+/** Exam session for a course from name, startingDate, code, or saved record timestamps. */
+export const getCourseSession = (course, record = null) => {
+  const label = String(course?.courseName || course?.code || '');
+  const fromName = {
+    month: parseMonthFromText(label),
+    year: parseYearFromText(label),
+  };
+  if (fromName.month && fromName.year) return fromName;
+
+  const fromStartingDate = parseMonthYearFromDate(course?.startingDate);
+  if ((fromName.month || fromStartingDate.month) && (fromName.year || fromStartingDate.year)) {
+    return {
+      month: fromName.month || fromStartingDate.month,
+      year: fromName.year || fromStartingDate.year,
+    };
+  }
+
+  const codeMatch = String(course?.code || '').match(/-(\d{4})(\d{2})(\d{2})-/);
+  if (codeMatch) {
+    return { month: Number(codeMatch[2]), year: Number(codeMatch[1]) };
+  }
+
+  if (record) {
+    const fromRecord = parseMonthYearFromDate(record.updatedAt || record.createdAt);
+    if (fromRecord.month && fromRecord.year) return fromRecord;
+  }
+
+  return {
+    month: fromName.month || fromStartingDate.month,
+    year: fromName.year || fromStartingDate.year,
+  };
+};
+
+export const courseMatchesGradingSchemeSession = (course, gradingScheme, record = null) => {
+  if (!gradingScheme) return true;
+  const schemeSession = getGradingSchemeSession(gradingScheme);
+  if (!schemeSession.month && !schemeSession.year) return true;
+
+  const courseSession = getCourseSession(course, record);
+  if (schemeSession.year) {
+    if (!courseSession.year || courseSession.year !== schemeSession.year) return false;
+  }
+  if (schemeSession.month) {
+    if (!courseSession.month || courseSession.month !== schemeSession.month) return false;
+  }
+  return true;
+};
+
+export const formatSessionLabelFromGradingScheme = (gradingScheme) => {
+  if (!gradingScheme) {
+    return new Date().toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  }
+  const session = getGradingSchemeSession(gradingScheme);
+  if (session.month && session.year) {
+    const monthName = new Date(session.year, session.month - 1, 1).toLocaleDateString(undefined, {
+      month: 'long',
+    });
+    return `${monthName} ${session.year}`;
+  }
+  const name = String(gradingScheme.name || '').trim();
+  if (name) return name;
+  const start = formatDateDisplay(gradingScheme.startDate);
+  const end = formatDateDisplay(gradingScheme.endDate);
+  if (start !== '—' && end !== '—') return `${start} – ${end}`;
+  return start !== '—' ? start : '—';
+};
+
 export const courseMatchesGrade = (course, selectedGrade) => {
   if (!selectedGrade) return false;
   const normalized = normalizeGradeForMatch(selectedGrade);
@@ -202,12 +334,13 @@ export const courseHasSavedRecords = (record, registrationNumber = null) => {
   return record.students.some((entry) => studentHasCourseRecord(entry));
 };
 
-export const filterCoursesForReport = (courses, { grade, recordsByCourse, registrationNumber } = {}) => {
+export const filterCoursesForReport = (courses, { grade, gradingScheme, recordsByCourse, registrationNumber } = {}) => {
   if (!Array.isArray(courses)) return [];
   return courses.filter((course) => {
     if (grade && !courseMatchesGrade(course, grade)) return false;
+    const record = recordsByCourse?.[course.code] || null;
+    if (gradingScheme && !courseMatchesGradingSchemeSession(course, gradingScheme, record)) return false;
     if (recordsByCourse) {
-      const record = recordsByCourse[course.code];
       if (!courseHasSavedRecords(record, registrationNumber)) return false;
     }
     return true;
@@ -349,6 +482,7 @@ export const buildStudentReportData = ({
   courses,
   recordsByCourse,
   gradingSchemeRows,
+  gradingScheme = null,
   registrationNumber,
   curriculumList = [],
 }) => {
@@ -360,6 +494,7 @@ export const buildStudentReportData = ({
     ? []
     : filterCoursesForReport(courses, {
         grade: student?.grade,
+        gradingScheme,
         recordsByCourse,
         registrationNumber: decodedRegNo,
       })
@@ -504,7 +639,8 @@ export const buildStudentReportData = ({
     displayDob: formatDateDisplay(student?.dateOfBirth),
     studentAge: formatAgeFromMonths(getAgeInMonths(student?.dateOfBirth)),
     averageAgeInClass: formatAgeFromMonths(averageAgeMonths),
-    reportMonthYear: new Date().toLocaleDateString(undefined, { month: 'long', year: 'numeric' }),
+    reportMonthYear: formatSessionLabelFromGradingScheme(gradingScheme),
+    sessionLabel: formatSessionLabelFromGradingScheme(gradingScheme),
     objectiveSections,
     marksheetRows,
     totalMax: totalMax > 0 ? totalMax : '',

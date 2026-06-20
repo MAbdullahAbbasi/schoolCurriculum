@@ -5,7 +5,7 @@ import { API_URL } from './config/api';
 import { IconBack } from './ButtonIcons';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { getCourseTotalMarks, filterCoursesForReport } from './reportUtils';
+import { getCourseTotalMarks, filterCoursesForReport, formatSessionLabelFromGradingScheme } from './reportUtils';
 import './ResultSheet.css';
 
 // Registration number has 4 parts separated by 3 hyphens: year - serialNumber - part3 - part4
@@ -40,6 +40,7 @@ const ResultSheet = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const selectedGrade = location.state?.selectedGrade ?? '';
+  const selectedGradingScheme = location.state?.selectedGradingScheme ?? null;
 
   const [students, setStudents] = useState([]);
   const [courses, setCourses] = useState([]);
@@ -50,22 +51,26 @@ const ResultSheet = () => {
 
   const tableRef = useRef(null);
 
-  const allCourseCodesForGrade = useMemo(() => {
+  const sessionCourseCodesForGrade = useMemo(() => {
     if (!selectedGrade) return [];
-    return filterCoursesForReport(courses, { grade: selectedGrade })
+    return filterCoursesForReport(courses, {
+      grade: selectedGrade,
+      gradingScheme: selectedGradingScheme,
+    })
       .map((c) => c.code)
       .filter(Boolean);
-  }, [courses, selectedGrade]);
+  }, [courses, selectedGrade, selectedGradingScheme]);
 
   const courseCodesForGrade = useMemo(() => {
     if (!selectedGrade) return [];
     return filterCoursesForReport(courses, {
       grade: selectedGrade,
+      gradingScheme: selectedGradingScheme,
       recordsByCourse,
     })
       .map((c) => c.code)
       .filter(Boolean);
-  }, [courses, selectedGrade, recordsByCourse]);
+  }, [courses, selectedGrade, selectedGradingScheme, recordsByCourse]);
 
   const coursesForGrade = useMemo(() => {
     return (courses || []).filter((c) => courseCodesForGrade.includes(c.code));
@@ -106,7 +111,7 @@ const ResultSheet = () => {
   }, []);
 
   useEffect(() => {
-    if (!selectedGrade || allCourseCodesForGrade.length === 0) {
+    if (!selectedGrade || sessionCourseCodesForGrade.length === 0) {
       setRecordsByCourse({});
       return;
     }
@@ -114,7 +119,7 @@ const ResultSheet = () => {
     const fetchRecords = async () => {
       const byCourse = {};
       await Promise.all(
-        allCourseCodesForGrade.map(async (code) => {
+        sessionCourseCodesForGrade.map(async (code) => {
           if (cancelled) return;
           try {
             const res = await axios.get(`${API_URL}/api/records/course/${encodeURIComponent(code)}`);
@@ -128,7 +133,7 @@ const ResultSheet = () => {
     };
     fetchRecords();
     return () => { cancelled = true; };
-  }, [selectedGrade, allCourseCodesForGrade]);
+  }, [selectedGrade, sessionCourseCodesForGrade]);
 
   // Matrix: subject rows, student columns. Each cell has { marks, percentage } for that subject. Rows sorted by SUBJECT_ORDER.
   const { subjectRows, studentTotals, studentPercentages } = useMemo(() => {
@@ -412,7 +417,10 @@ const ResultSheet = () => {
           <button type="button" className="result-sheet-back-btn" onClick={handleBack}>
             <span className="btn-icon-wrap"><IconBack />Back to Reports</span>
           </button>
-          <h2 className="result-sheet-title page-local-header">Result Sheet — Grade {selectedGrade}</h2>
+          <h2 className="result-sheet-title page-local-header">
+            Result Sheet — Grade {selectedGrade}
+            {selectedGradingScheme ? ` (${formatSessionLabelFromGradingScheme(selectedGradingScheme)})` : ''}
+          </h2>
         </div>
 
         <div className="result-sheet-table-actions">

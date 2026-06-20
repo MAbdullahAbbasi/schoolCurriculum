@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from './config/api';
 import { IconBack } from './ButtonIcons';
-import { formatGradingSchemeForDisplay, getCourseTotalMarks, getSubjectSortIndex, filterCoursesForReport, studentHasCourseRecord } from './reportUtils';
+import { formatGradingSchemeForDisplay, formatSessionLabelFromGradingScheme, getCourseTotalMarks, getSubjectSortIndex, filterCoursesForReport, studentHasCourseRecord } from './reportUtils';
 import logoLeft from './assets/logoleft.jpg';
 import logoRight from './assets/logoright.jpg';
 import './StudentReportDetail.css';
@@ -113,6 +113,7 @@ const StudentReportDetail = () => {
   const location = useLocation();
   const studentFromState = location.state?.student;
   const gradingSchemeRowsFromState = location.state?.gradingSchemeRows;
+  const selectedGradingSchemeFromState = location.state?.selectedGradingScheme ?? null;
 
   const [student, setStudent] = useState(studentFromState || null);
   const [allStudents, setAllStudents] = useState([]);
@@ -189,6 +190,7 @@ const StudentReportDetail = () => {
 
         const gradeCourseCodes = filterCoursesForReport(coursesList, {
           grade: currentStudent.grade,
+          gradingScheme: selectedGradingSchemeFromState,
         })
           .map((c) => c.code)
           .filter(Boolean);
@@ -226,6 +228,7 @@ const StudentReportDetail = () => {
 
     const list = filterCoursesForReport(courses, {
       grade: student?.grade,
+      gradingScheme: selectedGradingSchemeFromState,
       recordsByCourse,
       registrationNumber: decodedRegNo,
     })
@@ -245,7 +248,7 @@ const StudentReportDetail = () => {
       const labelB = (b.course.subject && String(b.course.subject).trim()) || b.course.courseName || b.course.code || '';
       return getSubjectSortIndex(labelA) - getSubjectSortIndex(labelB);
     });
-  }, [courses, recordsByCourse, student, decodedRegNo]);
+  }, [courses, recordsByCourse, student, decodedRegNo, selectedGradingSchemeFromState]);
 
   const currentStudentGrade = normalizeGradeForMatch(student?.grade);
   const gradeByRegistration = useMemo(
@@ -392,7 +395,7 @@ const StudentReportDetail = () => {
         classmatesWithDob.reduce((sum, s) => sum + getAgeInMonths(s.dateOfBirth), 0) / classmatesWithDob.length
       )
     : null;
-  const reportMonthYear = new Date().toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  const reportMonthYear = formatSessionLabelFromGradingScheme(selectedGradingSchemeFromState);
 
   return (
     <div className="student-report-detail-container">      <div className="student-report-detail-content">
