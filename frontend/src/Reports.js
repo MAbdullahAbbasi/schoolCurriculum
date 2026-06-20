@@ -18,8 +18,8 @@ import {
   normalizeGradingSchemeRows,
   getCourseTotalMarks,
   getGradeFromPercentageWithScheme,
-  formatDateDisplay,
   filterCoursesForReport,
+  formatGradingSchemeOptionLabel,
 } from './reportUtils';
 import logoLeft from './assets/logoleft.jpg';
 import './Reports.css';
@@ -41,14 +41,6 @@ const getWatermarkDataUrl = () =>
     img.src = logoLeft;
   });
 
-const formatGradingSchemeOptionLabel = (scheme) => {
-  const name = String(scheme?.name || 'Grading scheme').trim();
-  const start = formatDateDisplay(scheme?.startDate);
-  const end = formatDateDisplay(scheme?.endDate);
-  if (start !== '—' && end !== '—') return `${name} (${start} – ${end})`;
-  if (start !== '—') return `${name} (from ${start})`;
-  return name;
-};
 
 const gradeFromPercentage = (percentage, schemeRows) =>
   getGradeFromPercentageWithScheme(percentage, schemeRows);
@@ -554,7 +546,7 @@ const Reports = () => {
         {selectedGrade && selectedGradingSchemeId && sessionCourseCodesForGrade.length === 0 && (
           <div className="reports-prompt reports-prompt-warning">
             No courses match exam session &quot;{formatGradingSchemeOptionLabel(selectedGradingScheme)}&quot; for Grade {selectedGrade}.
-            Course names or starting dates should include the exam month and year (e.g. May 2026).
+            When creating or editing a course, assign the same exam session (grading scheme).
           </div>
         )}
 

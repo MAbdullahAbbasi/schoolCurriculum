@@ -137,6 +137,13 @@ const courseSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+
+    // Links course to an exam session / grading scheme for reports.
+    gradingSchemeId: {
+      type: String,
+      default: null,
+      trim: true,
+    },
   },
   {
     collection: 'courses',

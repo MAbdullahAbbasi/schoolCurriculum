@@ -1,11 +1,15 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import axios from 'axios';
+import { API_URL } from './config/api';
 import { IconCancel, IconNext } from './ButtonIcons';
 import { resolveTopicsFromCurriculum } from './objectiveKeyUtils';
+import { formatGradingSchemeOptionLabel } from './reportUtils';
 import './CreateCourse.css';
 
 const defaultFormData = {
   courseName: '',
+  gradingSchemeId: '',
   durationType: '',
   durationValue: '',
   weightageItems: [
@@ -26,8 +30,23 @@ const CreateCourse = () => {
   const { selectedTopics = [], data: curriculumData = [], resolvedTopics: preResolvedTopics = null } = location.state || {};
 
   const [formData, setFormData] = useState(defaultFormData);
+  const [gradingSchemes, setGradingSchemes] = useState([]);
   const [questionParts, setQuestionParts] = useState([]);
   const [createError, setCreateError] = useState(null);
+
+  useEffect(() => {
+    const fetchSchemes = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/api/grading-schemes`);
+        if (res.data?.success) {
+          setGradingSchemes(res.data.data || []);
+        }
+      } catch {
+        setGradingSchemes([]);
+      }
+    };
+    fetchSchemes();
+  }, []);
 
   const totalQuestionsNum = useMemo(() => {
     const n = parseInt(formData.totalQuestions, 10);
@@ -114,6 +133,10 @@ const CreateCourse = () => {
       setCreateError('Course name is required.');
       return;
     }
+    if (gradingSchemes.length > 0 && !formData.gradingSchemeId) {
+      setCreateError('Please select the exam session (grading scheme) for this course.');
+      return;
+    }
     if (!formData.durationType || !formData.durationValue) {
       setCreateError('Duration is required.');
       return;
@@ -175,6 +198,7 @@ const CreateCourse = () => {
     const coursePayload = {
       courseName: formData.courseName.trim(),
       subject: resolvedTopics[0]?.subject ?? '',
+      ...(formData.gradingSchemeId && { gradingSchemeId: formData.gradingSchemeId }),
       courseDuration: {
         type: formData.durationType,
         value: Number(formData.durationValue),
@@ -241,6 +265,33 @@ const CreateCourse = () => {
                 value={formData.courseName}
                 onChange={(e) => handleFormChange('courseName', e.target.value)}
               />
+            </div>
+
+            <div className="form-field">
+              <label htmlFor="grading-scheme" className="form-label">Exam session (grading scheme)</label>
+              <select
+                id="grading-scheme"
+                className="course-name-input"
+                value={formData.gradingSchemeId}
+                onChange={(e) => handleFormChange('gradingSchemeId', e.target.value)}
+                disabled={gradingSchemes.length === 0}
+              >
+                {gradingSchemes.length === 0 ? (
+                  <option value="">No grading schemes — create one first</option>
+                ) : (
+                  <>
+                    <option value="">Select exam session</option>
+                    {gradingSchemes.map((scheme) => (
+                      <option key={scheme._id} value={String(scheme._id)}>
+                        {formatGradingSchemeOptionLabel(scheme)}
+                      </option>
+                    ))}
+                  </>
+                )}
+              </select>
+              <span className="form-hint">
+                Reports and result sheets will include this course only when this session is selected.
+              </span>
             </div>
 
             <div className="form-field">

@@ -271,6 +271,13 @@ export const getCourseSession = (course, record = null) => {
 
 export const courseMatchesGradingSchemeSession = (course, gradingScheme, record = null) => {
   if (!gradingScheme) return true;
+
+  const schemeId = getGradingSchemeId(gradingScheme);
+  const courseSchemeId = getCourseGradingSchemeId(course);
+  if (schemeId && courseSchemeId) {
+    return courseSchemeId === schemeId;
+  }
+
   const schemeSession = getGradingSchemeSession(gradingScheme);
   if (!schemeSession.month && !schemeSession.year) return true;
 
@@ -301,6 +308,28 @@ export const formatSessionLabelFromGradingScheme = (gradingScheme) => {
   const end = formatDateDisplay(gradingScheme.endDate);
   if (start !== '—' && end !== '—') return `${start} – ${end}`;
   return start !== '—' ? start : '—';
+};
+
+export const formatGradingSchemeOptionLabel = (scheme) => {
+  const name = String(scheme?.name || 'Grading scheme').trim();
+  const start = formatDateDisplay(scheme?.startDate);
+  const end = formatDateDisplay(scheme?.endDate);
+  if (start !== '—' && end !== '—') return `${name} (${start} – ${end})`;
+  if (start !== '—') return `${name} (from ${start})`;
+  return name;
+};
+
+export const getGradingSchemeId = (gradingScheme) => {
+  if (!gradingScheme) return null;
+  const id = gradingScheme._id ?? gradingScheme.id;
+  if (id == null || id === '') return null;
+  return String(id);
+};
+
+export const getCourseGradingSchemeId = (course) => {
+  const id = course?.gradingSchemeId;
+  if (id == null || id === '') return null;
+  return String(id);
 };
 
 export const courseMatchesGrade = (course, selectedGrade) => {

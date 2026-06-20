@@ -67,7 +67,7 @@ router.post('/', requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), async (req, res)
       });
     }
 
-    const { courseName, courseDuration, weightage, startingDate, topics, totalMarks: bodyTotalMarks, totalQuestions: bodyTotalQuestions, questions: bodyQuestions, subject: bodySubject, compulsoryQuestions: bodyCompulsory, questionParts: bodyQuestionParts, questionPartMarks: bodyQuestionPartMarks } = req.body;
+    const { courseName, courseDuration, weightage, startingDate, topics, totalMarks: bodyTotalMarks, totalQuestions: bodyTotalQuestions, questions: bodyQuestions, subject: bodySubject, compulsoryQuestions: bodyCompulsory, questionParts: bodyQuestionParts, questionPartMarks: bodyQuestionPartMarks, gradingSchemeId: bodyGradingSchemeId } = req.body;
 
     // Validate required fields
     if (!courseName || !courseName.trim()) {
@@ -214,10 +214,15 @@ router.post('/', requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), async (req, res)
 
     // Create course object
     const subjectStr = bodySubject != null && String(bodySubject).trim() !== '' ? String(bodySubject).trim() : '';
+    const gradingSchemeIdStr =
+      bodyGradingSchemeId != null && String(bodyGradingSchemeId).trim() !== ''
+        ? String(bodyGradingSchemeId).trim()
+        : null;
     const courseData = {
       code,
       courseName: courseName.trim(),
       ...(subjectStr && { subject: subjectStr }),
+      ...(gradingSchemeIdStr && { gradingSchemeId: gradingSchemeIdStr }),
       courseDuration: {
         type: courseDuration.type,
         value: Number(courseDuration.value),
@@ -393,6 +398,7 @@ router.put('/:code', requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), async (req, 
       questionPartMarks,
       compulsoryQuestions,
       questionChoiceGroups,
+      gradingSchemeId,
     } = req.body || {};
 
     if (courseName !== undefined) {
@@ -477,6 +483,12 @@ router.put('/:code', requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), async (req, 
 
     if (totalQuestions !== undefined) existing.totalQuestions = totalQuestions == null ? null : Number(totalQuestions);
     if (compulsoryQuestions !== undefined) existing.compulsoryQuestions = compulsoryQuestions == null ? null : Number(compulsoryQuestions);
+    if (gradingSchemeId !== undefined) {
+      existing.gradingSchemeId =
+        gradingSchemeId == null || String(gradingSchemeId).trim() === ''
+          ? null
+          : String(gradingSchemeId).trim();
+    }
     if (Array.isArray(questions)) existing.questions = questions;
     if (Array.isArray(questionParts)) existing.questionParts = questionParts;
     if (Array.isArray(questionPartMarks)) existing.questionPartMarks = questionPartMarks;

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from './config/api';
 import { IconAdd, IconCancel, IconClose, IconDelete, IconEdit, IconRemove, IconSave, IconSelectAll } from './ButtonIcons';
+import { formatGradingSchemeOptionLabel } from './reportUtils';
 import './StudentsRecord.css';
 
 const normalizeDateForInput = (d) => {
@@ -18,6 +19,7 @@ const normalizeDateForInput = (d) => {
 const StudentsRecord = () => {
   const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
+  const [gradingSchemes, setGradingSchemes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deletingCourseCode, setDeletingCourseCode] = useState(null);
@@ -46,7 +48,17 @@ const StudentsRecord = () => {
   const getColSpan = () => 7 + (showSelectionCol ? 1 : 0) + (showActionCol ? 1 : 0);
 
   useEffect(() => {
-    fetchCourses();
+    const load = async () => {
+      await Promise.all([
+        fetchCourses(),
+        axios.get(`${API_URL}/api/grading-schemes`)
+          .then((res) => {
+            if (res.data?.success) setGradingSchemes(res.data.data || []);
+          })
+          .catch(() => setGradingSchemes([])),
+      ]);
+    };
+    load();
   }, []);
 
   const sortedCourses = useMemo(() => {
@@ -108,8 +120,17 @@ const StudentsRecord = () => {
         percentage: w.percentage ?? 0,
       })) : [],
       compulsoryQuestions: course.compulsoryQuestions != null ? String(course.compulsoryQuestions) : '',
+      gradingSchemeId: course.gradingSchemeId != null ? String(course.gradingSchemeId) : '',
     });
   };
+
+  const gradingSchemeLabelById = useMemo(() => {
+    const map = new Map();
+    gradingSchemes.forEach((s) => {
+      if (s._id) map.set(String(s._id), formatGradingSchemeOptionLabel(s));
+    });
+    return map;
+  }, [gradingSchemes]);
 
   const closeEdit = () => {
     setEditingCourse(null);
@@ -219,6 +240,9 @@ const StudentsRecord = () => {
       ...(String(editForm.compulsoryQuestions ?? '').trim() !== ''
         ? { compulsoryQuestions: Number(editForm.compulsoryQuestions) }
         : { compulsoryQuestions: null }),
+      ...(String(editForm.gradingSchemeId ?? '').trim() !== ''
+        ? { gradingSchemeId: String(editForm.gradingSchemeId) }
+        : { gradingSchemeId: null }),
     };
 
     try {
@@ -405,6 +429,7 @@ const StudentsRecord = () => {
                   <th>Sr. No</th>
                   <th>Course Code</th>
                     <th>Course Name</th>
+                    <th>Session</th>
                     <th>Duration</th>
                     <th>Start Date</th>
                     <th>Topics</th>
@@ -439,6 +464,11 @@ const StudentsRecord = () => {
                       <td>{idx + 1}</td>
                       <td>{course.code || '-'}</td>
                       <td>{course.courseName || '-'}</td>
+                      <td>
+                        {course.gradingSchemeId
+                          ? gradingSchemeLabelById.get(String(course.gradingSchemeId)) || 'Linked session'
+                          : '—'}
+                      </td>
                       <td>
                         {course.courseDuration?.value != null && course.courseDuration?.type
                           ? `${course.courseDuration.value} ${course.courseDuration.type}`
@@ -516,6 +546,21 @@ const StudentsRecord = () => {
                     value={editForm.courseName}
                     onChange={(e) => updateEditField('courseName', e.target.value)}
                   />
+                </div>
+                <div className="course-edit-field">
+                  <label className="course-edit-label">Exam session (grading scheme)</label>
+                  <select
+                    className="course-edit-input"
+                    value={editForm.gradingSchemeId ?? ''}
+                    onChange={(e) => updateEditField('gradingSchemeId', e.target.value)}
+                  >
+                    <option value="">Not linked to a session</option>
+                    {gradingSchemes.map((scheme) => (
+                      <option key={scheme._id} value={String(scheme._id)}>
+                        {formatGradingSchemeOptionLabel(scheme)}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="course-edit-field">
                   <label className="course-edit-label">Duration Type</label>
