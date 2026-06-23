@@ -1,0 +1,140 @@
+.student-report-card {
+  background: #fff;
+  border: 1px solid #c5d5c5;
+  border-radius: 6px;
+  padding: 10px 12px 12px;
+  margin-bottom: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  font-size: 11px;
+  color: #1a3d2e;
+  box-sizing: border-box;
+}
+
+.report-cards-pdf-page {
+  width: 794px;
+  background: #fff;
+  padding: 8px 12px;
+  box-sizing: border-box;
+}
+
+.report-cards-pdf-page .student-report-card {
+  min-height: 0;
+  margin-bottom: 14px;
+  page-break-inside: avoid;
+}
+
+.report-cards-pdf-page .student-report-card:last-child {
+  margin-bottom: 0;
+}
+
+.student-report-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.student-report-card-logo {
+  width: 48px;
+  height: auto;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.student-report-card-title-block {
+  flex: 1;
+  text-align: center;
+}
+
+.student-report-card-school {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  color: #1b5e3b;
+  letter-spacing: 0.02em;
+}
+
+.student-report-card-school-first {
+  font-size: 16px;
+}
+
+.student-report-card-registered {
+  font-weight: 600;
+  font-size: 11px;
+}
+
+.student-report-card-subtitle {
+  margin: 2px 0 0;
+  font-size: 10px;
+  color: #444;
+}
+
+.student-report-card-exam {
+  margin: 6px 0 0;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: underline;
+  color: #1b5e3b;
+}
+
+.student-report-card-details {
+  margin-bottom: 8px;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.student-report-card-detail-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 24px;
+  margin-bottom: 3px;
+}
+
+.student-report-card-detail-row-three {
+  gap: 4px 16px;
+}
+
+.student-report-card-table-wrap {
+  overflow: hidden;
+}
+
+.student-report-card-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+}
+
+.student-report-card-table thead {
+  background: #e8efe8;
+}
+
+.student-report-card-table th {
+  padding: 5px 6px;
+  text-align: left;
+  font-weight: 700;
+  color: #1b5e3b;
+  border-bottom: 1px solid #b8c9b8;
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.student-report-card-table td {
+  padding: 4px 6px;
+  border-bottom: 1px solid #e0e8e0;
+}
+
+.student-report-card-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.student-report-card-total-row {
+  background: #f4f8f4;
+  font-weight: 700;
+}
+
+.student-report-card-table tfoot td {
+  border-bottom: none;
+  padding-top: 5px;
+}
