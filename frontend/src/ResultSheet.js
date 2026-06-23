@@ -177,7 +177,8 @@ const ResultSheet = () => {
   }, [coursesForGrade, recordsByCourse, studentsInGrade]);
 
   const handleBack = () => {
-    navigate('/reports', {
+    const backPath = location.state?.reportSource || '/reports';
+    navigate(backPath, {
       state: {
         selectedGrade,
         selectedGradingSchemeId: location.state?.selectedGradingSchemeId || '',
@@ -386,7 +387,7 @@ const ResultSheet = () => {
     return (
       <div className="result-sheet-container">        <div className="result-sheet-content">
           <p className="result-sheet-no-grade">No grade selected. Please go to Reports and select a grade first.</p>
-          <button type="button" className="result-sheet-back-btn" onClick={() => navigate('/reports')}>
+          <button type="button" className="result-sheet-back-btn" onClick={() => navigate(location.state?.reportSource || '/reports')}>
             <span className="btn-icon-wrap"><IconBack />Back to Reports</span>
           </button>
         </div>

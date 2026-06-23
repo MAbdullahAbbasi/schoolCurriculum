@@ -13,6 +13,7 @@ import PromoteStudents from './PromoteStudents';
 import StudentsRecord from './StudentsRecord';
 import StudentRecordDetail from './StudentRecordDetail';
 import Reports from './Reports';
+import DownloadReports from './DownloadReports';
 import ResultSheet from './ResultSheet';
 import StudentReportDetail from './StudentReportDetail';
 import GradingScheme from './GradingScheme';
@@ -220,7 +221,9 @@ function App() {
               element={userRole === 'ADMIN' ? <Educators /> : <Navigate to="/" replace />}
             />
             <Route path="/reports" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <Reports />} />
+            <Route path="/download-reports" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <DownloadReports />} />
             <Route path="/reports/result-sheet" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <ResultSheet />} />
+            <Route path="/download-reports/result-sheet" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <ResultSheet />} />
             <Route
               path="/reports/student/:registrationNumber"
               element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <StudentReportDetail />}

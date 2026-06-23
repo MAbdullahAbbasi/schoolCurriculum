@@ -34,6 +34,14 @@ const iconRecord = (
   </svg>
 );
 
+const iconReports = (
+  <svg {...svgProps}>
+    <line x1="18" y1="20" x2="18" y2="10" />
+    <line x1="12" y1="20" x2="12" y2="4" />
+    <line x1="6" y1="20" x2="6" y2="14" />
+  </svg>
+);
+
 const iconDownloadReports = (
   <svg {...svgProps}>
     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -141,7 +149,8 @@ const AppSidebar = ({ open, onClose }) => {
         {!isRootAdmin && canViewObjectives && navBtn('Objectives', iconObjectives, '/', ['/', '/create-course'])}
         {!isRootAdmin && isSuperAdmin && navBtn(APP_LABELS.groveNav, iconRoles, '/roles', ['/roles', '/course-admins', '/educators'])}
         {!isRootAdmin && navBtn('Record', iconRecord, '/record', ['/record', '/studentRecord'])}
-        {!isRootAdmin && canViewReports && navBtn('Download Reports', iconDownloadReports, '/reports', ['/reports'])}
+        {!isRootAdmin && canViewReports && navBtn('Reports', iconReports, '/reports', ['/reports'])}
+        {!isRootAdmin && canViewReports && navBtn('Download Reports', iconDownloadReports, '/download-reports', ['/download-reports'])}
         {!isRootAdmin && canViewGradingScheme && navBtn('Grading Scheme', iconGradingScheme, '/grading-scheme', ['/grading-scheme'])}
       </nav>
       <div className="app-sidebar-footer">

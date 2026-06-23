@@ -19,6 +19,7 @@ import {
   getCourseTotalMarks,
   getGradeFromPercentageWithScheme,
   filterCoursesForReport,
+  formatGradingSchemeOptionLabel,
 } from './reportUtils';
 import logoLeft from './assets/logoleft.jpg';
 import './Reports.css';
@@ -40,9 +41,11 @@ const getWatermarkDataUrl = () =>
     img.src = logoLeft;
   });
 
+
 const gradeFromPercentage = (percentage, schemeRows) =>
   getGradeFromPercentageWithScheme(percentage, schemeRows);
 
+// Sort order: KG classes first, then numeric grades ascending
 const gradeSortOrder = (g) => {
   const s = String(g).trim();
   if (/^KG[- ]?1$/i.test(s) || /^KG[- ]?I$/i.test(s)) return 0;
@@ -53,13 +56,16 @@ const gradeSortOrder = (g) => {
   return 10 + n;
 };
 
-const Reports = () => {
+const DownloadReports = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [students, setStudents] = useState([]);
   const [courses, setCourses] = useState([]);
   const [recordsByCourse, setRecordsByCourse] = useState({});
-  const [gradingSchemeRows, setGradingSchemeRows] = useState([]);
+  const [gradingSchemes, setGradingSchemes] = useState([]);
+  const [selectedGradingSchemeId, setSelectedGradingSchemeId] = useState(
+    () => location.state?.selectedGradingSchemeId || ''
+  );
   const [curriculumList, setCurriculumList] = useState([]);
   const [selectedGrade, setSelectedGrade] = useState(() => location.state?.selectedGrade || '');
   const [loading, setLoading] = useState(true);
@@ -67,6 +73,7 @@ const Reports = () => {
   const [downloadingRegNo, setDownloadingRegNo] = useState('');
   const [downloadingAll, setDownloadingAll] = useState(false);
 
+  // Grades present in DB (from students), sorted: KG first, then 1–10
   const gradesFromDb = useMemo(() => {
     const set = new Set();
     students.forEach((s) => {
@@ -75,14 +82,30 @@ const Reports = () => {
     return Array.from(set).sort((a, b) => gradeSortOrder(a) - gradeSortOrder(b));
   }, [students]);
 
+  const selectedGradingScheme = useMemo(() => {
+    if (!selectedGradingSchemeId) return null;
+    return gradingSchemes.find((s) => String(s._id) === String(selectedGradingSchemeId)) || null;
+  }, [gradingSchemes, selectedGradingSchemeId]);
+
+  const selectedGradingSchemeRows = useMemo(() => {
+    return normalizeGradingSchemeRows(selectedGradingScheme?.rows || []);
+  }, [selectedGradingScheme]);
+
   const handleViewReport = (student) => {
     navigate(`/reports/student/${encodeURIComponent(student.registrationNumber)}`, {
       state: {
         student,
-        gradingSchemeRows,
-        selectedGradingScheme: null,
+        gradingSchemeRows: selectedGradingSchemeRows,
+        selectedGradingScheme: selectedGradingScheme
+          ? {
+              name: selectedGradingScheme.name,
+              startDate: selectedGradingScheme.startDate,
+              endDate: selectedGradingScheme.endDate,
+            }
+          : null,
+        selectedGradingSchemeId,
         selectedGrade,
-        reportSource: '/reports',
+        reportSource: '/download-reports',
       },
     });
   };
@@ -100,23 +123,28 @@ const Reports = () => {
       });
   }, [students, selectedGrade]);
 
-  const allCourseCodesForGrade = useMemo(() => {
-    if (!selectedGrade) return [];
-    return filterCoursesForReport(courses, { grade: selectedGrade })
-      .map((c) => c.code)
-      .filter(Boolean);
-  }, [courses, selectedGrade]);
-
-  const courseCodesForGrade = useMemo(() => {
-    if (!selectedGrade) return [];
+  const sessionCourseCodesForGrade = useMemo(() => {
+    if (!selectedGrade || !selectedGradingScheme) return [];
     return filterCoursesForReport(courses, {
       grade: selectedGrade,
+      gradingScheme: selectedGradingScheme,
+    })
+      .map((c) => c.code)
+      .filter(Boolean);
+  }, [courses, selectedGrade, selectedGradingScheme]);
+
+  const courseCodesForGrade = useMemo(() => {
+    if (!selectedGrade || !selectedGradingSchemeId) return [];
+    return filterCoursesForReport(courses, {
+      grade: selectedGrade,
+      gradingScheme: selectedGradingScheme,
       recordsByCourse,
     })
       .map((c) => c.code)
       .filter(Boolean);
-  }, [courses, selectedGrade, recordsByCourse]);
+  }, [courses, selectedGrade, selectedGradingSchemeId, selectedGradingScheme, recordsByCourse]);
 
+  // Top 3 students by aggregate marks across all courses for this grade
   const topThreeStudents = useMemo(() => {
     if (!selectedGrade || studentsInGrade.length === 0) return [];
     const coursesList = (courses || []).filter((c) => courseCodesForGrade.includes(c.code));
@@ -136,7 +164,7 @@ const Reports = () => {
         }
       });
       const percentage = totalMax > 0 ? Math.round((obtained / totalMax) * 10000) / 100 : 0;
-      const grade = gradeFromPercentage(percentage, gradingSchemeRows);
+      const grade = gradeFromPercentage(percentage, selectedGradingSchemeRows);
       return { student, obtained: Math.round(obtained * 100) / 100, totalMax, percentage, grade };
     });
     rankList.sort((a, b) => {
@@ -145,7 +173,7 @@ const Reports = () => {
       return (a.student.studentName || '').localeCompare(b.student.studentName || '');
     });
     return rankList.slice(0, 3);
-  }, [selectedGrade, studentsInGrade, courses, courseCodesForGrade, recordsByCourse, gradingSchemeRows]);
+  }, [selectedGrade, studentsInGrade, courses, courseCodesForGrade, recordsByCourse, selectedGradingSchemeRows]);
 
   useEffect(() => {
     const fetchStudentsAndCourses = async () => {
@@ -161,7 +189,7 @@ const Reports = () => {
         setStudents(Array.isArray(studentsRes.data) ? studentsRes.data : (studentsRes.data?.data || []));
         setCourses(coursesRes.data?.success ? (coursesRes.data.data || []) : []);
         const gradingSchemesList = gradingSchemesRes.data?.success ? gradingSchemesRes.data.data || [] : [];
-        setGradingSchemeRows(normalizeGradingSchemeRows(gradingSchemesList[0]?.rows || []));
+        setGradingSchemes(gradingSchemesList);
         setCurriculumList(Array.isArray(curriculumRes.data) ? curriculumRes.data : []);
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -174,7 +202,7 @@ const Reports = () => {
   }, []);
 
   useEffect(() => {
-    if (!selectedGrade || allCourseCodesForGrade.length === 0) {
+    if (!selectedGrade || sessionCourseCodesForGrade.length === 0) {
       setRecordsByCourse({});
       return;
     }
@@ -182,7 +210,7 @@ const Reports = () => {
     const fetchRecords = async () => {
       const byCourse = {};
       await Promise.all(
-        allCourseCodesForGrade.map(async (code) => {
+        sessionCourseCodesForGrade.map(async (code) => {
           if (cancelled) return;
           try {
             const res = await axios.get(`${API_URL}/api/records/course/${encodeURIComponent(code)}`);
@@ -196,8 +224,9 @@ const Reports = () => {
     };
     fetchRecords();
     return () => { cancelled = true; };
-  }, [selectedGrade, allCourseCodesForGrade]);
+  }, [selectedGrade, sessionCourseCodesForGrade]);
 
+  // Fetch all course records sequentially (for Download All) to avoid partial failures from parallel requests
   const fetchAllRecordsForGrade = async (courseCodes) => {
     const byCourse = {};
     for (const code of courseCodes) {
@@ -251,8 +280,8 @@ const Reports = () => {
       allStudents: dataOverride?.allStudents ?? students,
       courses: dataOverride?.courses ?? courses,
       recordsByCourse: records,
-      gradingSchemeRows: dataOverride?.gradingSchemeRows ?? gradingSchemeRows,
-      gradingScheme: null,
+      gradingSchemeRows: dataOverride?.gradingSchemeRows ?? selectedGradingSchemeRows,
+      gradingScheme: dataOverride?.gradingScheme ?? selectedGradingScheme,
       registrationNumber: student.registrationNumber,
       curriculumList: dataOverride?.curriculumList ?? curriculumList,
     });
@@ -368,6 +397,7 @@ const Reports = () => {
     addCanvasToPdf(gradingCanvas, true);
 
     return pdf.output('blob');
+
   };
 
   const getStudentPdfFileName = (student) => {
@@ -394,7 +424,7 @@ const Reports = () => {
   const handleDownloadAllReports = async () => {
     if (!selectedGrade || studentsInGrade.length === 0) return;
     if (courseCodesForGrade.length === 0) {
-      setError('No courses with saved marks found for this grade.');
+      setError('No courses found for this grade.');
       return;
     }
     try {
@@ -405,7 +435,8 @@ const Reports = () => {
         recordsByCourse: recordsByCourseForZip,
         allStudents: students,
         courses,
-        gradingSchemeRows,
+        gradingSchemeRows: selectedGradingSchemeRows,
+        gradingScheme: selectedGradingScheme,
         curriculumList,
       };
       const zip = new JSZip();
@@ -415,7 +446,7 @@ const Reports = () => {
       }
       const zipBlob = await zip.generateAsync({ type: 'blob' });
       const year = new Date().getFullYear();
-      const zipName = `Reports-${year}-${sanitizeNamePart(selectedGrade)}.zip`;
+      const zipName = `AnnualExamination-${year}-${sanitizeNamePart(selectedGrade)}.zip`;
       triggerBlobDownload(zipName, zipBlob);
     } catch (err) {
       console.error('Error downloading all report PDFs:', err);
@@ -427,29 +458,23 @@ const Reports = () => {
 
   if (loading) {
     return (
-      <div className="reports-container">
-        <div className="reports-loading">Loading...</div>
+      <div className="reports-container">        <div className="reports-loading">Loading...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="reports-container">
-        <div className="reports-error">{error}</div>
+      <div className="reports-container">        <div className="reports-error">{error}</div>
       </div>
     );
   }
 
   return (
-    <div className="reports-container">
-      <div className="reports-content">
+    <div className="reports-container">      <div className="reports-content">
         <div className="page-local-header-block">
-          <h2 className="reports-title">Reports</h2>
-          <p className="reports-subtitle">
-            Select a grade to view students, results, and reports across all courses with saved marks.
-            For session-specific PDFs, use <strong>Download Reports</strong> in the menu.
-          </p>
+          <h2 className="reports-title">Download Reports</h2>
+          <p className="reports-subtitle">Select a grade and exam session to download session-specific report PDFs.</p>
         </div>
 
         <div className="reports-filters">
@@ -471,19 +496,62 @@ const Reports = () => {
               ))}
             </select>
           </div>
+
+          <div className="reports-select-wrapper">
+            <label htmlFor="reports-grading-scheme-select" className="reports-select-label">
+              Exam session (grading scheme)
+            </label>
+            <select
+              id="reports-grading-scheme-select"
+              className="reports-select"
+              value={selectedGradingSchemeId}
+              onChange={(e) => setSelectedGradingSchemeId(e.target.value)}
+              disabled={gradingSchemes.length === 0}
+            >
+              {gradingSchemes.length === 0 ? (
+                <option value="">No grading schemes defined</option>
+              ) : (
+                <>
+                  <option value="">Select a grading scheme</option>
+                  {gradingSchemes.map((scheme) => (
+                    <option key={scheme._id} value={String(scheme._id)}>
+                      {formatGradingSchemeOptionLabel(scheme)}
+                    </option>
+                  ))}
+                </>
+              )}
+            </select>
+          </div>
         </div>
 
         {!selectedGrade && (
           <div className="reports-prompt">Please select a grade above to view students.</div>
         )}
 
-        {selectedGrade && allCourseCodesForGrade.length > 0 && courseCodesForGrade.length === 0 && (
+        {selectedGrade && gradingSchemes.length === 0 && (
           <div className="reports-prompt reports-prompt-warning">
-            No saved marks found for Grade {selectedGrade}. Enter marks from the Record page first.
+            No grading scheme found. Define one from the Grading Scheme page so reports use the correct grade mapping.
           </div>
         )}
 
-        {selectedGrade && courseCodesForGrade.length > 0 && (
+        {selectedGrade && gradingSchemes.length > 0 && !selectedGradingSchemeId && (
+          <div className="reports-prompt">Please select a grading scheme above to view reports.</div>
+        )}
+
+        {selectedGrade && selectedGradingSchemeId && sessionCourseCodesForGrade.length > 0 && courseCodesForGrade.length === 0 && (
+          <div className="reports-prompt reports-prompt-warning">
+            No saved marks found for Grade {selectedGrade} in exam session &quot;{formatGradingSchemeOptionLabel(selectedGradingScheme)}&quot;. Enter marks from the Record page first.
+          </div>
+        )}
+
+        {selectedGrade && selectedGradingSchemeId && sessionCourseCodesForGrade.length === 0 && (
+          <div className="reports-prompt reports-prompt-warning">
+            No courses match exam session &quot;{formatGradingSchemeOptionLabel(selectedGradingScheme)}&quot; for Grade {selectedGrade}.
+            When creating or editing a course, assign the same exam session (grading scheme).
+          </div>
+        )}
+
+        {selectedGrade && selectedGradingSchemeId && courseCodesForGrade.length > 0 && (
           <>
             {studentsInGrade.length > 0 && topThreeStudents.length > 0 && (
               <div className="reports-top-three-card">
@@ -529,10 +597,18 @@ const Reports = () => {
               <button
                 type="button"
                 className="reports-result-sheet-btn"
-                onClick={() => navigate('/reports/result-sheet', {
+                onClick={() => navigate('/download-reports/result-sheet', {
                   state: {
                     selectedGrade,
-                    reportSource: '/reports',
+                    selectedGradingSchemeId,
+                    selectedGradingScheme: selectedGradingScheme
+                      ? {
+                          name: selectedGradingScheme.name,
+                          startDate: selectedGradingScheme.startDate,
+                          endDate: selectedGradingScheme.endDate,
+                        }
+                      : null,
+                    reportSource: '/download-reports',
                   },
                 })}
                 disabled={studentsInGrade.length === 0}
@@ -543,58 +619,58 @@ const Reports = () => {
               </button>
             </div>
             <div className="reports-table-wrapper">
-              <table className="reports-table">
-                <thead>
+            <table className="reports-table">
+              <thead>
+                <tr>
+                  <th className="reports-th">Sr. No</th>
+                  <th className="reports-th">Registration Number</th>
+                  <th className="reports-th">Name</th>
+                  <th className="reports-th reports-th-action">Action</th>
+                  <th className="reports-th reports-th-report">Report.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {studentsInGrade.length === 0 ? (
                   <tr>
-                    <th className="reports-th">Sr. No</th>
-                    <th className="reports-th">Registration Number</th>
-                    <th className="reports-th">Name</th>
-                    <th className="reports-th reports-th-action">Action</th>
-                    <th className="reports-th reports-th-report">Report.</th>
+                    <td colSpan={5} className="reports-empty-cell">
+                      No students in Grade {selectedGrade}.
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {studentsInGrade.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="reports-empty-cell">
-                        No students in Grade {selectedGrade}.
+                ) : (
+                  studentsInGrade.map((student, index) => (
+                    <tr key={student.registrationNumber}>
+                      <td className="reports-td">{index + 1}</td>
+                      <td className="reports-td">{student.registrationNumber}</td>
+                      <td className="reports-td">{student.studentName}</td>
+                      <td className="reports-td reports-td-action">
+                        <button
+                          type="button"
+                          className="reports-view-btn"
+                          onClick={() => handleViewReport(student)}
+                          title={`View report for ${student.studentName}`}
+                          aria-label={`View report for ${student.studentName}`}
+                        >
+                          <span className="btn-icon-wrap"><IconView />View</span>
+                        </button>
+                      </td>
+                      <td className="reports-td reports-td-report">
+                        <button
+                          type="button"
+                          className="reports-download-btn"
+                          onClick={() => handleDownloadReport(student)}
+                          disabled={downloadingAll || downloadingRegNo === String(student.registrationNumber)}
+                          title={`Download report for ${student.studentName}`}
+                          aria-label={`Download report for ${student.studentName}`}
+                        >
+                          <span className="btn-icon-wrap"><IconDownload />{downloadingRegNo === String(student.registrationNumber) ? 'Preparing...' : 'Download'}</span>
+                        </button>
                       </td>
                     </tr>
-                  ) : (
-                    studentsInGrade.map((student, index) => (
-                      <tr key={student.registrationNumber}>
-                        <td className="reports-td">{index + 1}</td>
-                        <td className="reports-td">{student.registrationNumber}</td>
-                        <td className="reports-td">{student.studentName}</td>
-                        <td className="reports-td reports-td-action">
-                          <button
-                            type="button"
-                            className="reports-view-btn"
-                            onClick={() => handleViewReport(student)}
-                            title={`View report for ${student.studentName}`}
-                            aria-label={`View report for ${student.studentName}`}
-                          >
-                            <span className="btn-icon-wrap"><IconView />View</span>
-                          </button>
-                        </td>
-                        <td className="reports-td reports-td-report">
-                          <button
-                            type="button"
-                            className="reports-download-btn"
-                            onClick={() => handleDownloadReport(student)}
-                            disabled={downloadingAll || downloadingRegNo === String(student.registrationNumber)}
-                            title={`Download report for ${student.studentName}`}
-                            aria-label={`Download report for ${student.studentName}`}
-                          >
-                            <span className="btn-icon-wrap"><IconDownload />{downloadingRegNo === String(student.registrationNumber) ? 'Preparing...' : 'Download'}</span>
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
           </>
         )}
       </div>
@@ -602,4 +678,4 @@ const Reports = () => {
   );
 };
 
-export default Reports;
+export default DownloadReports;
