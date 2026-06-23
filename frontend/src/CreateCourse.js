@@ -290,7 +290,7 @@ const CreateCourse = () => {
                 )}
               </select>
               <span className="form-hint">
-                Reports and result sheets will include this course only when this session is selected.
+                Reports group courses by starting date: before March → February session; from March → May session.
               </span>
             </div>
 

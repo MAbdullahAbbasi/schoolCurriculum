@@ -473,7 +473,9 @@ const Reports = () => {
     <div className="reports-container">      <div className="reports-content">
         <div className="page-local-header-block">
           <h2 className="reports-title">Reports</h2>
-          <p className="reports-subtitle">Select a grade and exam session (grading scheme) to view results and download reports.</p>
+          <p className="reports-subtitle">
+            Select a grade and exam session. Courses held in January–February use the February grading scheme; from March onward use the May grading scheme (by course starting date).
+          </p>
         </div>
 
         <div className="reports-filters">
@@ -546,7 +548,7 @@ const Reports = () => {
         {selectedGrade && selectedGradingSchemeId && sessionCourseCodesForGrade.length === 0 && (
           <div className="reports-prompt reports-prompt-warning">
             No courses match exam session &quot;{formatGradingSchemeOptionLabel(selectedGradingScheme)}&quot; for Grade {selectedGrade}.
-            When creating or editing a course, assign the same exam session (grading scheme).
+            Check each course&apos;s starting date: before March → February session; March onward → May session.
           </div>
         )}
 

@@ -269,8 +269,73 @@ export const getCourseSession = (course, record = null) => {
   };
 };
 
+/** 'february' = held before March; 'may' = held from March onward */
+export const getExamPeriodFromMonth = (month) => {
+  const m = Number(month);
+  if (!Number.isFinite(m) || m < 1 || m > 12) return null;
+  return m < 3 ? 'february' : 'may';
+};
+
+const getCourseHeldMonthYear = (course, record = null) => {
+  const fromStarting = parseMonthYearFromDate(course?.startingDate);
+  if (fromStarting.month && fromStarting.year) return fromStarting;
+
+  const codeMatch = String(course?.code || '').match(/-(\d{4})(\d{2})(\d{2})-/);
+  if (codeMatch) {
+    return { month: Number(codeMatch[2]), year: Number(codeMatch[1]) };
+  }
+
+  const label = String(course?.courseName || course?.code || '');
+  const fromName = {
+    month: parseMonthFromText(label),
+    year: parseYearFromText(label),
+  };
+  if (fromName.month && fromName.year) return fromName;
+
+  if (record) {
+    const fromRecord = parseMonthYearFromDate(record.updatedAt || record.createdAt);
+    if (fromRecord.month && fromRecord.year) return fromRecord;
+  }
+
+  return {
+    month: fromStarting.month || fromName.month,
+    year: fromStarting.year || fromName.year,
+  };
+};
+
+export const getGradingSchemeExamPeriod = (gradingScheme) => {
+  if (!gradingScheme) return null;
+  const name = String(gradingScheme.name || '').toLowerCase();
+  if (/(^|[^a-z])feb(ruary)?([^a-z]|$)/.test(name)) return 'february';
+  if (/(^|[^a-z])may([^a-z]|$)/.test(name)) return 'may';
+  const fromStart = parseMonthYearFromDate(gradingScheme.startDate);
+  if (fromStart.month) return getExamPeriodFromMonth(fromStart.month);
+  const session = getGradingSchemeSession(gradingScheme);
+  if (session.month) return getExamPeriodFromMonth(session.month);
+  return null;
+};
+
+export const getCourseExamPeriod = (course, record = null) => {
+  const held = getCourseHeldMonthYear(course, record);
+  if (!held.month) return null;
+  return getExamPeriodFromMonth(held.month);
+};
+
 export const courseMatchesGradingSchemeSession = (course, gradingScheme, record = null) => {
   if (!gradingScheme) return true;
+
+  const schemeSession = getGradingSchemeSession(gradingScheme);
+  const courseHeld = getCourseHeldMonthYear(course, record);
+
+  if (schemeSession.year && courseHeld.year && courseHeld.year !== schemeSession.year) {
+    return false;
+  }
+
+  const schemePeriod = getGradingSchemeExamPeriod(gradingScheme);
+  const coursePeriod = getCourseExamPeriod(course, record);
+  if (schemePeriod && coursePeriod) {
+    return schemePeriod === coursePeriod;
+  }
 
   const schemeId = getGradingSchemeId(gradingScheme);
   const courseSchemeId = getCourseGradingSchemeId(course);
@@ -278,7 +343,6 @@ export const courseMatchesGradingSchemeSession = (course, gradingScheme, record 
     return courseSchemeId === schemeId;
   }
 
-  const schemeSession = getGradingSchemeSession(gradingScheme);
   if (!schemeSession.month && !schemeSession.year) return true;
 
   const courseSession = getCourseSession(course, record);
