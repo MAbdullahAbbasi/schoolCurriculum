@@ -150,7 +150,7 @@ const AppSidebar = ({ open, onClose }) => {
         {!isRootAdmin && isSuperAdmin && navBtn(APP_LABELS.groveNav, iconRoles, '/roles', ['/roles', '/course-admins', '/educators'])}
         {!isRootAdmin && navBtn('Record', iconRecord, '/record', ['/record', '/studentRecord'])}
         {!isRootAdmin && canViewReports && navBtn('Reports', iconReports, '/reports', ['/reports'])}
-        {!isRootAdmin && canViewReports && navBtn('Download Reports', iconDownloadReports, '/download-reports', ['/download-reports'])}
+        {!isRootAdmin && canViewReports && navBtn('Download Reports', iconDownloadReports, '/reports', ['/reports'])}
         {!isRootAdmin && canViewGradingScheme && navBtn('Grading Scheme', iconGradingScheme, '/grading-scheme', ['/grading-scheme'])}
       </nav>
       <div className="app-sidebar-footer">

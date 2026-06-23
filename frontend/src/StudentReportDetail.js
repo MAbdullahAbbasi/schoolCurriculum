@@ -353,8 +353,7 @@ const StudentReportDetail = () => {
   };
 
   const handleBack = () => {
-    const backPath = location.state?.reportSource || '/reports';
-    navigate(backPath, {
+    navigate('/reports', {
       state: {
         selectedGrade: location.state?.selectedGrade || student?.grade || '',
         selectedGradingSchemeId: location.state?.selectedGradingSchemeId || '',
