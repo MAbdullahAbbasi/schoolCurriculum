@@ -10,7 +10,7 @@ const PAGE_RULES = [
   { test: (p) => p.startsWith('/create-course'), title: 'Create Course', subtitle: 'Configure course details from selected objectives.' },
   { test: (p) => p.startsWith('/reports/result-sheet'), title: 'Result Sheet', subtitle: 'View and export grade result sheets.' },
   { test: (p) => p.startsWith('/reports/student/'), title: 'Student Report', subtitle: 'Review and download an individual report.' },
-  { test: (p) => p.startsWith('/reports'), title: 'Reports', subtitle: 'Select a grade to view students and download reports.' },
+  { test: (p) => p.startsWith('/reports'), title: 'Download Reports', subtitle: 'Select a grade and exam session to view students and download reports.' },
   { test: (p) => p.startsWith('/studentRecord/'), title: 'Record', subtitle: 'View and manage marks for this course.' },
   { test: (p) => p === '/course-admins', title: `${ROLE_LABELS.forestKeeper}s`, subtitle: `Manage ${ROLE_LABELS.forestKeeper.toLowerCase()} accounts and access.` },
   { test: (p) => p === '/educators', title: `${ROLE_LABELS.gardener}s`, subtitle: `Manage ${ROLE_LABELS.gardener.toLowerCase()} accounts and assignments.` },
