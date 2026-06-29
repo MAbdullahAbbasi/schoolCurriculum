@@ -32,3 +32,17 @@ export function getPageMeta(pathname) {
     ? { title: rule.title, subtitle: rule.subtitle }
     : { title: 'The Learning Grove', subtitle: '' };
 }
+
+// Top-level pages reachable directly from the sidebar; these don't need a back button.
+const TOP_LEVEL_PATHS = new Set([
+  '/',
+  '/record',
+  '/reports',
+  '/grading-scheme',
+  '/roles',
+  '/root-logins',
+]);
+
+export function isTopLevelPath(pathname) {
+  return TOP_LEVEL_PATHS.has(pathname || '/');
+}

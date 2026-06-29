@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import AppSidebar from './AppSidebar';
 import PageHeader from './PageHeader';
-import { getPageMeta } from './pageTitles';
+import { getPageMeta, isTopLevelPath } from './pageTitles';
 import './AppLayout.css';
 import './pageLayout.css';
 
@@ -11,6 +11,7 @@ const AppLayout = () => {
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);
   const { pathname } = useLocation();
   const { title, subtitle } = getPageMeta(pathname);
+  const showBack = !isTopLevelPath(pathname);
 
   return (
     <div className="app-layout">
@@ -35,7 +36,7 @@ const AppLayout = () => {
         </button>
         <div className="app-main-content">
           <div className="app-page-panel">
-            <PageHeader title={title} subtitle={subtitle} />
+            <PageHeader title={title} subtitle={subtitle} showBack={showBack} />
             <div className="app-page-body">
               <Outlet />
             </div>

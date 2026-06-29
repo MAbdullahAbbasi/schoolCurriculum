@@ -22,6 +22,31 @@
   flex-shrink: 0;
 }
 
+.app-page-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--garden-forest, #1b4332);
+  background: rgba(216, 243, 220, 0.6);
+  border: 1px solid rgba(27, 67, 50, 0.18);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+
+.app-page-back-btn:hover {
+  background: rgba(183, 228, 199, 0.85);
+  border-color: rgba(27, 67, 50, 0.32);
+}
+
+.app-page-back-btn svg {
+  flex-shrink: 0;
+}
+
 .app-page-title {
   margin: 0 0 0.35rem;
   font-size: 1.65rem;
