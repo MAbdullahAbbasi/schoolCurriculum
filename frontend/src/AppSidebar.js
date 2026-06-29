@@ -5,15 +5,6 @@ import './AppSidebar.css';
 
 const svgProps = { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true };
 
-const iconStudentsData = (
-  <svg {...svgProps}>
-    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-    <circle cx="9" cy="7" r="4" />
-    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-  </svg>
-);
-
 const iconObjectives = (
   <svg {...svgProps}>
     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -39,14 +30,6 @@ const iconReports = (
     <line x1="18" y1="20" x2="18" y2="10" />
     <line x1="12" y1="20" x2="12" y2="4" />
     <line x1="6" y1="20" x2="6" y2="14" />
-  </svg>
-);
-
-const iconDownloadReports = (
-  <svg {...svgProps}>
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-    <polyline points="7 10 12 15 17 10" />
-    <line x1="12" y1="15" x2="12" y2="3" />
   </svg>
 );
 
@@ -107,7 +90,6 @@ const AppSidebar = ({ open, onClose }) => {
   const isCourseAdmin = role === 'COURSE_ADMIN';
   const isSuperAdmin = isAdmin;
 
-  const canViewStudentsData = isAdmin;
   const canViewObjectives = isAdmin || isCourseAdmin;
   const canViewReports = isAdmin || isCourseAdmin;
   const canViewGradingScheme = isAdmin || isCourseAdmin;
@@ -145,12 +127,10 @@ const AppSidebar = ({ open, onClose }) => {
       </div>
       <nav className="app-sidebar-nav">
         {isRootAdmin && navBtn('All logins', iconRootLogins, '/root-logins', ['/root-logins'])}
-        {!isRootAdmin && canViewStudentsData && navBtn(APP_LABELS.seedlingData, iconStudentsData, '/students-data', ['/students-data'])}
         {!isRootAdmin && canViewObjectives && navBtn('Objectives', iconObjectives, '/', ['/', '/create-course'])}
-        {!isRootAdmin && isSuperAdmin && navBtn(APP_LABELS.groveNav, iconRoles, '/roles', ['/roles', '/course-admins', '/educators'])}
+        {!isRootAdmin && isSuperAdmin && navBtn(APP_LABELS.groveNav, iconRoles, '/roles', ['/roles', '/course-admins', '/educators', '/students-data'])}
         {!isRootAdmin && navBtn('Record', iconRecord, '/record', ['/record', '/studentRecord'])}
         {!isRootAdmin && canViewReports && navBtn('Reports', iconReports, '/reports', ['/reports'])}
-        {!isRootAdmin && canViewReports && navBtn('Download Report Cards', iconDownloadReports, '/download-report-cards', ['/download-report-cards'])}
         {!isRootAdmin && canViewGradingScheme && navBtn('Grading Scheme', iconGradingScheme, '/grading-scheme', ['/grading-scheme'])}
       </nav>
       <div className="app-sidebar-footer">

@@ -66,6 +66,7 @@ const RolesDashboard = () => {
 
   const goForestKeeper = () => navigate('/course-admins');
   const goGardener = () => navigate('/educators');
+  const goSeedlings = () => navigate('/students-data');
 
   return (
     <div className="roles-dashboard-container">      <div className="roles-dashboard-content">
@@ -115,16 +116,21 @@ const RolesDashboard = () => {
           </div>
 
           <div
-            className="roles-card roles-card--static roles-card--delay-2"
-            role="note"
+            className="roles-card roles-card--interactive roles-card--delay-2"
+            role="button"
             tabIndex={0}
-            aria-label={`${ROLE_LABELS.seedling} — coming soon`}
+            aria-label={`${ROLE_LABELS.seedling} — open directory`}
+            onClick={goSeedlings}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') goSeedlings();
+            }}
           >
+            <div className="roles-card-glow" aria-hidden />
             <div className="roles-card-icon">
               <IconSeedling />
             </div>
             <div className="roles-card-label">{ROLE_LABELS.seedling}</div>
-            <p className="roles-card-hint roles-card-hint--muted">Learner view — soon</p>
+            <p className="roles-card-hint">Student directory &amp; records</p>
           </div>
 
           <div

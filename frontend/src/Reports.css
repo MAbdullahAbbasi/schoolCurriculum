@@ -247,6 +247,43 @@
   flex-shrink: 0;
 }
 
+.reports-sessions-panel {
+  margin-bottom: 1.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+.reports-sessions-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.reports-sessions-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1f3d2b;
+}
+
+.reports-sessions-close-btn {
+  border: none;
+  background: #e2e8f0;
+  color: #334155;
+  font-weight: 600;
+  padding: 0.4rem 0.9rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.reports-sessions-close-btn:hover {
+  background: #cbd5e1;
+}
+
 .reports-loading,
 .reports-error {
   padding: 2rem;

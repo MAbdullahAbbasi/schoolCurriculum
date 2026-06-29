@@ -20,15 +20,6 @@ const closeIcon = (
   </svg>
 );
 
-const iconStudentsData = (
-  <svg {...svgProps}>
-    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-    <circle cx="9" cy="7" r="4" />
-    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-  </svg>
-);
-
 const iconObjectives = (
   <svg {...svgProps}>
     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -105,10 +96,15 @@ const CurriculumHeader = () => {
   const isCourseAdmin = role === 'COURSE_ADMIN';
   const isSuperAdmin = isAdmin;
 
-  const canViewStudentsData = isAdmin;
   const canViewObjectives = isAdmin || isCourseAdmin;
   const canViewReports = isAdmin || isCourseAdmin;
   const canViewGradingScheme = isAdmin || isCourseAdmin;
+
+  const isGroveActive =
+    path === '/roles' ||
+    path.startsWith('/course-admins') ||
+    path.startsWith('/educators') ||
+    path.startsWith('/students-data');
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -121,10 +117,6 @@ const CurriculumHeader = () => {
     return () => window.removeEventListener('keydown', handleEscape);
   }, [menuOpen]);
 
-  const handleStudentsDataClick = () => {
-    navigate('/students-data');
-    closeMenu();
-  };
   const handleRecordClick = () => {
     navigate('/record');
     closeMenu();
@@ -154,16 +146,6 @@ const CurriculumHeader = () => {
           <p className="curriculum-subtitle">{APP_LABELS.brandTagline}</p>
         </div>
         <div className="header-buttons-group">
-          {canViewStudentsData && (
-            <button
-              type="button"
-              className={`nav-btn ${path === '/students-data' ? 'active' : ''}`}
-              onClick={handleStudentsDataClick}
-            >
-              <span className="nav-btn-icon">{iconStudentsData}</span>
-              {APP_LABELS.seedlingData}
-            </button>
-          )}
           {canViewObjectives && (
             <button
               type="button"
@@ -177,7 +159,7 @@ const CurriculumHeader = () => {
           {isSuperAdmin && (
             <button
               type="button"
-              className={`nav-btn ${path === '/roles' ? 'active' : ''}`}
+              className={`nav-btn ${isGroveActive ? 'active' : ''}`}
               onClick={() => {
                 navigate('/roles');
                 closeMenu();
@@ -250,16 +232,6 @@ const CurriculumHeader = () => {
           </button>
         </div>
         <nav className="header-nav-drawer-nav">
-          {canViewStudentsData && (
-            <button
-              type="button"
-              className={`nav-drawer-btn ${path === '/students-data' ? 'active' : ''}`}
-              onClick={handleStudentsDataClick}
-            >
-              <span className="nav-btn-icon">{iconStudentsData}</span>
-              {APP_LABELS.seedlingData}
-            </button>
-          )}
           {canViewObjectives && (
             <button
               type="button"
@@ -273,7 +245,7 @@ const CurriculumHeader = () => {
           {isSuperAdmin && (
             <button
               type="button"
-              className={`nav-drawer-btn ${path === '/roles' ? 'active' : ''}`}
+              className={`nav-drawer-btn ${isGroveActive ? 'active' : ''}`}
               onClick={() => {
                 navigate('/roles');
                 closeMenu();

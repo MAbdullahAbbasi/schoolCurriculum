@@ -21,8 +21,16 @@ import {
   filterCoursesForReport,
   formatGradingSchemeOptionLabel,
 } from './reportUtils';
+import { buildReportCardsPdfBlob } from './downloadReportCardsPdf';
 import logoLeft from './assets/logoleft.jpg';
 import './Reports.css';
+
+const formatSessionDate = (d) => {
+  if (!d) return '—';
+  const dt = new Date(d);
+  if (Number.isNaN(dt.getTime())) return '—';
+  return dt.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
+};
 
 const getWatermarkDataUrl = () =>
   new Promise((resolve, reject) => {
@@ -72,6 +80,8 @@ const Reports = () => {
   const [error, setError] = useState(null);
   const [downloadingRegNo, setDownloadingRegNo] = useState('');
   const [downloadingAll, setDownloadingAll] = useState(false);
+  const [downloadingCards, setDownloadingCards] = useState(false);
+  const [showSessions, setShowSessions] = useState(false);
 
   // Grades present in DB (from students), sorted: KG first, then 1–10
   const gradesFromDb = useMemo(() => {
@@ -455,6 +465,39 @@ const Reports = () => {
     }
   };
 
+  const handleDownloadReportCards = async () => {
+    if (!selectedGrade || studentsInGrade.length === 0) return;
+    if (courseCodesForGrade.length === 0) {
+      setError('No courses found for this grade.');
+      return;
+    }
+    try {
+      setDownloadingCards(true);
+      setError(null);
+      const records = await fetchAllRecordsForGrade(courseCodesForGrade);
+      const reportDataList = studentsInGrade.map((student) =>
+        buildStudentReportData({
+          student,
+          allStudents: students,
+          courses,
+          recordsByCourse: records,
+          gradingSchemeRows: selectedGradingSchemeRows,
+          gradingScheme: selectedGradingScheme,
+          registrationNumber: student.registrationNumber,
+          curriculumList,
+        })
+      );
+      const blob = await buildReportCardsPdfBlob(reportDataList);
+      const sessionLabel = sanitizeNamePart(selectedGradingScheme?.name || 'session');
+      triggerBlobDownload(`Report-Cards-Grade-${sanitizeNamePart(selectedGrade)}-${sessionLabel}.pdf`, blob);
+    } catch (err) {
+      console.error('Error generating report cards PDF:', err);
+      setError(err?.message || 'Failed to generate report cards PDF.');
+    } finally {
+      setDownloadingCards(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="reports-container">        <div className="reports-loading">Loading...</div>
@@ -524,6 +567,76 @@ const Reports = () => {
             </select>
           </div>
         </div>
+
+        <div className="reports-download-all-wrapper">
+          <button
+            type="button"
+            className="reports-download-all-btn"
+            onClick={handleDownloadReportCards}
+            disabled={
+              !selectedGrade ||
+              !selectedGradingSchemeId ||
+              courseCodesForGrade.length === 0 ||
+              studentsInGrade.length === 0 ||
+              downloadingCards
+            }
+            title="Download report cards (2 per page)"
+            aria-label="Download report cards"
+          >
+            <span className="btn-icon-wrap"><IconDownload />{downloadingCards ? 'Preparing PDF...' : 'Download Report Cards'}</span>
+          </button>
+          <button
+            type="button"
+            className="reports-result-sheet-btn"
+            onClick={() => setShowSessions((v) => !v)}
+            title="View exam sessions"
+            aria-label="View exam sessions"
+          >
+            <span className="btn-icon-wrap"><IconList />{showSessions ? 'Hide Sessions' : 'Sessions'}</span>
+          </button>
+        </div>
+
+        {showSessions && (
+          <div className="reports-sessions-panel">
+            <div className="reports-sessions-header">
+              <h3 className="reports-sessions-title">Sessions</h3>
+              <button
+                type="button"
+                className="reports-sessions-close-btn"
+                onClick={() => setShowSessions(false)}
+                aria-label="Close sessions"
+              >
+                Close
+              </button>
+            </div>
+            {gradingSchemes.length === 0 ? (
+              <div className="reports-prompt">No sessions defined yet.</div>
+            ) : (
+              <div className="reports-table-wrapper">
+                <table className="reports-table">
+                  <thead>
+                    <tr>
+                      <th className="reports-th">Sr. No</th>
+                      <th className="reports-th">Session</th>
+                      <th className="reports-th">Start date</th>
+                      <th className="reports-th">End date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {gradingSchemes.map((s, i) => (
+                      <tr key={s._id}>
+                        <td className="reports-td">{i + 1}</td>
+                        <td className="reports-td">{s.name || '—'}</td>
+                        <td className="reports-td">{formatSessionDate(s.startDate)}</td>
+                        <td className="reports-td">{formatSessionDate(s.endDate)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
 
         {!selectedGrade && (
           <div className="reports-prompt">Please select a grade above to view students.</div>
