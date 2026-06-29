@@ -15,8 +15,7 @@ const StudentReportCard = ({ reportData }) => {
           <h2 className="student-report-card-school">
             <span className="student-report-card-school-first">S</span>APLING{' '}
             <span className="student-report-card-school-first">H</span>IGH{' '}
-            <span className="student-report-card-school-first">S</span>CHOOL{' '}
-            <span className="student-report-card-registered">(Registered)</span>
+            <span className="student-report-card-school-first">S</span>CHOOL<span className="student-report-card-registered">(Registered)</span>
           </h2>
           <p className="student-report-card-subtitle">(Boys/ Girls)</p>
           <h3 className="student-report-card-exam">Annual Examination {reportData.reportMonthYear}</h3>
