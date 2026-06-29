@@ -124,6 +124,13 @@ export const StudentReportMarksheet = ({ reportData }) => (
               {reportData.totalPercentage}
             </td>
           </tr>
+          <tr className="student-report-marksheet-summary-row">
+            <td className="student-report-marksheet-td" colSpan={3} />
+            <td className="student-report-marksheet-td"><strong>Overall Grade</strong></td>
+            <td className="student-report-marksheet-td student-report-marksheet-td-num" colSpan={2}>
+              {reportData.overallGrade || '—'}
+            </td>
+          </tr>
           {reportData.classPosition != null && (
             <tr className="student-report-marksheet-summary-row">
               <td className="student-report-marksheet-td" colSpan={3} />

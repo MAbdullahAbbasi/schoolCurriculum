@@ -44,41 +44,50 @@ const StudentReportCard = ({ reportData }) => {
         <table className="student-report-card-table">
           <thead>
             <tr>
-              <th>Subject</th>
-              <th>Max. Marks</th>
-              <th>Marks. Obtained</th>
-              <th>Grade</th>
-              <th>Highest Marks in Class</th>
+              <th className="student-report-card-col-subject">Subject</th>
+              <th className="student-report-card-col-num">Max. Marks</th>
+              <th className="student-report-card-col-num">Marks. Obtained</th>
+              <th className="student-report-card-col-grade">Grade</th>
+              <th className="student-report-card-col-num">Highest Marks in Class</th>
             </tr>
           </thead>
           <tbody>
             {(reportData.marksheetRows || []).map((row) => (
               <tr key={row.key}>
-                <td>{row.label}</td>
+                <td className="student-report-card-col-subject">{row.label}</td>
                 <td className="student-report-card-num">{row.maxTotal ?? ''}</td>
                 <td className="student-report-card-num">{row.obtainedTotal ?? ''}</td>
-                <td>{row.grade ?? ''}</td>
+                <td className="student-report-card-col-grade">{row.grade ?? ''}</td>
                 <td className="student-report-card-num">{row.highestInClass ?? ''}</td>
               </tr>
             ))}
           </tbody>
           <tfoot>
             <tr className="student-report-card-total-row">
-              <td><strong>Total</strong></td>
+              <td className="student-report-card-col-subject"><strong>Total</strong></td>
               <td className="student-report-card-num">{reportData.totalMax}</td>
               <td className="student-report-card-num">{reportData.totalObtained}</td>
-              <td colSpan={2} />
+              <td className="student-report-card-col-grade" />
+              <td className="student-report-card-num" />
             </tr>
             <tr>
-              <td colSpan={3} />
-              <td><strong>Percentage</strong></td>
-              <td className="student-report-card-num">{reportData.totalPercentage}</td>
+              <td colSpan={2} />
+              <td className="student-report-card-num"><strong>Percentage</strong></td>
+              <td className="student-report-card-col-grade">{reportData.totalPercentage}</td>
+              <td className="student-report-card-num" />
+            </tr>
+            <tr>
+              <td colSpan={2} />
+              <td className="student-report-card-num"><strong>Overall Grade</strong></td>
+              <td className="student-report-card-col-grade">{reportData.overallGrade || '—'}</td>
+              <td className="student-report-card-num" />
             </tr>
             {reportData.classPosition != null && (
               <tr>
-                <td colSpan={3} />
-                <td><strong>Position</strong></td>
-                <td className="student-report-card-num">{reportData.classPosition}</td>
+                <td colSpan={2} />
+                <td className="student-report-card-num"><strong>Position</strong></td>
+                <td className="student-report-card-col-grade">{reportData.classPosition}</td>
+                <td className="student-report-card-num" />
               </tr>
             )}
           </tfoot>

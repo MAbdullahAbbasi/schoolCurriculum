@@ -355,6 +355,13 @@
   white-space: nowrap;
 }
 
+/* Align numeric column headers with their right-aligned values */
+.student-report-marksheet-table thead th:nth-child(2),
+.student-report-marksheet-table thead th:nth-child(3),
+.student-report-marksheet-table thead th:nth-child(5) {
+  text-align: right;
+}
+
 .student-report-marksheet-total-row {
   background: #f8f9fa;
   font-weight: 600;

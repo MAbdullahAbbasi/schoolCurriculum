@@ -124,8 +124,20 @@
   border-bottom: 1px solid #e0e8e0;
 }
 
-.student-report-card-num {
+/* Column alignment: keep header and body cells in each column consistent */
+.student-report-card-col-subject {
+  text-align: left;
+}
+
+.student-report-card-num,
+.student-report-card-table th.student-report-card-num {
   text-align: right;
+  white-space: nowrap;
+}
+
+.student-report-card-col-grade,
+.student-report-card-table th.student-report-card-col-grade {
+  text-align: center;
   white-space: nowrap;
 }
 

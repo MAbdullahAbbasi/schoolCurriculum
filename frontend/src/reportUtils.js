@@ -650,6 +650,9 @@ export const buildStudentReportData = ({
   const totalMax = marksheetRows.reduce((s, r) => s + r.maxTotal, 0);
   const totalObtained = marksheetRows.reduce((s, r) => s + Number(r.obtainedTotal), 0);
   const totalPercentage = totalMax > 0 ? `${((totalObtained / totalMax) * 100).toFixed(2)}%` : '';
+  const overallGrade = totalMax > 0
+    ? getGradeFromPercentageWithScheme((totalObtained / totalMax) * 100, effectiveSchemeRows)
+    : '';
 
   const totalByStudent = {};
   enrolledCoursesWithMarks.forEach(({ record }) => {
@@ -739,6 +742,7 @@ export const buildStudentReportData = ({
     totalMax: totalMax > 0 ? totalMax : '',
     totalObtained: totalMax > 0 ? Number(totalObtained).toFixed(2) : '',
     totalPercentage,
+    overallGrade,
     classPosition,
     gradingSchemeRows: effectiveSchemeRows,
   };
