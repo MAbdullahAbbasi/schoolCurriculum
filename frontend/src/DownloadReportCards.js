@@ -9,17 +9,12 @@ import {
   formatGradingSchemeOptionLabel,
 } from './reportUtils';
 import { buildReportCardsPdfBlob } from './downloadReportCardsPdf';
+import {
+  formatGradeOptionLabel,
+  studentMatchesGrade,
+  uniqueCanonicalGradesFromStudents,
+} from './studentDataUtils';
 import './Reports.css';
-
-const gradeSortOrder = (g) => {
-  const s = String(g).trim();
-  if (/^KG[- ]?1$/i.test(s) || /^KG[- ]?I$/i.test(s)) return 0;
-  if (/^KG[- ]?2$/i.test(s) || /^KG[- ]?II$/i.test(s)) return 1;
-  if (/^KG[- ]?3$/i.test(s) || /^KG[- ]?III$/i.test(s)) return 2;
-  const n = parseInt(s, 10);
-  if (Number.isNaN(n)) return 100;
-  return 10 + n;
-};
 
 const DownloadReportCards = () => {
   const [students, setStudents] = useState([]);
@@ -33,13 +28,10 @@ const DownloadReportCards = () => {
   const [error, setError] = useState(null);
   const [generating, setGenerating] = useState(false);
 
-  const gradesFromDb = useMemo(() => {
-    const set = new Set();
-    students.forEach((s) => {
-      if (s.grade != null && String(s.grade).trim() !== '') set.add(String(s.grade).trim());
-    });
-    return Array.from(set).sort((a, b) => gradeSortOrder(a) - gradeSortOrder(b));
-  }, [students]);
+  const gradesFromDb = useMemo(
+    () => uniqueCanonicalGradesFromStudents(students),
+    [students]
+  );
 
   const selectedGradingScheme = useMemo(() => {
     if (!selectedGradingSchemeId) return null;
@@ -53,9 +45,8 @@ const DownloadReportCards = () => {
 
   const studentsInGrade = useMemo(() => {
     if (!selectedGrade) return [];
-    const gradeStr = String(selectedGrade);
     return students
-      .filter((s) => String(s.grade) === gradeStr)
+      .filter((s) => studentMatchesGrade(s, selectedGrade))
       .sort((a, b) => {
         const nameA = (a.studentName || '').toLowerCase();
         const nameB = (b.studentName || '').toLowerCase();
@@ -218,7 +209,7 @@ const DownloadReportCards = () => {
             >
               <option value="">Select a grade</option>
               {gradesFromDb.map((g) => (
-                <option key={g} value={g}>Grade {g}</option>
+                <option key={g} value={g}>{formatGradeOptionLabel(g)}</option>
               ))}
             </select>
           </div>

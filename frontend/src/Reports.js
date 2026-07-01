@@ -22,6 +22,11 @@ import {
   formatGradingSchemeOptionLabel,
 } from './reportUtils';
 import { buildReportCardsPdfBlob } from './downloadReportCardsPdf';
+import {
+  formatGradeOptionLabel,
+  studentMatchesGrade,
+  uniqueCanonicalGradesFromStudents,
+} from './studentDataUtils';
 import logoLeft from './assets/logoleft.jpg';
 import './Reports.css';
 
@@ -53,17 +58,6 @@ const getWatermarkDataUrl = () =>
 const gradeFromPercentage = (percentage, schemeRows) =>
   getGradeFromPercentageWithScheme(percentage, schemeRows);
 
-// Sort order: KG classes first, then numeric grades ascending
-const gradeSortOrder = (g) => {
-  const s = String(g).trim();
-  if (/^KG[- ]?1$/i.test(s) || /^KG[- ]?I$/i.test(s)) return 0;
-  if (/^KG[- ]?2$/i.test(s) || /^KG[- ]?II$/i.test(s)) return 1;
-  if (/^KG[- ]?3$/i.test(s) || /^KG[- ]?III$/i.test(s)) return 2;
-  const n = parseInt(s, 10);
-  if (Number.isNaN(n)) return 100;
-  return 10 + n;
-};
-
 const Reports = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -83,14 +77,11 @@ const Reports = () => {
   const [downloadingCards, setDownloadingCards] = useState(false);
   const [showSessions, setShowSessions] = useState(false);
 
-  // Grades present in DB (from students), sorted: KG first, then 1–10
-  const gradesFromDb = useMemo(() => {
-    const set = new Set();
-    students.forEach((s) => {
-      if (s.grade != null && String(s.grade).trim() !== '') set.add(String(s.grade).trim());
-    });
-    return Array.from(set).sort((a, b) => gradeSortOrder(a) - gradeSortOrder(b));
-  }, [students]);
+  // Grades present in DB (canonical: K.G-II / KG-2 / KG II → KG-2)
+  const gradesFromDb = useMemo(
+    () => uniqueCanonicalGradesFromStudents(students),
+    [students]
+  );
 
   const selectedGradingScheme = useMemo(() => {
     if (!selectedGradingSchemeId) return null;
@@ -121,9 +112,8 @@ const Reports = () => {
 
   const studentsInGrade = useMemo(() => {
     if (!selectedGrade) return [];
-    const gradeStr = String(selectedGrade);
     return students
-      .filter((s) => String(s.grade) === gradeStr)
+      .filter((s) => studentMatchesGrade(s, selectedGrade))
       .sort((a, b) => {
         const nameA = (a.studentName || '').toLowerCase();
         const nameB = (b.studentName || '').toLowerCase();
@@ -535,7 +525,7 @@ const Reports = () => {
               <option value="">Select a grade</option>
               {gradesFromDb.map((g) => (
                 <option key={g} value={g}>
-                  Grade {g}
+                  {formatGradeOptionLabel(g)}
                 </option>
               ))}
             </select>

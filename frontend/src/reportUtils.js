@@ -1,4 +1,7 @@
 import { effectiveTotalFromQuestionPartMarks } from './questionChoiceUtils.js';
+import { normalizeGradeForMatch } from './studentDataUtils.js';
+
+export { normalizeGradeForMatch } from './studentDataUtils.js';
 
 export const GRADING_SCHEME_STORAGE_KEY = 'curriculum_grading_scheme';
 
@@ -132,20 +135,6 @@ export const getSubjectSortIndex = (subjectName) => {
   if (n.startsWith('chem') || n === 'chemistry') return 12;
   if (n.startsWith('bio') || n === 'biology') return 13;
   return 999;
-};
-
-export const normalizeGradeForMatch = (grade) => {
-  if (grade == null || grade === '') return '';
-  let s = String(grade).trim();
-  if (s === '') return '';
-  s = s.replace(/^(grade|class)\s+/i, '').trim();
-  if (s === '') return '';
-  const lower = s.toLowerCase().replace(/\s+/g, ' ');
-  const compact = lower.replace(/\s/g, '').replace(/k\.g\.?/g, 'kg');
-  if (/^kg[- ]?1$|^kg[- ]?i$|^k\.g\.?[- ]?1$|^k\.g\.?[- ]?i$/i.test(lower) || /^kg[-]?1$|^kg[-]?i$/.test(compact)) return 'KG-1';
-  if (/^kg[- ]?2$|^kg\s*ii$|^kg[- ]?ii$|^k\.g\.?[- ]?2$|^k\.g\.?[- ]?ii$/i.test(lower) || /^kg[-]?2$|^kg[-]?ii$/.test(compact)) return 'KG-2';
-  if (/^kg[- ]?3$|^kg[- ]?iii$|^k\.g\.?[- ]?3$|^k\.g\.?[- ]?iii$/i.test(lower) || /^kg[-]?3$|^kg[-]?iii$/.test(compact)) return 'KG-3';
-  return s;
 };
 
 export const getGradingSchemeFromStorage = () => {
@@ -552,16 +541,8 @@ const subjectMatches = (courseSubjectLower, objectiveSubjectLower) => {
 const getCurriculumObjectivesBySubject = (curriculumList, studentGradeNormalized, courseSubject) => {
   if (!Array.isArray(curriculumList) || !courseSubject) return [];
   const subjectLower = String(courseSubject).trim().toLowerCase();
-  const doc = curriculumList.find((d) => {
-    const g = d.grade;
-    const id = d.id;
-    if (studentGradeNormalized === 'KG-1' || studentGradeNormalized === 'KG-2' || studentGradeNormalized === 'KG-3') {
-      return String(g).trim() === studentGradeNormalized;
-    }
-    const num = parseInt(studentGradeNormalized, 10);
-    if (!Number.isNaN(num)) return g === num || String(g) === studentGradeNormalized || id === num;
-    return String(g).trim() === studentGradeNormalized;
-  });
+  const studentCanon = normalizeGradeForMatch(studentGradeNormalized);
+  const doc = curriculumList.find((d) => normalizeGradeForMatch(d.grade) === studentCanon);
   const objectives = doc?.objectives || [];
   return objectives.filter((obj) => {
     const objSubject = String(obj.subject || '').trim().toLowerCase();

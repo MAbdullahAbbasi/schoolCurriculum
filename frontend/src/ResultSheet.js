@@ -6,6 +6,7 @@ import { IconBack } from './ButtonIcons';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { getCourseTotalMarks, filterCoursesForReport, formatSessionLabelFromGradingScheme } from './reportUtils';
+import { studentMatchesGrade } from './studentDataUtils';
 import './ResultSheet.css';
 
 // Registration number has 4 parts separated by 3 hyphens: year - serialNumber - part3 - part4
@@ -78,9 +79,8 @@ const ResultSheet = () => {
 
   const studentsInGrade = useMemo(() => {
     if (!selectedGrade) return [];
-    const gradeStr = String(selectedGrade);
     return (students || [])
-      .filter((s) => String(s.grade) === gradeStr)
+      .filter((s) => studentMatchesGrade(s, selectedGrade))
       .sort((a, b) => {
         const nameA = (a.studentName || '').toLowerCase();
         const nameB = (b.studentName || '').toLowerCase();

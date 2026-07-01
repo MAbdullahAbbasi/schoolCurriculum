@@ -97,6 +97,22 @@ export const normalizeGradeForMatch = (grade) => {
 export const gradesMatch = (gradeA, gradeB) =>
   normalizeGradeForMatch(gradeA) === normalizeGradeForMatch(gradeB);
 
+/** Unique canonical grades from student records (merges K.G-II, KG-2, KG II, etc.). */
+export const uniqueCanonicalGradesFromStudents = (students) => {
+  const seen = new Set();
+  const list = [];
+  (students || []).forEach((s) => {
+    const canon = normalizeGradeForMatch(s.grade);
+    if (!canon || seen.has(canon)) return;
+    seen.add(canon);
+    list.push(canon);
+  });
+  return list.sort((a, b) => gradeSortOrder(a) - gradeSortOrder(b));
+};
+
+export const studentMatchesGrade = (student, selectedGrade) =>
+  gradesMatch(student?.grade, selectedGrade);
+
 /** Next grade on the school ladder, or null if already at the top / unknown. */
 export const getNextGrade = (grade) => {
   const canon = normalizeGradeForMatch(grade);
