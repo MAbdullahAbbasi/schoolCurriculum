@@ -5,7 +5,17 @@ import { API_URL } from './config/api';
 import { IconBack } from './ButtonIcons';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { getCourseTotalMarks, filterCoursesForReport, formatSessionLabelFromGradingScheme, formatPercentageDisplay, roundPercentage } from './reportUtils';
+import {
+  getCourseTotalMarks,
+  filterCoursesForReport,
+  formatSessionLabelFromGradingScheme,
+  formatPercentageDisplay,
+  roundPercentage,
+  roundMarks,
+  formatMarksDisplay,
+  getSubjectSortIndex,
+  studentQualifiesForResultSheet,
+} from './reportUtils';
 import { studentMatchesGrade } from './studentDataUtils';
 import './ResultSheet.css';
 
@@ -14,27 +24,6 @@ const getSerialFromRegistration = (regNo) => {
   if (regNo == null || String(regNo).trim() === '') return '—';
   const parts = String(regNo).trim().split('-');
   return parts.length >= 2 ? parts[1].trim() : '—';
-};
-
-// Subject order for result sheet (original – do not change; result sheet is source of truth)
-const SUBJECT_ORDER = [
-  'urdu', 'english', 'math', 'science', 'social studies', 'computer',
-  'tarjuma tul quran', 'tq', 'islamiat', 'nazra', 'art',
-];
-const getSubjectSortIndex = (subjectName) => {
-  if (!subjectName || typeof subjectName !== 'string') return SUBJECT_ORDER.length;
-  const n = subjectName.toLowerCase().trim().replace(/\s+/g, ' ');
-  if (n.startsWith('urdu')) return 0;
-  if (n.startsWith('eng')) return 1;
-  if (/\bmath|maths\b/.test(n) || n === 'mathematics') return 2;
-  if (n.startsWith('sci') || n === 'science') return 3;
-  if (n.includes('social') || n === 's.st' || n === 's.st.') return 4;
-  if (n.startsWith('comp') || n === 'computer') return 5;
-  if (n.includes('tarjuma') || n.includes('t.q') || n === 'tq') return 6;
-  if (n.includes('islamiat') || n.startsWith('isl') || n.startsWith('del')) return 7;
-  if (n.startsWith('nazar') || n === 'nazra') return 8;
-  if (n.startsWith('art') || n === 'a.a' || n === 'a.a.') return 9;
-  return SUBJECT_ORDER.length;
 };
 
 const ResultSheet = () => {
@@ -62,20 +51,10 @@ const ResultSheet = () => {
       .filter(Boolean);
   }, [courses, selectedGrade, selectedGradingScheme]);
 
-  const courseCodesForGrade = useMemo(() => {
-    if (!selectedGrade) return [];
-    return filterCoursesForReport(courses, {
-      grade: selectedGrade,
-      gradingScheme: selectedGradingScheme,
-      recordsByCourse,
-    })
-      .map((c) => c.code)
-      .filter(Boolean);
-  }, [courses, selectedGrade, selectedGradingScheme, recordsByCourse]);
-
-  const coursesForGrade = useMemo(() => {
-    return (courses || []).filter((c) => courseCodesForGrade.includes(c.code));
-  }, [courses, courseCodesForGrade]);
+  // Include all session-matched courses (e.g. English) even if marks are not yet saved for every student.
+  const coursesForSession = useMemo(() => {
+    return (courses || []).filter((c) => sessionCourseCodesForGrade.includes(c.code));
+  }, [courses, sessionCourseCodesForGrade]);
 
   const studentsInGrade = useMemo(() => {
     if (!selectedGrade) return [];
@@ -135,9 +114,9 @@ const ResultSheet = () => {
     return () => { cancelled = true; };
   }, [selectedGrade, sessionCourseCodesForGrade]);
 
-  // Matrix: subject rows, student columns. Each cell has { marks, percentage } for that subject. Rows sorted by SUBJECT_ORDER.
-  const { subjectRows, studentTotals, studentPercentages } = useMemo(() => {
-    const rows = coursesForGrade.map((course) => {
+  // Matrix: subject rows, student columns. Exclude students with 0% in all subjects.
+  const { subjectRows, studentTotals, studentPercentages, studentsForSheet } = useMemo(() => {
+    const rows = coursesForSession.map((course) => {
       const subjectName = (course.subject && String(course.subject).trim()) || course.courseName || course.code || '—';
       const courseTotal = getCourseTotalMarks(course);
       const record = recordsByCourse[course.code];
@@ -146,7 +125,7 @@ const ResultSheet = () => {
         if (!entry || courseTotal <= 0) return null;
         const pct = Number(entry.overallPercentage);
         if (!Number.isFinite(pct)) return null;
-        const marks = Math.round((pct / 100) * courseTotal * 100) / 100;
+        const marks = roundMarks((pct / 100) * courseTotal);
         const percentage = roundPercentage(pct);
         return { marks, percentage: percentage ?? 0 };
       });
@@ -154,27 +133,38 @@ const ResultSheet = () => {
     });
     rows.sort((a, b) => getSubjectSortIndex(a.subjectName) - getSubjectSortIndex(b.subjectName));
 
-    // Total obtained per student (only from subjects they're enrolled in — cell non-null)
-    const studentTotals = studentsInGrade.map((_, studentIdx) =>
-      rows.reduce((sum, r) => {
-        const cell = r.marksPerStudent[studentIdx];
-        return sum + (cell ? cell.marks : 0);
-      }, 0)
+    const allStudentTotals = studentsInGrade.map((_, studentIdx) =>
+      roundMarks(
+        rows.reduce((sum, r) => {
+          const cell = r.marksPerStudent[studentIdx];
+          return sum + (cell ? cell.marks : 0);
+        }, 0)
+      )
     );
-    // Total max per student: only sum course totals for courses where this student has a cell (enrolled).
-    // So Bio/Comp choice: Biology students don't include Computer max, and vice versa.
     const studentTotalMaxes = studentsInGrade.map((_, studentIdx) =>
       rows.reduce((sum, r) => {
         const cell = r.marksPerStudent[studentIdx];
         return sum + (cell ? r.courseTotal : 0);
       }, 0)
     );
-    const studentPercentages = studentTotals.map((total, i) =>
-      studentTotalMaxes[i] > 0 ? Math.round((total / studentTotalMaxes[i]) * 10000) / 100 : 0
+    const allStudentPercentages = allStudentTotals.map((total, i) =>
+      studentTotalMaxes[i] > 0 ? roundPercentage((total / studentTotalMaxes[i]) * 100) ?? 0 : 0
     );
 
-    return { subjectRows: rows, studentTotals, studentPercentages };
-  }, [coursesForGrade, recordsByCourse, studentsInGrade]);
+    const activeIndices = studentsInGrade
+      .map((_, i) => i)
+      .filter((i) => studentQualifiesForResultSheet(i, rows));
+
+    return {
+      subjectRows: rows.map((row) => ({
+        ...row,
+        marksPerStudent: activeIndices.map((i) => row.marksPerStudent[i]),
+      })),
+      studentTotals: activeIndices.map((i) => allStudentTotals[i]),
+      studentPercentages: activeIndices.map((i) => allStudentPercentages[i]),
+      studentsForSheet: activeIndices.map((i) => studentsInGrade[i]),
+    };
+  }, [coursesForSession, recordsByCourse, studentsInGrade]);
 
   const handleBack = () => {
     navigate('/reports', {
@@ -273,7 +263,7 @@ const ResultSheet = () => {
 
       const tbody = document.createElement('tbody');
 
-      studentsInGrade.forEach((student, studentIdx) => {
+      studentsForSheet.forEach((student, studentIdx) => {
         const tr = document.createElement('tr');
 
         const tdStudent = document.createElement('td');
@@ -287,7 +277,7 @@ const ResultSheet = () => {
           const td = document.createElement('td');
           td.className = 'result-sheet-td';
           td.style.textAlign = 'center';
-          td.textContent = cell ? `${cell.marks} (${formatPercentageDisplay(cell.percentage)})` : '—';
+          td.textContent = cell ? `${formatMarksDisplay(cell.marks)} (${formatPercentageDisplay(cell.percentage)})` : '—';
           tr.appendChild(td);
         });
 
@@ -295,7 +285,7 @@ const ResultSheet = () => {
         tdTotal.className = 'result-sheet-td';
         tdTotal.style.textAlign = 'center';
         tdTotal.style.fontWeight = '800';
-        tdTotal.textContent = String(studentTotals?.[studentIdx] ?? 0);
+        tdTotal.textContent = formatMarksDisplay(studentTotals?.[studentIdx] ?? 0);
         tr.appendChild(tdTotal);
 
         const tdPct = document.createElement('td');
@@ -439,7 +429,7 @@ const ResultSheet = () => {
             <thead>
               <tr>
                 <th className="result-sheet-th result-sheet-th-subject">Subject</th>
-                {studentsInGrade.map((s) => (
+                {studentsForSheet.map((s) => (
                   <th key={s.registrationNumber} className="result-sheet-th result-sheet-th-student">
                     <span className="result-sheet-student-name">{s.studentName || s.registrationNumber || '—'}</span>
                     <span className="result-sheet-student-serial">{getSerialFromRegistration(s.registrationNumber)}</span>
@@ -452,10 +442,10 @@ const ResultSheet = () => {
                 <tr key={idx}>
                   <td className="result-sheet-td result-sheet-td-subject">{row.subjectName}</td>
                   {row.marksPerStudent.map((cell, studentIdx) => (
-                    <td key={studentsInGrade[studentIdx]?.registrationNumber} className="result-sheet-td result-sheet-td-marks">
+                    <td key={studentsForSheet[studentIdx]?.registrationNumber} className="result-sheet-td result-sheet-td-marks">
                       {cell != null ? (
                         <span className="result-sheet-cell-content">
-                          <span className="result-sheet-cell-marks">{cell.marks}</span>
+                          <span className="result-sheet-cell-marks">{formatMarksDisplay(cell.marks)}</span>
                           <span className="result-sheet-cell-pct"> ({formatPercentageDisplay(cell.percentage)})</span>
                         </span>
                       ) : '—'}
@@ -466,15 +456,15 @@ const ResultSheet = () => {
               <tr className="result-sheet-row-total">
                 <td className="result-sheet-td result-sheet-td-subject">Total</td>
                 {studentTotals.map((total, studentIdx) => (
-                  <td key={studentsInGrade[studentIdx]?.registrationNumber} className="result-sheet-td result-sheet-td-marks">
-                    {total}
+                  <td key={studentsForSheet[studentIdx]?.registrationNumber} className="result-sheet-td result-sheet-td-marks">
+                    {formatMarksDisplay(total)}
                   </td>
                 ))}
               </tr>
               <tr className="result-sheet-row-percentage">
                 <td className="result-sheet-td result-sheet-td-subject">Percentage</td>
                 {studentPercentages.map((pct, studentIdx) => (
-                  <td key={studentsInGrade[studentIdx]?.registrationNumber} className="result-sheet-td result-sheet-td-marks">
+                  <td key={studentsForSheet[studentIdx]?.registrationNumber} className="result-sheet-td result-sheet-td-marks">
                     {formatPercentageDisplay(pct)}
                   </td>
                 ))}

@@ -126,6 +126,7 @@ export const getSubjectSortIndex = (subjectName) => {
   if (n.startsWith('sci') || n === 'science') return 3;
   if (n.includes('social') || n === 's.st' || n === 's.st.') return 4;
   if (n.startsWith('comp') || n === 'computer') return 5;
+  if (n.includes('quran') || n.includes('al-quran') || n === 'al quran') return 6;
   if (n.includes('tarjuma') || n.includes('t.q') || n === 'tq') return 6;
   if (n.includes('islamiat') || n.startsWith('isl') || n.startsWith('del')) return 7;
   if (n.startsWith('nazar') || n === 'nazra') return 8;
@@ -528,6 +529,20 @@ export const roundPercentage = (value) => {
   return Math.round(num * 100) / 100;
 };
 
+/** Format marks for display with exactly two decimal places. */
+export const formatMarksDisplay = (value) => {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return '—';
+  return num.toFixed(2);
+};
+
+/** Round marks to two decimal places. */
+export const roundMarks = (value) => {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return 0;
+  return Math.round(num * 100) / 100;
+};
+
 /** Sort by percentage descending and format for display: Grade | X% and above / Less than X | Remark. Adds group (1,2,3) and showGapAfter for layout. */
 export const formatGradingSchemeForDisplay = (rows) => {
   if (!Array.isArray(rows) || rows.length === 0) return [];
@@ -792,4 +807,13 @@ export const studentQualifiesForReportCard = (reportData) => {
   if (totalMax <= 0) return false;
   const totalObtained = rows.reduce((sum, row) => sum + (Number(row.obtainedTotal) || 0), 0);
   return totalObtained > 0;
+};
+
+/** Exclude students with 0% in every subject from the result sheet. */
+export const studentQualifiesForResultSheet = (studentIdx, subjectRows) => {
+  if (!Array.isArray(subjectRows) || subjectRows.length === 0) return false;
+  return subjectRows.some((row) => {
+    const cell = row.marksPerStudent?.[studentIdx];
+    return cell != null && Number(cell.marks) > 0;
+  });
 };
