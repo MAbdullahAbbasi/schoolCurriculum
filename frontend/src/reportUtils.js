@@ -768,3 +768,13 @@ export const buildStudentReportData = ({
     gradingSchemeRows: effectiveSchemeRows,
   };
 };
+
+/** Exclude students with 0 marks in every subject (likely no longer in school) from bulk report cards. */
+export const studentQualifiesForReportCard = (reportData) => {
+  const rows = reportData?.marksheetRows || [];
+  if (rows.length === 0) return false;
+  const totalMax = rows.reduce((sum, row) => sum + (Number(row.maxTotal) || 0), 0);
+  if (totalMax <= 0) return false;
+  const totalObtained = rows.reduce((sum, row) => sum + (Number(row.obtainedTotal) || 0), 0);
+  return totalObtained > 0;
+};

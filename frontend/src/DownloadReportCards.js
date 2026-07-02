@@ -7,6 +7,7 @@ import {
   normalizeGradingSchemeRows,
   filterCoursesForReport,
   formatGradingSchemeOptionLabel,
+  studentQualifiesForReportCard,
 } from './reportUtils';
 import { buildReportCardsPdfBlob } from './downloadReportCardsPdf';
 import {
@@ -151,18 +152,24 @@ const DownloadReportCards = () => {
       setGenerating(true);
       setError(null);
       const records = await fetchAllRecordsForGrade(courseCodesForGrade);
-      const reportDataList = studentsInGrade.map((student) =>
-        buildStudentReportData({
-          student,
-          allStudents: students,
-          courses,
-          recordsByCourse: records,
-          gradingSchemeRows: selectedGradingSchemeRows,
-          gradingScheme: selectedGradingScheme,
-          registrationNumber: student.registrationNumber,
-          curriculumList,
-        })
-      );
+      const reportDataList = studentsInGrade
+        .map((student) =>
+          buildStudentReportData({
+            student,
+            allStudents: students,
+            courses,
+            recordsByCourse: records,
+            gradingSchemeRows: selectedGradingSchemeRows,
+            gradingScheme: selectedGradingScheme,
+            registrationNumber: student.registrationNumber,
+            curriculumList,
+          })
+        )
+        .filter(studentQualifiesForReportCard);
+      if (reportDataList.length === 0) {
+        setError('No students with marks to include in report cards (0% in all subjects are excluded).');
+        return;
+      }
       const blob = await buildReportCardsPdfBlob(reportDataList);
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
