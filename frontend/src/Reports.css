@@ -291,6 +291,32 @@
   color: #6c757d;
 }
 
+.reports-loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  color: #6c757d;
+}
+
+.reports-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #e0e0e0;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  animation: reports-spin 1s linear infinite;
+}
+
+@keyframes reports-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .reports-error {
   color: #c62828;
   background: #ffebee;

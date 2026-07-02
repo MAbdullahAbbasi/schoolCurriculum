@@ -73,6 +73,7 @@ const Reports = () => {
   const [curriculumList, setCurriculumList] = useState([]);
   const [selectedGrade, setSelectedGrade] = useState(() => location.state?.selectedGrade || '');
   const [loading, setLoading] = useState(true);
+  const [loadingRecords, setLoadingRecords] = useState(false);
   const [error, setError] = useState(null);
   const [downloadingRegNo, setDownloadingRegNo] = useState('');
   const [downloadingAll, setDownloadingAll] = useState(false);
@@ -205,8 +206,11 @@ const Reports = () => {
   useEffect(() => {
     if (!selectedGrade || sessionCourseCodesForGrade.length === 0) {
       setRecordsByCourse({});
+      setLoadingRecords(false);
       return;
     }
+    setLoadingRecords(true);
+    setRecordsByCourse({});
     let cancelled = false;
     const fetchRecords = async () => {
       const byCourse = {};
@@ -221,7 +225,10 @@ const Reports = () => {
           }
         })
       );
-      if (!cancelled) setRecordsByCourse(byCourse);
+      if (!cancelled) {
+        setRecordsByCourse(byCourse);
+        setLoadingRecords(false);
+      }
     };
     fetchRecords();
     return () => { cancelled = true; };
@@ -498,7 +505,11 @@ const Reports = () => {
 
   if (loading) {
     return (
-      <div className="reports-container">        <div className="reports-loading">Loading...</div>
+      <div className="reports-container">
+        <div className="reports-loading-spinner">
+          <div className="reports-spinner" aria-hidden="true" />
+          <p>Loading reports...</p>
+        </div>
       </div>
     );
   }
@@ -650,7 +661,14 @@ const Reports = () => {
           <div className="reports-prompt">Please select a grading scheme above to view reports.</div>
         )}
 
-        {selectedGrade && selectedGradingSchemeId && sessionCourseCodesForGrade.length > 0 && courseCodesForGrade.length === 0 && (
+        {selectedGrade && selectedGradingSchemeId && loadingRecords && sessionCourseCodesForGrade.length > 0 && (
+          <div className="reports-loading-spinner">
+            <div className="reports-spinner" aria-hidden="true" />
+            <p>Loading marks...</p>
+          </div>
+        )}
+
+        {selectedGrade && selectedGradingSchemeId && !loadingRecords && sessionCourseCodesForGrade.length > 0 && courseCodesForGrade.length === 0 && (
           <div className="reports-prompt reports-prompt-warning">
             No saved marks found for Grade {selectedGrade} in exam session &quot;{formatGradingSchemeOptionLabel(selectedGradingScheme)}&quot;. Enter marks from the Record page first.
           </div>
@@ -663,7 +681,7 @@ const Reports = () => {
           </div>
         )}
 
-        {selectedGrade && selectedGradingSchemeId && courseCodesForGrade.length > 0 && (
+        {selectedGrade && selectedGradingSchemeId && !loadingRecords && courseCodesForGrade.length > 0 && (
           <>
             {studentsInGrade.length > 0 && topThreeStudents.length > 0 && (
               <div className="reports-top-three-card">
