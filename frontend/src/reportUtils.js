@@ -513,6 +513,21 @@ const GRADING_SCHEME_GROUP = {
   'C': 3, 'D': 3, 'U': 3,
 };
 
+/** Format a percentage for display with exactly two decimal places. */
+export const formatPercentageDisplay = (value) => {
+  if (value == null || value === '') return '—';
+  const num = Number(String(value).replace(/%/g, '').trim());
+  if (!Number.isFinite(num)) return '—';
+  return `${num.toFixed(2)}%`;
+};
+
+/** Round a percentage to two decimal places for calculations. */
+export const roundPercentage = (value) => {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return null;
+  return Math.round(num * 100) / 100;
+};
+
 /** Sort by percentage descending and format for display: Grade | X% and above / Less than X | Remark. Adds group (1,2,3) and showGapAfter for layout. */
 export const formatGradingSchemeForDisplay = (rows) => {
   if (!Array.isArray(rows) || rows.length === 0) return [];
@@ -533,7 +548,7 @@ export const formatGradingSchemeForDisplay = (rows) => {
   return sorted.map((row, idx) => {
     const pctNum = Number(String(row.percentage).replace(/%/g, ''));
     const isLast = idx === sorted.length - 1;
-    const pctDisplay = Number.isFinite(pctNum) ? pctNum : row.percentage;
+    const pctDisplay = Number.isFinite(pctNum) ? pctNum.toFixed(2) : row.percentage;
     const percentageLabel = isLast
       ? (String(row.grade).trim().toUpperCase() === 'U' ? 'Less than 40' : `Less than ${pctDisplay}`)
       : `${pctDisplay}% and above`;
@@ -670,7 +685,7 @@ export const buildStudentReportData = ({
 
   const totalMax = marksheetRows.reduce((s, r) => s + r.maxTotal, 0);
   const totalObtained = marksheetRows.reduce((s, r) => s + Number(r.obtainedTotal), 0);
-  const totalPercentage = totalMax > 0 ? `${((totalObtained / totalMax) * 100).toFixed(2)}%` : '';
+  const totalPercentage = totalMax > 0 ? formatPercentageDisplay((totalObtained / totalMax) * 100) : '';
   const overallGrade = totalMax > 0
     ? getGradeFromPercentageWithScheme((totalObtained / totalMax) * 100, effectiveSchemeRows)
     : '';
@@ -730,7 +745,7 @@ export const buildStudentReportData = ({
           `Objective ${topicIndex + 1}`;
         return {
           objective,
-          percentage: percentage != null ? `${Number(percentage).toFixed(2)}%` : '—',
+          percentage: percentage != null ? formatPercentageDisplay(percentage) : '—',
           grade,
         };
       }),

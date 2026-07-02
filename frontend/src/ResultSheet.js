@@ -5,7 +5,7 @@ import { API_URL } from './config/api';
 import { IconBack } from './ButtonIcons';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { getCourseTotalMarks, filterCoursesForReport, formatSessionLabelFromGradingScheme } from './reportUtils';
+import { getCourseTotalMarks, filterCoursesForReport, formatSessionLabelFromGradingScheme, formatPercentageDisplay, roundPercentage } from './reportUtils';
 import { studentMatchesGrade } from './studentDataUtils';
 import './ResultSheet.css';
 
@@ -147,8 +147,8 @@ const ResultSheet = () => {
         const pct = Number(entry.overallPercentage);
         if (!Number.isFinite(pct)) return null;
         const marks = Math.round((pct / 100) * courseTotal * 100) / 100;
-        const percentage = Math.round(pct * 100) / 100;
-        return { marks, percentage };
+        const percentage = roundPercentage(pct);
+        return { marks, percentage: percentage ?? 0 };
       });
       return { subjectName, courseTotal, marksPerStudent };
     });
@@ -287,7 +287,7 @@ const ResultSheet = () => {
           const td = document.createElement('td');
           td.className = 'result-sheet-td';
           td.style.textAlign = 'center';
-          td.textContent = cell ? `${cell.marks} (${cell.percentage}%)` : '—';
+          td.textContent = cell ? `${cell.marks} (${formatPercentageDisplay(cell.percentage)})` : '—';
           tr.appendChild(td);
         });
 
@@ -302,7 +302,7 @@ const ResultSheet = () => {
         tdPct.className = 'result-sheet-td';
         tdPct.style.textAlign = 'center';
         tdPct.style.fontWeight = '800';
-        tdPct.textContent = `${studentPercentages?.[studentIdx] ?? 0}%`;
+        tdPct.textContent = formatPercentageDisplay(studentPercentages?.[studentIdx] ?? 0);
         tr.appendChild(tdPct);
 
         tbody.appendChild(tr);
@@ -456,7 +456,7 @@ const ResultSheet = () => {
                       {cell != null ? (
                         <span className="result-sheet-cell-content">
                           <span className="result-sheet-cell-marks">{cell.marks}</span>
-                          <span className="result-sheet-cell-pct"> ({cell.percentage}%)</span>
+                          <span className="result-sheet-cell-pct"> ({formatPercentageDisplay(cell.percentage)})</span>
                         </span>
                       ) : '—'}
                     </td>
@@ -475,7 +475,7 @@ const ResultSheet = () => {
                 <td className="result-sheet-td result-sheet-td-subject">Percentage</td>
                 {studentPercentages.map((pct, studentIdx) => (
                   <td key={studentsInGrade[studentIdx]?.registrationNumber} className="result-sheet-td result-sheet-td-marks">
-                    {pct}%
+                    {formatPercentageDisplay(pct)}
                   </td>
                 ))}
               </tr>

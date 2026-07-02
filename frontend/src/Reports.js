@@ -20,6 +20,7 @@ import {
   getGradeFromPercentageWithScheme,
   filterCoursesForReport,
   formatGradingSchemeOptionLabel,
+  formatPercentageDisplay,
   studentQualifiesForReportCard,
 } from './reportUtils';
 import { buildReportCardsPdfBlob } from './downloadReportCardsPdf';
@@ -684,7 +685,7 @@ const Reports = () => {
                           <div className="reports-top-three-item-meta">
                             <span>Reg. No: {item.student.registrationNumber || '—'}</span>
                             <span>Marks: {item.obtained} / {item.totalMax}</span>
-                            <span>{item.percentage}%</span>
+                            <span>{formatPercentageDisplay(item.percentage)}</span>
                             <span className="reports-top-three-item-grade">Grade: {item.grade}</span>
                           </div>
                         </div>

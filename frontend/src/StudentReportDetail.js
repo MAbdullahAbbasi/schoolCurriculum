@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from './config/api';
 import { IconBack } from './ButtonIcons';
-import { formatGradingSchemeForDisplay, formatSessionLabelFromGradingScheme, getCourseTotalMarks, getSubjectSortIndex, filterCoursesForReport, studentHasCourseRecord } from './reportUtils';
+import { formatGradingSchemeForDisplay, formatSessionLabelFromGradingScheme, formatPercentageDisplay, getCourseTotalMarks, getSubjectSortIndex, filterCoursesForReport, studentHasCourseRecord } from './reportUtils';
 import logoLeft from './assets/logoleft.jpg';
 import logoRight from './assets/logoright.jpg';
 import './StudentReportDetail.css';
@@ -578,7 +578,7 @@ const StudentReportDetail = () => {
                     {(() => {
                       const totalMax = marksheetDisplayRows.reduce((s, r) => s + r.maxTotal, 0);
                       const totalObtained = marksheetDisplayRows.reduce((s, r) => s + Number(r.obtainedTotal), 0);
-                      return totalMax > 0 ? `${((totalObtained / totalMax) * 100).toFixed(2)}%` : '';
+                      return totalMax > 0 ? formatPercentageDisplay((totalObtained / totalMax) * 100) : '';
                     })()}
                   </td>
                 </tr>
