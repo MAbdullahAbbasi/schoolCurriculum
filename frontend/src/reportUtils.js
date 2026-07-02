@@ -265,6 +265,38 @@ export const getExamPeriodFromMonth = (month) => {
   return m < 3 ? 'february' : 'may';
 };
 
+/** Feb / May session hinted in course title (e.g. "FLC MAY 2026", "Art Feb 2026"). */
+const getExamPeriodFromCourseLabel = (course) => {
+  const label = String(course?.courseName || course?.code || '').toLowerCase();
+  const hasFeb = /(^|[^a-z])feb(ruary)?([^a-z]|$)/.test(label);
+  const hasMay = /(^|[^a-z])may([^a-z]|$)/.test(label);
+  if (hasFeb && !hasMay) return 'february';
+  if (hasMay && !hasFeb) return 'may';
+  return null;
+};
+
+const getCourseExamYear = (course, record = null) => {
+  const fromName = parseYearFromText(course?.courseName || course?.code || '');
+  if (fromName) return fromName;
+  return getCourseHeldMonthYear(course, record).year;
+};
+
+/** Infer KG / class from course title when topic grades are missing (e.g. "Grade KG-2 ARTS"). */
+export const inferGradeFromCourseLabel = (course) => {
+  const label = `${course?.courseName || ''} ${course?.code || ''}`;
+  const kgPatterns = [
+    [/(\bk\.?g\.?[- ]?iii\b|\bkg[- ]?3\b)/i, 'KG-3'],
+    [/(\bk\.?g\.?[- ]?ii\b|\bkg[- ]?2\b)/i, 'KG-2'],
+    [/(\bk\.?g\.?[- ]?i\b|\bkg[- ]?1\b)/i, 'KG-1'],
+  ];
+  for (const [re, canon] of kgPatterns) {
+    if (re.test(label)) return canon;
+  }
+  const classMatch = label.match(/\b(?:grade|class)\s+(\d{1,2})\b/i);
+  if (classMatch) return String(parseInt(classMatch[1], 10));
+  return null;
+};
+
 const getCourseHeldMonthYear = (course, record = null) => {
   const fromStarting = parseMonthYearFromDate(course?.startingDate);
   if (fromStarting.month && fromStarting.year) return fromStarting;
@@ -305,6 +337,8 @@ export const getGradingSchemeExamPeriod = (gradingScheme) => {
 };
 
 export const getCourseExamPeriod = (course, record = null) => {
+  const fromLabel = getExamPeriodFromCourseLabel(course);
+  if (fromLabel) return fromLabel;
   const held = getCourseHeldMonthYear(course, record);
   if (!held.month) return null;
   return getExamPeriodFromMonth(held.month);
@@ -313,10 +347,20 @@ export const getCourseExamPeriod = (course, record = null) => {
 export const courseMatchesGradingSchemeSession = (course, gradingScheme, record = null) => {
   if (!gradingScheme) return true;
 
-  const schemeSession = getGradingSchemeSession(gradingScheme);
-  const courseHeld = getCourseHeldMonthYear(course, record);
+  const schemeId = getGradingSchemeId(gradingScheme);
+  const courseSchemeId = getCourseGradingSchemeId(course);
+  if (schemeId && courseSchemeId) {
+    return courseSchemeId === schemeId;
+  }
 
-  if (schemeSession.year && courseHeld.year && courseHeld.year !== schemeSession.year) {
+  const schemeSession = getGradingSchemeSession(gradingScheme);
+  const courseYear = getCourseExamYear(course, record);
+  const schemeYear =
+    schemeSession.year ||
+    parseYearFromText(gradingScheme?.name) ||
+    parseMonthYearFromDate(gradingScheme?.startDate).year;
+
+  if (schemeYear && courseYear && courseYear !== schemeYear) {
     return false;
   }
 
@@ -324,12 +368,6 @@ export const courseMatchesGradingSchemeSession = (course, gradingScheme, record 
   const coursePeriod = getCourseExamPeriod(course, record);
   if (schemePeriod && coursePeriod) {
     return schemePeriod === coursePeriod;
-  }
-
-  const schemeId = getGradingSchemeId(gradingScheme);
-  const courseSchemeId = getCourseGradingSchemeId(course);
-  if (schemeId && courseSchemeId) {
-    return courseSchemeId === schemeId;
   }
 
   if (!schemeSession.month && !schemeSession.year) return true;
@@ -391,8 +429,10 @@ export const courseMatchesGrade = (course, selectedGrade) => {
   if (!normalized) return false;
   const topics = course.topics || [];
   for (const t of topics) {
-    if (t.grade != null && normalizeGradeForMatch(t.grade) === normalized) return true;
+    if (t.grade != null && t.grade !== '' && normalizeGradeForMatch(t.grade) === normalized) return true;
   }
+  const inferred = inferGradeFromCourseLabel(course);
+  if (inferred && normalizeGradeForMatch(inferred) === normalized) return true;
   return false;
 };
 

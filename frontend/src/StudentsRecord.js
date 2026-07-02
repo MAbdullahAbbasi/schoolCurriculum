@@ -231,7 +231,13 @@ const StudentsRecord = () => {
         courseCode: String(t.courseCode || '').trim(),
         topicName: String(t.topicName || '').trim(),
         marks: Number(t.marks) || 0,
-        grade: t.grade != null && t.grade !== '' ? Number(t.grade) : null,
+        grade: (() => {
+          const g = t.grade;
+          if (g == null || g === '') return null;
+          const s = String(g).trim();
+          if (s === '') return null;
+          return /^\d+$/.test(s) ? Number(s) : s;
+        })(),
       })),
       weightage: editForm.weightage.map((w) => ({
         label: String(w.label || '').trim(),
