@@ -116,6 +116,70 @@ export const getCourseTotalMarks = (course) => {
   return topics.reduce((s, t) => s + (Number(t.marks) || 0), 0);
 };
 
+export const getCourseSubjectLabel = (course) =>
+  (course?.subject && String(course.subject).trim()) || course?.courseName || course?.code || '';
+
+/** Canonical subject key so duplicate courses (e.g. two "Maths") collapse to one row. */
+export const getSubjectGroupKey = (subjectName) => {
+  const n = String(subjectName || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  if (!n) return '';
+  if (SUBJECT_TO_TEMPLATE_KEY[n]) return SUBJECT_TO_TEMPLATE_KEY[n];
+  const aliases = Object.keys(SUBJECT_TO_TEMPLATE_KEY).sort((a, b) => b.length - a.length);
+  for (const alias of aliases) {
+    if (n === alias || n.startsWith(`${alias} `) || n.endsWith(` ${alias}`)) {
+      return SUBJECT_TO_TEMPLATE_KEY[alias];
+    }
+  }
+  if (n.startsWith('urdu')) return n.includes('written') ? 'urdu_written' : 'urdu_oral';
+  if (n.startsWith('eng')) return n.includes('written') ? 'english_written' : 'english_oral';
+  if (/\bmath|maths\b/.test(n) || n === 'mathematics' || n.startsWith("math's")) {
+    return n.includes('written') ? 'math_written' : 'math_oral';
+  }
+  if (n.startsWith('sci') || n === 'science') return 'science';
+  if (n.includes('social') || n === 's.st' || n === 's.st.') return 'social_studies';
+  if (n.startsWith('comp') || n === 'computer') return 'computer';
+  if (n.includes('quran') || n.includes('tarjuma') || n === 'tq' || n === 't.q') return 'tarjuma_tul_quran';
+  if (n.includes('islamiat') || n.startsWith('isl')) return n.includes('written') ? 'islamiat_written' : 'islamiat_oral';
+  if (n.startsWith('nazar') || n === 'nazra') return 'nazra';
+  if (n.startsWith('art') || n === 'a.a' || n === 'a.a.') return 'art';
+  if (n === 'g.k' || n === 'g.k.' || n === 'gk' || n.includes('general knowledge')) return 'general_knowledge';
+  if (n.startsWith('phys') || n === 'physics') return 'physics';
+  if (n.startsWith('chem') || n === 'chemistry') return 'chemistry';
+  if (n.startsWith('bio') || n === 'biology') return 'biology';
+  return n;
+};
+
+const scoreCourseForSubjectDedup = (course, recordsByCourse) => {
+  const record = recordsByCourse?.[course.code];
+  let studentsWithMarks = 0;
+  if (record?.students?.length) {
+    record.students.forEach((entry) => {
+      const pct = Number(entry?.overallPercentage);
+      if (Number.isFinite(pct) && pct > 0) studentsWithMarks += 1;
+    });
+  }
+  return studentsWithMarks * 10000 + (record?.students?.length || 0) * 100 + getCourseTotalMarks(course);
+};
+
+/** When multiple session courses share a subject (e.g. duplicate Maths), keep the one with real marks. */
+export const deduplicateCoursesBySubject = (courses, recordsByCourse = {}) => {
+  if (!Array.isArray(courses) || courses.length === 0) return [];
+  const byKey = new Map();
+  courses.forEach((course) => {
+    const label = getCourseSubjectLabel(course);
+    const groupKey = getSubjectGroupKey(label) || course.code || label;
+    const existing = byKey.get(groupKey);
+    if (!existing) {
+      byKey.set(groupKey, course);
+      return;
+    }
+    if (scoreCourseForSubjectDedup(course, recordsByCourse) > scoreCourseForSubjectDedup(existing, recordsByCourse)) {
+      byKey.set(groupKey, course);
+    }
+  });
+  return Array.from(byKey.values());
+};
+
 // Same order as result sheet so report card shows same subjects in same order
 export const getSubjectSortIndex = (subjectName) => {
   if (!subjectName || typeof subjectName !== 'string') return 999;

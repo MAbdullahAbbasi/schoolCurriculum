@@ -13,6 +13,7 @@ import {
   roundPercentage,
   roundMarks,
   formatMarksDisplay,
+  deduplicateCoursesBySubject,
   getSubjectSortIndex,
   studentQualifiesForResultSheet,
 } from './reportUtils';
@@ -51,10 +52,11 @@ const ResultSheet = () => {
       .filter(Boolean);
   }, [courses, selectedGrade, selectedGradingScheme]);
 
-  // Include all session-matched courses (e.g. English) even if marks are not yet saved for every student.
+  // Include all session-matched courses; drop duplicate subjects (e.g. two Maths courses).
   const coursesForSession = useMemo(() => {
-    return (courses || []).filter((c) => sessionCourseCodesForGrade.includes(c.code));
-  }, [courses, sessionCourseCodesForGrade]);
+    const matched = (courses || []).filter((c) => sessionCourseCodesForGrade.includes(c.code));
+    return deduplicateCoursesBySubject(matched, recordsByCourse);
+  }, [courses, sessionCourseCodesForGrade, recordsByCourse]);
 
   const studentsInGrade = useMemo(() => {
     if (!selectedGrade) return [];
@@ -133,6 +135,8 @@ const ResultSheet = () => {
     });
     rows.sort((a, b) => getSubjectSortIndex(a.subjectName) - getSubjectSortIndex(b.subjectName));
 
+    const sheetMaxTotal = roundMarks(rows.reduce((sum, r) => sum + r.courseTotal, 0));
+
     const allStudentTotals = studentsInGrade.map((_, studentIdx) =>
       roundMarks(
         rows.reduce((sum, r) => {
@@ -141,14 +145,8 @@ const ResultSheet = () => {
         }, 0)
       )
     );
-    const studentTotalMaxes = studentsInGrade.map((_, studentIdx) =>
-      rows.reduce((sum, r) => {
-        const cell = r.marksPerStudent[studentIdx];
-        return sum + (cell ? r.courseTotal : 0);
-      }, 0)
-    );
-    const allStudentPercentages = allStudentTotals.map((total, i) =>
-      studentTotalMaxes[i] > 0 ? roundPercentage((total / studentTotalMaxes[i]) * 100) ?? 0 : 0
+    const allStudentPercentages = allStudentTotals.map((total) =>
+      sheetMaxTotal > 0 ? roundPercentage((total / sheetMaxTotal) * 100) ?? 0 : 0
     );
 
     const activeIndices = studentsInGrade
