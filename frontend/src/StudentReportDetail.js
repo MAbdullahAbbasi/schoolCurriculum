@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from './config/api';
 import { IconBack } from './ButtonIcons';
-import { formatGradingSchemeForDisplay, formatSessionLabelFromGradingScheme, formatPercentageDisplay, getCourseTotalMarks, getSubjectSortIndex, filterCoursesForReport, studentHasCourseRecord } from './reportUtils';
+import { formatGradingSchemeForDisplay, formatSessionLabelFromGradingScheme, formatPercentageDisplay, getCourseTotalMarks, getSubjectSortIndex, filterCoursesForReport, getSessionCoursesForGrade, getStudentSubjectMarks, isStudentListedInCourseRecord, roundMarks } from './reportUtils';
 import logoLeft from './assets/logoleft.jpg';
 import logoRight from './assets/logoright.jpg';
 import './StudentReportDetail.css';
@@ -226,18 +226,17 @@ const StudentReportDetail = () => {
     const normalizedStudentGrade = normalizeGradeForMatch(student?.grade);
     if (!normalizedStudentGrade || !Array.isArray(courses)) return [];
 
-    const list = filterCoursesForReport(courses, {
+    const list = getSessionCoursesForGrade(courses, {
       grade: student?.grade,
       gradingScheme: selectedGradingSchemeFromState,
       recordsByCourse,
-      registrationNumber: decodedRegNo,
     })
       .map((course) => {
         const record = recordsByCourse[course.code] || null;
         const studentEntry = record?.students?.find(
           (s) => String(s.registrationNumber) === decodedRegNo
         );
-        if (!studentHasCourseRecord(studentEntry)) return null;
+        if (!isStudentListedInCourseRecord(studentEntry)) return null;
         const objectiveMarks = studentEntry?.objectiveMarks || {};
         return { course, record, objectiveMarks };
       })
@@ -254,6 +253,20 @@ const StudentReportDetail = () => {
   const gradeByRegistration = useMemo(
     () => new Map((allStudents || []).map((s) => [String(s.registrationNumber), normalizeGradeForMatch(s.grade)])),
     [allStudents]
+  );
+
+  const sessionCoursesForStudent = useMemo(() => {
+    if (!student?.grade || !Array.isArray(courses)) return [];
+    return getSessionCoursesForGrade(courses, {
+      grade: student.grade,
+      gradingScheme: selectedGradingSchemeFromState,
+      recordsByCourse,
+    });
+  }, [courses, student?.grade, selectedGradingSchemeFromState, recordsByCourse]);
+
+  const sheetMaxTotalForStudent = useMemo(
+    () => roundMarks(sessionCoursesForStudent.reduce((sum, course) => sum + getCourseTotalMarks(course), 0)),
+    [sessionCoursesForStudent]
   );
 
   // Same as result sheet: one row per course, same formula and order
@@ -275,22 +288,16 @@ const StudentReportDetail = () => {
     const rows = enrolledCoursesWithMarks
       .map(({ course, record }) => {
         const courseTotal = getCourseTotalMarks(course);
-        if (courseTotal <= 0) return null;
         const studentEntry = record?.students?.find((s) => String(s.registrationNumber) === decodedRegNo);
-        if (!studentEntry) return null; // not enrolled in this course (e.g. Bio/Comp choice) — do not show or count
-        const pct = studentEntry.overallPercentage != null && Number.isFinite(Number(studentEntry.overallPercentage))
-          ? Number(studentEntry.overallPercentage)
-          : null;
-        const obtainedMarks = pct != null ? Math.round((pct / 100) * courseTotal * 100) / 100 : 0;
-        const percentage = pct != null ? (obtainedMarks / courseTotal) * 100 : 0;
+        const subjectMarks = getStudentSubjectMarks(studentEntry, courseTotal);
+        if (!subjectMarks) return null;
+        const { marks, percentage } = subjectMarks;
         let highestInClass = 0;
         if (record?.students?.length) {
           record.students.forEach((se) => {
             if (gradeByRegistration.get(String(se.registrationNumber)) !== currentStudentGrade) return;
-            const pc = se.overallPercentage != null && Number.isFinite(Number(se.overallPercentage)) ? Number(se.overallPercentage) : null;
-            if (pc == null) return;
-            const m = Math.round((pc / 100) * courseTotal * 100) / 100;
-            if (m > highestInClass) highestInClass = m;
+            const peerMarks = getStudentSubjectMarks(se, courseTotal);
+            if (peerMarks && peerMarks.marks > highestInClass) highestInClass = peerMarks.marks;
           });
         }
         const label = (course.subject && String(course.subject).trim()) || course.courseName || course.code || '—';
@@ -298,7 +305,7 @@ const StudentReportDetail = () => {
           key: course.code,
           label,
           maxTotal: courseTotal,
-          obtainedTotal: Number(obtainedMarks).toFixed(2),
+          obtainedTotal: Number(marks).toFixed(2),
           grade: getGrade(percentage),
           highestInClass: highestInClass > 0 ? Number(highestInClass).toFixed(2) : '',
         };
@@ -317,26 +324,28 @@ const StudentReportDetail = () => {
     );
 
     const totalByStudent = {};
-    enrolledCoursesWithMarks.forEach(({ record }) => {
+    enrolledCoursesWithMarks.forEach(({ record, course }) => {
       if (!record?.students?.length) return;
+      const courseTotal = getCourseTotalMarks(course);
       record.students.forEach((studentEntry) => {
         const reg = String(studentEntry.registrationNumber || '');
         if (!reg) return;
         if (gradeByRegistration.get(reg) !== currentStudentGrade) return;
-        const overallPercentage = studentEntry?.overallPercentage;
-        const percentage = overallPercentage != null && Number.isFinite(Number(overallPercentage))
-          ? Number(overallPercentage)
-          : null;
-        if (percentage == null) return;
-        totalByStudent[reg] = (totalByStudent[reg] || 0) + percentage;
+        const subjectMarks = getStudentSubjectMarks(studentEntry, courseTotal);
+        if (!subjectMarks) return;
+        totalByStudent[reg] = (totalByStudent[reg] || 0) + subjectMarks.marks;
       });
     });
 
     const currentTotal = totalByStudent[decodedRegNo] || 0;
-    return currentTotal > 0
-      ? Object.values(totalByStudent).filter((value) => Number(value) > currentTotal).length + 1
+    return currentTotal > 0 && sheetMaxTotalForStudent > 0
+      ? Object.entries(totalByStudent).filter(([, marks]) => {
+          const pct = (marks / sheetMaxTotalForStudent) * 100;
+          const currentPct = (currentTotal / sheetMaxTotalForStudent) * 100;
+          return pct > currentPct;
+        }).length + 1
       : null;
-  }, [allStudents, enrolledCoursesWithMarks, student, decodedRegNo]);
+  }, [allStudents, enrolledCoursesWithMarks, student, decodedRegNo, sheetMaxTotalForStudent]);
 
   const getGradeFromPercentage = (percentage) => {
     const scheme = latestGradingSchemeRows;
@@ -560,9 +569,7 @@ const StudentReportDetail = () => {
                 <tr className="student-report-marksheet-total-row">
                   <td className="student-report-marksheet-td"><strong>Total</strong></td>
                   <td className="student-report-marksheet-td student-report-marksheet-td-num">
-                    {marksheetDisplayRows.length > 0
-                      ? marksheetDisplayRows.reduce((s, r) => s + r.maxTotal, 0)
-                      : ''}
+                    {marksheetDisplayRows.length > 0 ? sheetMaxTotalForStudent : ''}
                   </td>
                   <td className="student-report-marksheet-td student-report-marksheet-td-num">
                     {marksheetDisplayRows.length > 0
@@ -576,7 +583,7 @@ const StudentReportDetail = () => {
                   <td className="student-report-marksheet-td"><strong>Percentage</strong></td>
                   <td className="student-report-marksheet-td student-report-marksheet-td-num" colSpan={2}>
                     {(() => {
-                      const totalMax = marksheetDisplayRows.reduce((s, r) => s + r.maxTotal, 0);
+                      const totalMax = sheetMaxTotalForStudent;
                       const totalObtained = marksheetDisplayRows.reduce((s, r) => s + Number(r.obtainedTotal), 0);
                       return totalMax > 0 ? formatPercentageDisplay((totalObtained / totalMax) * 100) : '';
                     })()}

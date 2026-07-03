@@ -13,6 +13,7 @@ import {
   roundPercentage,
   roundMarks,
   formatMarksDisplay,
+  getStudentSubjectMarks,
   deduplicateCoursesBySubject,
   getSubjectSortIndex,
   studentQualifiesForResultSheet,
@@ -124,12 +125,7 @@ const ResultSheet = () => {
       const record = recordsByCourse[course.code];
       const marksPerStudent = studentsInGrade.map((student) => {
         const entry = record?.students?.find((s) => String(s.registrationNumber) === String(student.registrationNumber));
-        if (!entry || courseTotal <= 0) return null;
-        const pct = Number(entry.overallPercentage);
-        if (!Number.isFinite(pct)) return null;
-        const marks = roundMarks((pct / 100) * courseTotal);
-        const percentage = roundPercentage(pct);
-        return { marks, percentage: percentage ?? 0 };
+        return getStudentSubjectMarks(entry, courseTotal);
       });
       return { subjectName, courseTotal, marksPerStudent };
     });
@@ -141,7 +137,7 @@ const ResultSheet = () => {
       roundMarks(
         rows.reduce((sum, r) => {
           const cell = r.marksPerStudent[studentIdx];
-          return sum + (cell ? cell.marks : 0);
+          return sum + (cell != null ? cell.marks : 0);
         }, 0)
       )
     );
@@ -275,7 +271,9 @@ const ResultSheet = () => {
           const td = document.createElement('td');
           td.className = 'result-sheet-td';
           td.style.textAlign = 'center';
-          td.textContent = cell ? `${formatMarksDisplay(cell.marks)} (${formatPercentageDisplay(cell.percentage)})` : '—';
+          td.textContent = cell != null
+            ? `${formatMarksDisplay(cell.marks)} (${formatPercentageDisplay(cell.percentage)})`
+            : '—';
           tr.appendChild(td);
         });
 

@@ -517,12 +517,22 @@ export const studentHasCourseRecord = (studentEntry) => {
   );
 };
 
+/** Student appears in a course record (including absent / 0% entries). */
+export const isStudentListedInCourseRecord = (studentEntry) =>
+  studentEntry != null && String(studentEntry.registrationNumber ?? '').trim() !== '';
+
+export const getSessionCoursesForGrade = (courses, { grade, gradingScheme, recordsByCourse } = {}) =>
+  deduplicateCoursesBySubject(
+    filterCoursesForReport(courses, { grade, gradingScheme, recordsByCourse }),
+    recordsByCourse
+  );
+
 export const courseHasSavedRecords = (record, registrationNumber = null) => {
   if (!record?.students?.length) return false;
   if (registrationNumber != null && String(registrationNumber).trim() !== '') {
     const reg = String(registrationNumber);
     const entry = record.students.find((s) => String(s.registrationNumber) === reg);
-    return studentHasCourseRecord(entry);
+    return isStudentListedInCourseRecord(entry);
   }
   return record.students.some((entry) => studentHasCourseRecord(entry));
 };
@@ -611,6 +621,16 @@ export const roundMarks = (value) => {
   const num = Number(value);
   if (!Number.isFinite(num)) return 0;
   return Math.round(num * 100) / 100;
+};
+
+/** Marks for one subject; 0% / absent counts as zero but still returns a cell when listed. */
+export const getStudentSubjectMarks = (studentEntry, courseTotal) => {
+  if (courseTotal <= 0) return null;
+  if (!isStudentListedInCourseRecord(studentEntry)) return null;
+  const pct = Number(studentEntry.overallPercentage);
+  const percentage = Number.isFinite(pct) ? roundPercentage(pct) ?? 0 : 0;
+  const marks = roundMarks((percentage / 100) * courseTotal);
+  return { marks, percentage };
 };
 
 /** Sort by percentage descending and format for display: Grade | X% and above / Less than X | Remark. Adds group (1,2,3) and showGapAfter for layout. */
@@ -704,25 +724,23 @@ export const buildStudentReportData = ({
   const effectiveSchemeRows = normalizeGradingSchemeRows(gradingSchemeRows);
 
   const normalizedStudentGrade = normalizeGradeForMatch(student?.grade);
-  let enrolledCoursesWithMarks = (!normalizedStudentGrade || !Array.isArray(courses))
+  const sessionCourses = (!normalizedStudentGrade || !Array.isArray(courses))
     ? []
-    : filterCoursesForReport(courses, {
-        grade: student?.grade,
-        gradingScheme,
-        recordsByCourse,
-        registrationNumber: decodedRegNo,
-      })
-        .map((course) => {
-          const record = recordsByCourse?.[course.code] || null;
-          const studentEntry = record?.students?.find(
-            (s) => String(s.registrationNumber) === decodedRegNo
-          );
-          const objectiveMarks = studentEntry?.objectiveMarks || {};
-          return { course, record, objectiveMarks, studentEntry };
-        })
-        .filter(({ studentEntry }) => studentHasCourseRecord(studentEntry));
+    : getSessionCoursesForGrade(courses, { grade: student?.grade, gradingScheme, recordsByCourse });
 
-  enrolledCoursesWithMarks = [...enrolledCoursesWithMarks].sort((a, b) => {
+  const enrolledCoursesWithMarks = sessionCourses
+    .map((course) => {
+      const record = recordsByCourse?.[course.code] || null;
+      const studentEntry = record?.students?.find(
+        (s) => String(s.registrationNumber) === decodedRegNo
+      );
+      if (!isStudentListedInCourseRecord(studentEntry)) return null;
+      const objectiveMarks = studentEntry?.objectiveMarks || {};
+      return { course, record, objectiveMarks, studentEntry };
+    })
+    .filter(Boolean);
+
+  const enrolledCoursesSorted = [...enrolledCoursesWithMarks].sort((a, b) => {
     const labelA = (a.course.subject && String(a.course.subject).trim()) || a.course.courseName || a.course.code || '';
     const labelB = (b.course.subject && String(b.course.subject).trim()) || b.course.courseName || b.course.code || '';
     return getSubjectSortIndex(labelA) - getSubjectSortIndex(labelB);
@@ -733,26 +751,24 @@ export const buildStudentReportData = ({
     (allStudents || []).map((s) => [String(s.registrationNumber), normalizeGradeForMatch(s.grade)])
   );
 
-  // Build marksheet from same course list as result sheet: one row per course, same formula
-  const marksheetRows = enrolledCoursesWithMarks
-    .map(({ course, record, objectiveMarks }) => {
+  const sheetMaxTotal = roundMarks(
+    sessionCourses.reduce((sum, course) => sum + getCourseTotalMarks(course), 0)
+  );
+
+  // Build marksheet from session courses where this student is listed (0% / absent included).
+  const marksheetRows = enrolledCoursesSorted
+    .map(({ course, record }) => {
       const courseTotal = getCourseTotalMarks(course);
-      if (courseTotal <= 0) return null;
       const studentEntry = record?.students?.find((s) => String(s.registrationNumber) === decodedRegNo);
-      if (!studentEntry) return null; // not enrolled in this course (e.g. Bio/Comp choice) — do not show or count
-      const pct = studentEntry.overallPercentage != null && Number.isFinite(Number(studentEntry.overallPercentage))
-        ? Number(studentEntry.overallPercentage)
-        : null;
-      const obtainedMarks = pct != null ? Math.round((pct / 100) * courseTotal * 100) / 100 : 0;
-      const percentage = pct != null ? (obtainedMarks / courseTotal) * 100 : 0;
+      const subjectMarks = getStudentSubjectMarks(studentEntry, courseTotal);
+      if (!subjectMarks) return null;
+      const { marks, percentage } = subjectMarks;
       let highestInClass = 0;
       if (record?.students?.length) {
         record.students.forEach((se) => {
           if (gradeByRegistration.get(String(se.registrationNumber)) !== currentStudentGrade) return;
-          const pc = se.overallPercentage != null && Number.isFinite(Number(se.overallPercentage)) ? Number(se.overallPercentage) : null;
-          if (pc == null) return;
-          const m = Math.round((pc / 100) * courseTotal * 100) / 100;
-          if (m > highestInClass) highestInClass = m;
+          const peerMarks = getStudentSubjectMarks(se, courseTotal);
+          if (peerMarks && peerMarks.marks > highestInClass) highestInClass = peerMarks.marks;
         });
       }
       const label = (course.subject && String(course.subject).trim()) || course.courseName || course.code || '—';
@@ -760,7 +776,7 @@ export const buildStudentReportData = ({
         key: course.code,
         label,
         maxTotal: courseTotal,
-        obtainedTotal: Number(obtainedMarks).toFixed(2),
+        obtainedTotal: Number(marks).toFixed(2),
         grade: getGradeFromPercentageWithScheme(percentage, effectiveSchemeRows),
         highestInClass: highestInClass > 0 ? Number(highestInClass).toFixed(2) : null,
       };
@@ -768,36 +784,38 @@ export const buildStudentReportData = ({
     .filter(Boolean);
   marksheetRows.sort((a, b) => getSubjectSortIndex(a.label) - getSubjectSortIndex(b.label));
 
-  const totalMax = marksheetRows.reduce((s, r) => s + r.maxTotal, 0);
-  const totalObtained = marksheetRows.reduce((s, r) => s + Number(r.obtainedTotal), 0);
+  const totalObtained = roundMarks(marksheetRows.reduce((s, r) => s + Number(r.obtainedTotal), 0));
+  const totalMax = sheetMaxTotal;
   const totalPercentage = totalMax > 0 ? formatPercentageDisplay((totalObtained / totalMax) * 100) : '';
   const overallGrade = totalMax > 0
     ? getGradeFromPercentageWithScheme((totalObtained / totalMax) * 100, effectiveSchemeRows)
     : '';
 
   const totalByStudent = {};
-  enrolledCoursesWithMarks.forEach(({ record }) => {
+  enrolledCoursesSorted.forEach(({ record, course }) => {
     if (!record?.students?.length) return;
+    const courseTotal = getCourseTotalMarks(course);
     record.students.forEach((studentEntry) => {
       const reg = String(studentEntry.registrationNumber || '');
       if (!reg) return;
       if (gradeByRegistration.get(reg) !== currentStudentGrade) return;
-      const overallPercentage = studentEntry?.overallPercentage;
-      const percentage = overallPercentage != null && Number.isFinite(Number(overallPercentage))
-        ? Number(overallPercentage)
-        : null;
-      if (percentage == null) return;
-      totalByStudent[reg] = (totalByStudent[reg] || 0) + percentage;
+      const subjectMarks = getStudentSubjectMarks(studentEntry, courseTotal);
+      if (!subjectMarks) return;
+      totalByStudent[reg] = (totalByStudent[reg] || 0) + subjectMarks.marks;
     });
   });
   const currentStudentTotal = totalByStudent[decodedRegNo] || 0;
-  const position = currentStudentTotal > 0
-    ? Object.values(totalByStudent).filter((value) => Number(value) > currentStudentTotal).length + 1
+  const position = currentStudentTotal > 0 && sheetMaxTotal > 0
+    ? Object.entries(totalByStudent).filter(([, marks]) => {
+        const pct = (marks / sheetMaxTotal) * 100;
+        const currentPct = (currentStudentTotal / sheetMaxTotal) * 100;
+        return pct > currentPct;
+      }).length + 1
     : null;
   // Only show position on report card when it is 1–5; otherwise leave blank.
   const classPosition = position != null && position >= 1 && position <= 5 ? position : null;
 
-  const objectiveSections = enrolledCoursesWithMarks.map(({ course, objectiveMarks }) => {
+  const objectiveSections = enrolledCoursesSorted.map(({ course, objectiveMarks }) => {
     const curriculumObjectives = getCurriculumObjectivesBySubject(
       curriculumList,
       normalizedStudentGrade,

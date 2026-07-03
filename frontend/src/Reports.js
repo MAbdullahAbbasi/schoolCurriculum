@@ -21,6 +21,9 @@ import {
   filterCoursesForReport,
   formatGradingSchemeOptionLabel,
   formatPercentageDisplay,
+  getSessionCoursesForGrade,
+  getStudentSubjectMarks,
+  roundMarks,
   studentQualifiesForReportCard,
 } from './reportUtils';
 import { buildReportCardsPdfBlob } from './downloadReportCardsPdf';
@@ -146,28 +149,30 @@ const Reports = () => {
       .filter(Boolean);
   }, [courses, selectedGrade, selectedGradingSchemeId, selectedGradingScheme, recordsByCourse]);
 
-  // Top 3 students by aggregate marks across all courses for this grade
+  // Top 3 students by aggregate marks across all session courses for this grade
   const topThreeStudents = useMemo(() => {
     if (!selectedGrade || studentsInGrade.length === 0) return [];
-    const coursesList = (courses || []).filter((c) => courseCodesForGrade.includes(c.code));
+    const sessionCourses = getSessionCoursesForGrade(courses, {
+      grade: selectedGrade,
+      gradingScheme: selectedGradingScheme,
+      recordsByCourse,
+    });
+    const sheetMaxTotal = roundMarks(
+      sessionCourses.reduce((sum, course) => sum + getCourseTotalMarks(course), 0)
+    );
     const rankList = studentsInGrade.map((student) => {
       let obtained = 0;
-      let totalMax = 0;
-      coursesList.forEach((course) => {
+      sessionCourses.forEach((course) => {
         const record = recordsByCourse[course.code];
         const entry = record?.students?.find((s) => String(s.registrationNumber) === String(student.registrationNumber));
         const courseTotal = getCourseTotalMarks(course);
-        if (entry && courseTotal > 0) {
-          const pct = Number(entry.overallPercentage);
-          if (Number.isFinite(pct)) {
-            obtained += (pct / 100) * courseTotal;
-            totalMax += courseTotal;
-          }
-        }
+        const subjectMarks = getStudentSubjectMarks(entry, courseTotal);
+        if (subjectMarks) obtained += subjectMarks.marks;
       });
-      const percentage = totalMax > 0 ? Math.round((obtained / totalMax) * 10000) / 100 : 0;
+      obtained = roundMarks(obtained);
+      const percentage = sheetMaxTotal > 0 ? Math.round((obtained / sheetMaxTotal) * 10000) / 100 : 0;
       const grade = gradeFromPercentage(percentage, selectedGradingSchemeRows);
-      return { student, obtained: Math.round(obtained * 100) / 100, totalMax, percentage, grade };
+      return { student, obtained, totalMax: sheetMaxTotal, percentage, grade };
     });
     rankList.sort((a, b) => {
       if (b.percentage !== a.percentage) return b.percentage - a.percentage;
@@ -175,7 +180,7 @@ const Reports = () => {
       return (a.student.studentName || '').localeCompare(b.student.studentName || '');
     });
     return rankList.slice(0, 3);
-  }, [selectedGrade, studentsInGrade, courses, courseCodesForGrade, recordsByCourse, selectedGradingSchemeRows]);
+  }, [selectedGrade, studentsInGrade, courses, selectedGradingScheme, recordsByCourse, selectedGradingSchemeRows]);
 
   useEffect(() => {
     const fetchStudentsAndCourses = async () => {
