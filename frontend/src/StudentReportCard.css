@@ -43,11 +43,17 @@
   flex-shrink: 0;
 }
 
-.student-report-card-logo-right {
+.student-report-card-logo-left {
   width: 92px;
   height: 92px;
   max-height: 92px;
   border-radius: 50%;
+}
+
+.student-report-card-logo-right {
+  width: 96px;
+  max-height: 96px;
+  height: auto;
 }
 
 .student-report-card-title-block {

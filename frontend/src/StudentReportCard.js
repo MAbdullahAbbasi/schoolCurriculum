@@ -1,6 +1,6 @@
 import React from 'react';
-import logoLeft from './assets/logoleft.jpg';
 import logoShsCircle from './assets/logo-shs-circle.png';
+import logoShsText from './assets/logoright.jpg';
 import './StudentReportCard.css';
 
 /** Compact report card: logo, student details, and marksheet table (for bulk PDF). */
@@ -10,7 +10,7 @@ const StudentReportCard = ({ reportData }) => {
   return (
     <article className="student-report-card">
       <div className="student-report-card-header">
-        <img src={logoLeft} alt="" className="student-report-card-logo student-report-card-logo-left" />
+        <img src={logoShsCircle} alt="Sapling High School logo" className="student-report-card-logo student-report-card-logo-left" />
         <div className="student-report-card-title-block">
           <h2 className="student-report-card-school">
             <span className="student-report-card-school-first">S</span>APLING{' '}
@@ -20,7 +20,7 @@ const StudentReportCard = ({ reportData }) => {
           <p className="student-report-card-subtitle">(Boys/ Girls)</p>
           <h3 className="student-report-card-exam">{reportData.sessionName || reportData.reportMonthYear || '—'}</h3>
         </div>
-        <img src={logoShsCircle} alt="SHS logo" className="student-report-card-logo student-report-card-logo-right" />
+        <img src={logoShsText} alt="SHS" className="student-report-card-logo student-report-card-logo-right" />
       </div>
 
       <div className="student-report-card-details">
