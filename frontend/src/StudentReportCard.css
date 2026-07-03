@@ -31,15 +31,23 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 8px;
+  gap: 12px;
+  margin-bottom: 10px;
 }
 
 .student-report-card-logo {
-  width: 64px;
+  width: 88px;
+  max-height: 88px;
   height: auto;
   object-fit: contain;
   flex-shrink: 0;
+}
+
+.student-report-card-logo-right {
+  width: 92px;
+  height: 92px;
+  max-height: 92px;
+  border-radius: 50%;
 }
 
 .student-report-card-title-block {
@@ -50,7 +58,7 @@
 .student-report-card-school {
   margin: 0;
   font-family: Georgia, 'Times New Roman', 'Times', serif;
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 700;
   line-height: 1.1;
   color: #111;
@@ -58,7 +66,7 @@
 }
 
 .student-report-card-school-first {
-  font-size: 25px;
+  font-size: 32px;
 }
 
 .student-report-card-registered {
@@ -72,15 +80,15 @@
 }
 
 .student-report-card-subtitle {
-  margin: 1px 0 0;
+  margin: 2px 0 0;
   font-family: Georgia, 'Times New Roman', 'Times', serif;
-  font-size: 13px;
+  font-size: 15px;
   color: #111;
 }
 
 .student-report-card-exam {
-  margin: 6px 0 0;
-  font-size: 12px;
+  margin: 8px 0 0;
+  font-size: 15px;
   font-weight: 700;
   text-decoration: underline;
   color: #1b5e3b;

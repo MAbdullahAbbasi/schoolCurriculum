@@ -1,6 +1,6 @@
 import React from 'react';
 import logoLeft from './assets/logoleft.jpg';
-import logoRight from './assets/logoright.jpg';
+import logoShsCircle from './assets/logo-shs-circle.png';
 import './StudentReportCard.css';
 
 /** Compact report card: logo, student details, and marksheet table (for bulk PDF). */
@@ -18,9 +18,9 @@ const StudentReportCard = ({ reportData }) => {
             <span className="student-report-card-school-first">S</span>CHOOL<span className="student-report-card-registered">(Registered)</span>
           </h2>
           <p className="student-report-card-subtitle">(Boys/ Girls)</p>
-          <h3 className="student-report-card-exam">Annual Examination {reportData.reportMonthYear}</h3>
+          <h3 className="student-report-card-exam">{reportData.sessionName || reportData.reportMonthYear || '—'}</h3>
         </div>
-        <img src={logoRight} alt="" className="student-report-card-logo student-report-card-logo-right" />
+        <img src={logoShsCircle} alt="SHS logo" className="student-report-card-logo student-report-card-logo-right" />
       </div>
 
       <div className="student-report-card-details">

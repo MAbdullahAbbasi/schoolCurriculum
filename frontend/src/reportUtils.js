@@ -475,6 +475,12 @@ export const formatGradingSchemeOptionLabel = (scheme) => {
   return name;
 };
 
+/** Session name only (no dates) for report card headers. */
+export const formatGradingSchemeNameOnly = (gradingScheme) => {
+  const name = String(gradingScheme?.name || '').trim();
+  return name || '—';
+};
+
 export const getGradingSchemeId = (gradingScheme) => {
   if (!gradingScheme) return null;
   const id = gradingScheme._id ?? gradingScheme.id;
@@ -852,6 +858,7 @@ export const buildStudentReportData = ({
     averageAgeInClass: formatAgeFromMonths(averageAgeMonths),
     reportMonthYear: formatSessionLabelFromGradingScheme(gradingScheme),
     sessionLabel: formatSessionLabelFromGradingScheme(gradingScheme),
+    sessionName: formatGradingSchemeNameOnly(gradingScheme),
     objectiveSections,
     marksheetRows,
     totalMax: totalMax > 0 ? totalMax : '',
