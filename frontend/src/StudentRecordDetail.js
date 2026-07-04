@@ -41,6 +41,8 @@ const StudentRecordDetail = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [marksLocked, setMarksLocked] = useState(false);
+  const [unlocking, setUnlocking] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
 
   const role = (() => {
@@ -52,6 +54,7 @@ const StudentRecordDetail = () => {
       return null;
     }
   })();
+  const isAdmin = role === 'ADMIN';
 
   const topics = useMemo(() => course?.topics || [], [course]);
   const courseQuestions = useMemo(() => (course?.questions || []).sort((a, b) => a.questionIndex - b.questionIndex), [course]);
@@ -195,12 +198,20 @@ const StudentRecordDetail = () => {
           });
           setQuestionMarks(qMarks);
           setNotAttempted(nAttempted);
-          // Educators should enter marks immediately; admins/course admins can review first.
-          setIsEditMode(role === 'EDUCATOR');
+          const locked = Boolean(record.marksLocked);
+          setMarksLocked(locked);
+          // Educators edit only when results are not locked; admins review first unless locked override.
+          if (locked) {
+            setIsEditMode(false);
+          } else {
+            setIsEditMode(role === 'EDUCATOR');
+          }
         } else {
+          setMarksLocked(false);
           setIsEditMode(true);
         }
       } catch {
+        setMarksLocked(false);
         setIsEditMode(true);
       }
     } catch (err) {
@@ -411,8 +422,9 @@ const StudentRecordDetail = () => {
       setError(null);
       const response = await axios.post(`${API_URL}/api/records`, recordData);
       if (response.data.success) {
+        setMarksLocked(true);
         setIsEditMode(false);
-        showToast('Record saved successfully!', 'success');
+        showToast('Record saved and locked successfully!', 'success');
       } else {
         showToast(response.data.message || 'Failed to save record', 'error');
       }
@@ -425,7 +437,30 @@ const StudentRecordDetail = () => {
     }
   };
 
-  const handleEditClick = () => setIsEditMode(true);
+  const handleEditClick = () => {
+    if (marksLocked && !isAdmin) return;
+    setIsEditMode(true);
+  };
+
+  const handleUnlockRecord = async () => {
+    if (!isAdmin || !course) return;
+    if (!window.confirm('Unlock results so marks can be edited again?')) return;
+    try {
+      setUnlocking(true);
+      const response = await axios.post(`${API_URL}/api/records/course/${encodeURIComponent(course.code)}/unlock`);
+      if (response.data.success) {
+        setMarksLocked(false);
+        showToast('Results unlocked. Marks can be edited again.', 'success');
+      } else {
+        showToast(response.data.message || 'Failed to unlock record', 'error');
+      }
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || err.response?.data?.error || 'Failed to unlock record';
+      showToast(errorMessage, 'error');
+    } finally {
+      setUnlocking(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -508,6 +543,13 @@ const StudentRecordDetail = () => {
             <p className="compulsory-hint">
               Student may attempt any questions. Only the best {compulsoryQuestions} scoring questions count toward the total. Extra attempted questions are shown as &quot;Not counted&quot;.
             </p>
+          )}
+
+          {marksLocked && (
+            <div className="record-locked-banner">
+              Results are locked after marks were submitted.
+              {isAdmin ? ' You can edit as Admin or unlock for others to edit.' : ' Only Admin can change saved marks.'}
+            </div>
           )}
 
           {enrolledStudents.length > 0 && hasSlots ? (
@@ -652,9 +694,18 @@ const StudentRecordDetail = () => {
                   <span className="btn-icon-wrap"><IconCancel />Cancel</span>
                 </button>
                 {!isEditMode ? (
-                  <button type="button" className="edit-record-button" onClick={handleEditClick}>
-                    <span className="btn-icon-wrap"><IconEdit />Edit</span>
-                  </button>
+                  <>
+                    {(!marksLocked || isAdmin) && (
+                      <button type="button" className="edit-record-button" onClick={handleEditClick}>
+                        <span className="btn-icon-wrap"><IconEdit />{marksLocked && isAdmin ? 'Edit (Admin)' : 'Edit'}</span>
+                      </button>
+                    )}
+                    {marksLocked && isAdmin && (
+                      <button type="button" className="unlock-record-button" onClick={handleUnlockRecord} disabled={unlocking}>
+                        {unlocking ? 'Unlocking...' : 'Unlock results'}
+                      </button>
+                    )}
+                  </>
                 ) : (
                   <button type="button" className="save-record-button" onClick={handleSaveRecord} disabled={saving}>
                     <span className="btn-icon-wrap"><IconSave />{saving ? 'Saving...' : 'Submit'}</span>

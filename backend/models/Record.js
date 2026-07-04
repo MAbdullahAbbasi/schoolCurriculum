@@ -61,6 +61,19 @@ const recordSchema = new mongoose.Schema(
         },
       },
     ],
+    marksLocked: {
+      type: Boolean,
+      default: false,
+    },
+    marksLockedAt: {
+      type: Date,
+      default: null,
+    },
+    marksLockedBy: {
+      type: String,
+      default: null,
+      trim: true,
+    },
   },
   {
     collection: 'records',

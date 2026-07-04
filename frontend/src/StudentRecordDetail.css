@@ -169,6 +169,37 @@
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
+.record-locked-banner {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: #fff8e6;
+  border: 1px solid #f0d78c;
+  color: #856404;
+  font-size: 0.95rem;
+}
+
+.unlock-record-button {
+  background: #fff;
+  color: #856404;
+  border: 1px solid #f0d78c;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.unlock-record-button:hover:not(:disabled) {
+  background: #fff8e6;
+}
+
+.unlock-record-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .table-wrapper {
   overflow-x: auto;
   margin-bottom: 2rem;

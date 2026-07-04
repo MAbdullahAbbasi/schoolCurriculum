@@ -307,11 +307,24 @@ router.post('/', requireCourseAccess, async (req, res) => {
 
     // Check if record exists for this course
     const existingRecord = await Record.findOne({ courseCode });
+    const userRole = req.user?.role || ROLE.EDUCATOR;
+    const username = req.user?.username || '';
+
+    if (existingRecord?.marksLocked && userRole !== ROLE.ADMIN) {
+      return res.status(403).json({
+        success: false,
+        error: 'Record locked',
+        message: 'Results are locked. Only Admin can edit saved marks.',
+      });
+    }
 
     const recordData = {
       courseCode: courseCode.trim(),
       courseName: courseName.trim(),
       students: studentsPayload,
+      marksLocked: true,
+      marksLockedAt: new Date(),
+      marksLockedBy: username,
     };
 
     let record;
@@ -335,6 +348,7 @@ router.post('/', requireCourseAccess, async (req, res) => {
         courseCode: record.courseCode,
         courseName: record.courseName,
         studentsCount: record.students.length,
+        marksLocked: record.marksLocked,
       },
     });
   } catch (error) {
@@ -353,6 +367,47 @@ router.post('/', requireCourseAccess, async (req, res) => {
       success: false,
       error: 'Server error',
       message: 'Failed to save record',
+    });
+  }
+});
+
+// POST unlock marks for a course (Admin only — allows educators to edit again)
+router.post('/course/:courseCode/unlock', requireRoles([ROLE.ADMIN]), async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        error: 'Database not connected',
+        message: 'Database connection failed',
+      });
+    }
+
+    const { courseCode } = req.params;
+    const record = await Record.findOneAndUpdate(
+      { courseCode: String(courseCode).trim() },
+      { marksLocked: false, marksLockedAt: null, marksLockedBy: null },
+      { new: true }
+    );
+
+    if (!record) {
+      return res.status(404).json({
+        success: false,
+        error: 'Record not found',
+        message: 'Record not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Results unlocked. Marks can be edited again.',
+      data: { courseCode: record.courseCode, marksLocked: record.marksLocked },
+    });
+  } catch (error) {
+    console.error('Error unlocking record:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server error',
+      message: 'Failed to unlock record',
     });
   }
 });
