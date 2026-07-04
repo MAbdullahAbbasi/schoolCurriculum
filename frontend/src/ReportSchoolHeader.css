@@ -1,0 +1,78 @@
+.report-school-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 4px 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+}
+
+.report-school-header-logo {
+  width: 88px;
+  max-height: 88px;
+  height: auto;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.report-school-header-logo-left {
+  width: 92px;
+  height: 92px;
+  max-height: 92px;
+  border-radius: 50%;
+}
+
+.report-school-header-logo-right {
+  width: 96px;
+  max-height: 96px;
+  height: auto;
+}
+
+.report-school-header-title-block {
+  flex: 1;
+  text-align: center;
+}
+
+.report-school-header-school {
+  margin: 0;
+  font-family: Georgia, 'Times New Roman', 'Times', serif;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: #111;
+  letter-spacing: 0.5px;
+}
+
+.report-school-header-school-first {
+  font-size: 32px;
+}
+
+.report-school-header-registered {
+  display: inline-block;
+  font-weight: 600;
+  font-size: 9px;
+  vertical-align: sub;
+  letter-spacing: 0;
+  margin-left: 1px;
+  text-transform: none;
+}
+
+.report-school-header-subtitle {
+  margin: 2px 0 0;
+  font-family: Georgia, 'Times New Roman', 'Times', serif;
+  font-size: 15px;
+  color: #111;
+}
+
+.report-school-header-session {
+  margin: 8px 0 0;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: underline;
+  color: #1b5e3b;
+}
+
+.result-sheet-pdf-header-wrap {
+  margin-bottom: 12px;
+}

@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { createRoot } from 'react-dom/client';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from './config/api';
 import { IconBack } from './ButtonIcons';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import ReportSchoolHeader from './ReportSchoolHeader';
 import {
   getCourseTotalMarks,
   filterCoursesForReport,
   formatSessionLabelFromGradingScheme,
+  formatGradingSchemeNameOnly,
   formatPercentageDisplay,
   roundPercentage,
   roundMarks,
@@ -184,19 +187,31 @@ const ResultSheet = () => {
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-');
 
+  const waitForImages = async (container) => {
+    const images = Array.from(container.querySelectorAll('img'));
+    await Promise.all(
+      images.map((img) => {
+        if (img.complete) return Promise.resolve();
+        return new Promise((resolve) => {
+          img.onload = resolve;
+          img.onerror = resolve;
+        });
+      })
+    );
+  };
+
   const handleDownloadPdf = async () => {
     if (!tableRef.current) return;
     setDownloadingPdf(true);
     setError(null);
     let mountNode = null;
+    let headerRoot = null;
     try {
       const gradePart = sanitizeNamePart(selectedGrade);
       const pdfTitle = `ResultSheet-Grade-${gradePart}`;
       const filename = `${pdfTitle}.pdf`;
+      const sessionName = formatGradingSchemeNameOnly(selectedGradingScheme);
 
-      // Build a transposed table for PDF:
-      // - First column: student names
-      // - First row (after header): subjects
       mountNode = document.createElement('div');
       mountNode.style.position = 'fixed';
       mountNode.style.left = '-10000px';
@@ -206,13 +221,13 @@ const ResultSheet = () => {
       mountNode.style.zIndex = '-1';
       document.body.appendChild(mountNode);
 
-      const titleEl = document.createElement('div');
-      titleEl.textContent = pdfTitle;
-      titleEl.style.fontSize = '18px';
-      titleEl.style.fontWeight = '900';
-      titleEl.style.textAlign = 'center';
-      titleEl.style.marginBottom = '12px';
-      mountNode.appendChild(titleEl);
+      const headerMount = document.createElement('div');
+      headerMount.className = 'result-sheet-pdf-header-wrap';
+      mountNode.appendChild(headerMount);
+      headerRoot = createRoot(headerMount);
+      headerRoot.render(<ReportSchoolHeader sessionName={sessionName} />);
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      await waitForImages(mountNode);
 
       const wrapper = document.createElement('div');
       wrapper.className = 'result-sheet-table-wrapper';
@@ -361,6 +376,9 @@ const ResultSheet = () => {
       console.error('Error downloading result sheet PDF:', err);
       setError('Failed to download PDF.');
     } finally {
+      if (headerRoot) {
+        headerRoot.unmount();
+      }
       if (mountNode && mountNode.parentNode) {
         mountNode.parentNode.removeChild(mountNode);
       }
