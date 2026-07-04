@@ -27,6 +27,7 @@
   width: 96px;
   max-height: 96px;
   height: auto;
+  transform: rotate(45deg);
 }
 
 .report-school-header-title-block {

@@ -54,6 +54,7 @@
   width: 96px;
   max-height: 96px;
   height: auto;
+  transform: rotate(45deg);
 }
 
 .student-report-card-title-block {
