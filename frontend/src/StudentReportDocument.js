@@ -1,6 +1,7 @@
 import React from 'react';
 import logoLeft from './assets/logoleft.jpg';
-import logoRight from './assets/logoright.jpg';
+import logoShsCircle from './assets/logo-shs-circle.png';
+import logoShsText from './assets/logoright.jpg';
 import { formatGradingSchemeForDisplay } from './reportUtils';
 import './StudentReportDetail.css';
 
@@ -10,13 +11,13 @@ export const StudentReportCover = ({ reportData }) => (
       <img src={logoLeft} alt="" className="student-report-cover-watermark-img" />
     </div>
     <div className="student-report-cover-top">
-      <img src={logoLeft} alt="School logo" className="student-report-cover-logo student-report-cover-logo-left" />
+      <img src={logoShsCircle} alt="Sapling High School logo" className="student-report-cover-logo student-report-cover-logo-left" />
       <div className="student-report-cover-title-block">
         <h2 className="student-report-cover-school-title"><span className="student-report-cover-title-first">S</span>APLING <span className="student-report-cover-title-first">H</span>IGH <span className="student-report-cover-title-first">S</span>CHOOL <span className="student-report-cover-registered">(Registered)</span></h2>
         <p className="student-report-cover-school-subtitle">(Boys/ Girls)</p>
-        <h3 className="student-report-cover-term-title">Annual Examination {reportData.reportMonthYear}</h3>
+        <h3 className="student-report-cover-term-title">{reportData.sessionName || reportData.reportMonthYear || '—'}</h3>
       </div>
-      <img src={logoRight} alt="SHS logo" className="student-report-cover-logo student-report-cover-logo-right" />
+      <img src={logoShsText} alt="SHS" className="student-report-cover-logo student-report-cover-logo-right" />
     </div>
 
     <div className="student-report-cover-details-grid">
@@ -87,7 +88,7 @@ export const StudentReportObjectiveSection = ({ section }) => (
 export const StudentReportMarksheet = ({ reportData }) => (
   <section className="student-report-marksheet-section">
     <h2 className="student-report-marksheet-school-name">SAPLING HIGH SCHOOL (Registered)</h2>
-    <h3 className="student-report-marksheet-heading">Annual Examination</h3>
+    <h3 className="student-report-marksheet-heading">{reportData.sessionName || reportData.reportMonthYear || '—'}</h3>
     <div className="student-report-marksheet-table-wrapper">
       <table className="student-report-marksheet-table">
         <thead>

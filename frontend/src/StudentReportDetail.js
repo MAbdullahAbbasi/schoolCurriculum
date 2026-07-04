@@ -3,9 +3,10 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from './config/api';
 import { IconBack } from './ButtonIcons';
-import { formatGradingSchemeForDisplay, formatSessionLabelFromGradingScheme, formatPercentageDisplay, getCourseTotalMarks, getSubjectSortIndex, filterCoursesForReport, getSessionCoursesForGrade, getStudentSubjectMarks, isStudentListedInCourseRecord, roundMarks } from './reportUtils';
+import { formatGradingSchemeForDisplay, formatGradingSchemeNameOnly, formatPercentageDisplay, getCourseTotalMarks, getSubjectSortIndex, filterCoursesForReport, getSessionCoursesForGrade, getStudentSubjectMarks, isStudentListedInCourseRecord, roundMarks } from './reportUtils';
 import logoLeft from './assets/logoleft.jpg';
-import logoRight from './assets/logoright.jpg';
+import logoShsCircle from './assets/logo-shs-circle.png';
+import logoShsText from './assets/logoright.jpg';
 import './StudentReportDetail.css';
 
 const GRADING_SCHEME_STORAGE_KEY = 'curriculum_grading_scheme';
@@ -404,7 +405,7 @@ const StudentReportDetail = () => {
         classmatesWithDob.reduce((sum, s) => sum + getAgeInMonths(s.dateOfBirth), 0) / classmatesWithDob.length
       )
     : null;
-  const reportMonthYear = formatSessionLabelFromGradingScheme(selectedGradingSchemeFromState);
+  const sessionName = formatGradingSchemeNameOnly(selectedGradingSchemeFromState);
 
   return (
     <div className="student-report-detail-container">      <div className="student-report-detail-content">
@@ -425,13 +426,13 @@ const StudentReportDetail = () => {
             <img src={logoLeft} alt="" className="student-report-cover-watermark-img" />
           </div>
           <div className="student-report-cover-top">
-            <img src={logoLeft} alt="School logo" className="student-report-cover-logo student-report-cover-logo-left" />
+            <img src={logoShsCircle} alt="Sapling High School logo" className="student-report-cover-logo student-report-cover-logo-left" />
             <div className="student-report-cover-title-block">
               <h2 className="student-report-cover-school-title"><span className="student-report-cover-title-first">S</span>APLING <span className="student-report-cover-title-first">H</span>IGH <span className="student-report-cover-title-first">S</span>CHOOL <span className="student-report-cover-registered">(Registered)</span></h2>
               <p className="student-report-cover-school-subtitle">(Boys/ Girls)</p>
-              <h3 className="student-report-cover-term-title">Annual Examination {reportMonthYear}</h3>
+              <h3 className="student-report-cover-term-title">{sessionName}</h3>
             </div>
-            <img src={logoRight} alt="SHS logo" className="student-report-cover-logo student-report-cover-logo-right" />
+            <img src={logoShsText} alt="SHS" className="student-report-cover-logo student-report-cover-logo-right" />
           </div>
 
           <div className="student-report-cover-details-grid">
@@ -542,7 +543,7 @@ const StudentReportDetail = () => {
         {/* Marksheet – after objective tables, before grading scheme */}
         <section className="student-report-marksheet-section">
           <h2 className="student-report-marksheet-school-name">SAPLING HIGH SCHOOL (Registered)</h2>
-          <h3 className="student-report-marksheet-heading">Annual Examination</h3>
+          <h3 className="student-report-marksheet-heading">{sessionName}</h3>
           <div className="student-report-marksheet-table-wrapper">
             <table className="student-report-marksheet-table">
               <thead>

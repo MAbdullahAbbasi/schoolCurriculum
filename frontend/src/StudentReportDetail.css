@@ -121,67 +121,72 @@
 }
 
 .student-report-cover-top {
-  display: grid;
-  grid-template-columns: 180px 1fr 180px;
+  display: flex;
   align-items: center;
-  gap: 1rem;
+  justify-content: space-between;
+  gap: 12px;
   margin-bottom: 1.25rem;
 }
 
 .student-report-cover-logo {
-  max-width: 100%;
-  height: auto;
   object-fit: contain;
+  flex-shrink: 0;
 }
 
 .student-report-cover-logo-left {
-  width: 170px;
-  justify-self: start;
+  width: 92px;
+  height: 92px;
+  max-height: 92px;
+  border-radius: 50%;
 }
 
 .student-report-cover-logo-right {
-  width: 170px;
-  justify-self: end;
-  transform: rotate(45deg);
+  width: 96px;
+  max-height: 96px;
+  height: auto;
 }
 
 .student-report-cover-title-block {
+  flex: 1;
   text-align: center;
 }
 
 .student-report-cover-school-title {
   margin: 0;
-  font-size: 1.15rem;
+  font-family: Georgia, 'Times New Roman', 'Times', serif;
+  font-size: 1.375rem;
   font-weight: 700;
   color: #111;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1.1;
 }
 
 .student-report-cover-title-first {
-  font-size: 1.85em;
+  font-size: 2rem;
   font-weight: 800;
   vertical-align: baseline;
 }
 
 .student-report-cover-registered {
-  font-size: 0.95rem;
-  font-weight: 500;
+  font-size: 0.56rem;
+  font-weight: 600;
   text-transform: none;
+  vertical-align: sub;
 }
 
 .student-report-cover-school-subtitle {
-  margin: 0.4rem 0 0.35rem;
-  font-size: 1rem;
+  margin: 2px 0 0;
+  font-family: Georgia, 'Times New Roman', 'Times', serif;
+  font-size: 0.94rem;
   font-weight: 500;
-  color: #222;
+  color: #111;
 }
 
 .student-report-cover-term-title {
-  margin: 0;
-  font-size: 1.25rem;
+  margin: 8px 0 0;
+  font-size: 0.94rem;
   font-weight: 700;
-  color: #1f2937;
+  color: #1b5e3b;
   text-decoration: underline;
 }
 
@@ -310,9 +315,9 @@
 }
 
 .student-report-marksheet-heading {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #2c3e50;
+  font-size: 0.94rem;
+  font-weight: 700;
+  color: #1b5e3b;
   margin: 0 0 1rem 0;
   text-align: center;
   text-decoration: underline;
