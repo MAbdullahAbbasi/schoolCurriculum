@@ -4,6 +4,7 @@ import logoShsCircle from './assets/logo-shs-circle.png';
 import logoShsText from './assets/logoright.jpg';
 import { formatGradingSchemeForDisplay } from './reportUtils';
 import './StudentReportDetail.css';
+import './pdfExport.css';
 
 export const StudentReportCover = ({ reportData }) => (
   <section className="student-report-cover-section">

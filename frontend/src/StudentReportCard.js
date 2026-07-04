@@ -2,6 +2,7 @@ import React from 'react';
 import logoShsCircle from './assets/logo-shs-circle.png';
 import logoShsText from './assets/logoright.jpg';
 import './StudentReportCard.css';
+import './pdfExport.css';
 
 /** Compact report card: logo, student details, and marksheet table (for bulk PDF). */
 const StudentReportCard = ({ reportData }) => {

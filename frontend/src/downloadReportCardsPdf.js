@@ -46,6 +46,7 @@ export async function buildReportCardsPdfBlob(reportDataList) {
 
   for (let pageIndex = 0; pageIndex < pairs.length; pageIndex++) {
     const mountNode = document.createElement('div');
+    mountNode.className = 'pdf-export-root';
     mountNode.style.position = 'fixed';
     mountNode.style.left = '-10000px';
     mountNode.style.top = '0';

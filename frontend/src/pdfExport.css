@@ -1,0 +1,12 @@
+/* Preferred font for all downloaded PDF captures (html2canvas). */
+.pdf-export-root,
+.report-cards-pdf-page,
+.student-report-pdf-content {
+  font-family: Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.pdf-export-root *,
+.report-cards-pdf-page *,
+.student-report-pdf-content * {
+  font-family: Tahoma, Geneva, Verdana, sans-serif;
+}

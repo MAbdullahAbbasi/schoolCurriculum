@@ -2,6 +2,7 @@ import React from 'react';
 import logoShsCircle from './assets/logo-shs-circle.png';
 import logoShsText from './assets/logoright.jpg';
 import './ReportSchoolHeader.css';
+import './pdfExport.css';
 
 /** Shared letterhead for report cards, individual reports, and result sheet PDFs. */
 const ReportSchoolHeader = ({ sessionName }) => (

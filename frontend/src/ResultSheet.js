@@ -23,6 +23,7 @@ import {
 } from './reportUtils';
 import { studentMatchesGrade } from './studentDataUtils';
 import './ResultSheet.css';
+import './pdfExport.css';
 
 // Registration number has 4 parts separated by 3 hyphens: year - serialNumber - part3 - part4
 const getSerialFromRegistration = (regNo) => {
@@ -213,6 +214,7 @@ const ResultSheet = () => {
       const sessionName = formatGradingSchemeNameOnly(selectedGradingScheme);
 
       mountNode = document.createElement('div');
+      mountNode.className = 'pdf-export-root';
       mountNode.style.position = 'fixed';
       mountNode.style.left = '-10000px';
       mountNode.style.top = '0';
