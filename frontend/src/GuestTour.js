@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { GUEST_TOUR_STEPS } from './guestTourSteps';
+import { GUEST_TOUR_STEPS } from './portalTourSteps';
 import './GuestTour.css';
 
 const SPOTLIGHT_PAD = 8;
@@ -61,18 +61,18 @@ function computeCardPosition(rect, placement) {
   return { top, left };
 }
 
-const GuestTour = ({ runToken, onEnsureSidebarOpen }) => {
+const GuestTour = ({ steps = GUEST_TOUR_STEPS, runToken, onEnsureSidebarOpen, onComplete }) => {
   const [stepIndex, setStepIndex] = useState(0);
   const [closed, setClosed] = useState(false);
   const [spotRect, setSpotRect] = useState(null);
   const [cardPos, setCardPos] = useState({ top: 0, left: 0 });
   const cardRef = useRef(null);
 
-  const steps = GUEST_TOUR_STEPS;
-  const step = steps[stepIndex];
+  const tourSteps = steps?.length ? steps : GUEST_TOUR_STEPS;
+  const step = tourSteps[stepIndex];
   const isCenter = step?.type === 'center';
   const isFirst = stepIndex === 0;
-  const isLast = stepIndex === steps.length - 1;
+  const isLast = stepIndex === tourSteps.length - 1;
 
   const updateLayout = useCallback(() => {
     if (!step) return;
@@ -137,7 +137,10 @@ const GuestTour = ({ runToken, onEnsureSidebarOpen }) => {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [closed, isFirst, isLast]);
 
-  const closeTour = () => setClosed(true);
+  const closeTour = () => {
+    setClosed(true);
+    onComplete?.();
+  };
 
   if (closed || !step) {
     return null;
@@ -164,7 +167,7 @@ const GuestTour = ({ runToken, onEnsureSidebarOpen }) => {
       {!isCenter && spotlightStyle && <div className="guest-tour-spotlight" style={spotlightStyle} />}
       <div ref={cardRef} className={cardClass} style={cardStyle}>
         <p className="guest-tour-step-label">
-          Step {stepIndex + 1} of {steps.length}
+          Step {stepIndex + 1} of {tourSteps.length}
         </p>
         <h2 id="guest-tour-title" className="guest-tour-title">
           {step.title}

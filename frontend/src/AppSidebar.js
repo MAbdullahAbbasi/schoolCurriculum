@@ -118,7 +118,7 @@ const AppSidebar = ({ open, onClose }) => {
         <p className="app-sidebar-tagline">{APP_LABELS.brandTagline}</p>
       </div>
       <nav className="app-sidebar-nav">
-        {isRootAdmin && navBtn('All logins', iconRootLogins, '/root-logins', ['/root-logins'])}
+        {isRootAdmin && navBtn('All logins', iconRootLogins, '/root-logins', ['/root-logins'], '', 'nav-root-logins')}
         {!isRootAdmin && canViewObjectives && navBtn('Objectives', iconObjectives, '/', ['/', '/create-course'], '', 'nav-objectives')}
         {!isRootAdmin && isSuperAdmin && navBtn(APP_LABELS.groveNav, iconRoles, '/roles', ['/roles', '/course-admins', '/educators', '/students-data'], '', 'nav-grove')}
         {!isRootAdmin && navBtn('Record', iconRecord, '/record', ['/record', '/studentRecord'], '', 'nav-record')}

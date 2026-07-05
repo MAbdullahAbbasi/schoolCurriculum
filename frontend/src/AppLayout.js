@@ -1,41 +1,72 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import AppSidebar from './AppSidebar';
 import PageHeader from './PageHeader';
 import GuestTour from './GuestTour';
 import { getPageMeta, isTopLevelPath } from './pageTitles';
-import { isGuestRole } from './authUtils';
+import {
+  getAuthRole,
+  getAuthUsername,
+  hasCompletedPortalTour,
+  isGuestRole,
+  markPortalTourCompleted,
+} from './authUtils';
+import { getPortalTourSteps } from './portalTourSteps';
 import './AppLayout.css';
 import './pageLayout.css';
 
 const AppLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [guestTourKey, setGuestTourKey] = useState(0);
+  const [tourKey, setTourKey] = useState(0);
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);
   const { pathname } = useLocation();
   const { title, subtitle } = getPageMeta(pathname);
   const showBack = !isTopLevelPath(pathname);
-  const isGuest = isGuestRole();
+
+  const role = getAuthRole();
+  const username = getAuthUsername();
+  const isGuest = isGuestRole(role);
+  const tourSteps = useMemo(() => getPortalTourSteps(role), [role]);
 
   useEffect(() => {
+    if (!role || !username || tourSteps.length === 0) return;
+
+    setSidebarOpen(true);
+
     if (isGuest) {
-      setSidebarOpen(true);
-      setGuestTourKey(1);
+      setTourKey(1);
+      return;
     }
-  }, [isGuest]);
+
+    if (!hasCompletedPortalTour(username)) {
+      setTourKey(1);
+    }
+  }, [role, username, isGuest, tourSteps.length]);
 
   const replayGuestTour = () => {
     setSidebarOpen(true);
-    setGuestTourKey((k) => k + 1);
+    setTourKey((k) => k + 1);
   };
+
+  const handleTourComplete = useCallback(() => {
+    if (!isGuest && username) {
+      markPortalTourCompleted(username);
+    }
+  }, [isGuest, username]);
 
   const ensureSidebarOpen = useCallback(() => setSidebarOpen(true), []);
 
   return (
     <div className="app-layout">
       <AppSidebar open={sidebarOpen} onClose={closeSidebar} />
-      {isGuest && guestTourKey > 0 && (
-        <GuestTour key={guestTourKey} runToken={guestTourKey} onEnsureSidebarOpen={ensureSidebarOpen} />
+      {tourKey > 0 && tourSteps.length > 0 && (
+        <GuestTour
+          key={tourKey}
+          steps={tourSteps}
+          runToken={tourKey}
+          onEnsureSidebarOpen={ensureSidebarOpen}
+          onComplete={handleTourComplete}
+        />
       )}
       <div className={`app-main ${sidebarOpen ? 'app-main--sidebar-open' : ''}`}>
         {isGuest && (
