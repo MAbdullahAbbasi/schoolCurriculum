@@ -3,11 +3,13 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from './config/api';
 import { IconBack, IconCancel, IconCreate, IconList } from './ButtonIcons';
+import { canEditPortal } from './authUtils';
 import './MapCourseQuestions.css';
 
 const slotKey = (q, part) => (part === 0 ? `q${q}` : `q${q}-p${part}`);
 
 const MapCourseQuestions = () => {
+  const canEdit = canEditPortal();
   const navigate = useNavigate();
   const location = useLocation();
   const {
@@ -385,6 +387,7 @@ const MapCourseQuestions = () => {
           <button type="button" className="map-questions-cancel-btn" onClick={handleCancel} disabled={submitting}>
             <span className="btn-icon-wrap"><IconCancel />Cancel</span>
           </button>
+          {canEdit && (
           <button
             type="button"
             className="map-questions-create-btn"
@@ -393,6 +396,7 @@ const MapCourseQuestions = () => {
           >
             <span className="btn-icon-wrap"><IconCreate />{submitting ? 'Creating...' : 'Create course'}</span>
           </button>
+          )}
         </div>
         {!allSlotsDone && slots.length > 0 && (
           <p className="map-questions-validation-hint">

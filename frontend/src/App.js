@@ -23,6 +23,7 @@ import RolesDashboard from './RolesDashboard';
 import CourseAdmins from './CourseAdmins';
 import Educators from './Educators';
 import RootLogins from './RootLogins';
+import { isGuestRole } from './authUtils';
 
 const AUTH_KEY = 'curriculum_auth';
 const INACTIVITY_MS = 20 * 60 * 1000;   // 20 minutes
@@ -169,6 +170,11 @@ function App() {
     );
   }
 
+  const isGuest = isGuestRole(userRole);
+  const isEducator = userRole === 'EDUCATOR';
+  const isAdminOrGuest = userRole === 'ADMIN' || isGuest;
+  const canAccessGradingScheme = userRole === 'ADMIN' || userRole === 'COURSE_ADMIN' || isGuest;
+
   return (
     <Router>
       <div className="App">
@@ -179,7 +185,7 @@ function App() {
               element={
                 userRole === 'SUPER_ADMIN' ? (
                   <Navigate to="/root-logins" replace />
-                ) : userRole === 'EDUCATOR' ? (
+                ) : isEducator ? (
                   <Navigate to="/record" replace />
                 ) : (
                   <Curriculum />
@@ -190,49 +196,49 @@ function App() {
               path="/root-logins"
               element={userRole === 'SUPER_ADMIN' ? <RootLogins /> : <Navigate to="/" replace />}
             />
-            <Route path="/create-course" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <CreateCourse />} />
-            <Route path="/create-course/marks" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <CreateCourseMarks />} />
-            <Route path="/create-course/map-questions" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <MapCourseQuestions />} />
+            <Route path="/create-course" element={isEducator ? <Navigate to="/record" replace /> : <CreateCourse />} />
+            <Route path="/create-course/marks" element={isEducator ? <Navigate to="/record" replace /> : <CreateCourseMarks />} />
+            <Route path="/create-course/map-questions" element={isEducator ? <Navigate to="/record" replace /> : <MapCourseQuestions />} />
             <Route
               path="/students-data"
-              element={userRole === 'ADMIN' ? <StudentDirectory /> : <Navigate to="/record" replace />}
+              element={isAdminOrGuest ? <StudentDirectory /> : <Navigate to="/record" replace />}
             />
             <Route
               path="/students-data/add"
-              element={userRole === 'ADMIN' ? <AddStudent /> : <Navigate to="/record" replace />}
+              element={isAdminOrGuest ? <AddStudent /> : <Navigate to="/record" replace />}
             />
             <Route
               path="/students-data/promote"
-              element={userRole === 'ADMIN' ? <PromoteStudents /> : <Navigate to="/record" replace />}
+              element={isAdminOrGuest ? <PromoteStudents /> : <Navigate to="/record" replace />}
             />
             <Route
               path="/students-data/:registrationNumber"
-              element={userRole === 'ADMIN' ? <StudentDetail /> : <Navigate to="/record" replace />}
+              element={isAdminOrGuest ? <StudentDetail /> : <Navigate to="/record" replace />}
             />
             <Route path="/record" element={<StudentsRecord />} />
             <Route path="/studentRecord/:courseCode" element={<StudentRecordDetail />} />
-            <Route path="/roles" element={userRole === 'ADMIN' ? <RolesDashboard /> : <Navigate to="/record" replace />} />
+            <Route path="/roles" element={isAdminOrGuest ? <RolesDashboard /> : <Navigate to="/record" replace />} />
             <Route
               path="/course-admins"
-              element={userRole === 'ADMIN' ? <CourseAdmins /> : <Navigate to="/" replace />}
+              element={isAdminOrGuest ? <CourseAdmins /> : <Navigate to="/" replace />}
             />
             <Route
               path="/educators"
-              element={userRole === 'ADMIN' ? <Educators /> : <Navigate to="/" replace />}
+              element={isAdminOrGuest ? <Educators /> : <Navigate to="/" replace />}
             />
-            <Route path="/reports" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <Reports />} />
+            <Route path="/reports" element={isEducator ? <Navigate to="/record" replace /> : <Reports />} />
             <Route
               path="/download-report-cards"
-              element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <DownloadReportCards />}
+              element={isEducator ? <Navigate to="/record" replace /> : <DownloadReportCards />}
             />
-            <Route path="/reports/result-sheet" element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <ResultSheet />} />
+            <Route path="/reports/result-sheet" element={isEducator ? <Navigate to="/record" replace /> : <ResultSheet />} />
             <Route
               path="/reports/student/:registrationNumber"
-              element={userRole === 'EDUCATOR' ? <Navigate to="/record" replace /> : <StudentReportDetail />}
+              element={isEducator ? <Navigate to="/record" replace /> : <StudentReportDetail />}
             />
             <Route
               path="/grading-scheme"
-              element={userRole === 'ADMIN' || userRole === 'COURSE_ADMIN' ? <GradingScheme /> : <Navigate to="/record" replace />}
+              element={canAccessGradingScheme ? <GradingScheme /> : <Navigate to="/record" replace />}
             />
             <Route path="/login" element={<Navigate to="/" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />

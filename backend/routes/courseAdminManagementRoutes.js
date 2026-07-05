@@ -9,7 +9,7 @@ import { applyPasswordFields } from '../utils/userPassword.js';
 const router = express.Router();
 
 // Admin-only
-router.use(requireRoles([ROLE.ADMIN]));
+router.use(requireRoles([ROLE.ADMIN, ROLE.GUEST]));
 
 const requireAdminPassword = async (req, adminPassword) => {
   if (!adminPassword || !String(adminPassword).trim()) return false;

@@ -1,4 +1,4 @@
-import { effectiveTotalFromQuestionPartMarks } from './questionChoiceUtils.js';
+import { effectiveTotalFromQuestionPartMarks, getObtainedMarksFromRecord } from './questionChoiceUtils.js';
 import { normalizeGradeForMatch } from './studentDataUtils.js';
 
 export { normalizeGradeForMatch } from './studentDataUtils.js';
@@ -624,9 +624,17 @@ export const roundMarks = (value) => {
 };
 
 /** Marks for one subject; 0% / absent counts as zero but still returns a cell when listed. */
-export const getStudentSubjectMarks = (studentEntry, courseTotal) => {
+export const getStudentSubjectMarks = (studentEntry, courseTotal, course = null) => {
   if (courseTotal <= 0) return null;
   if (!isStudentListedInCourseRecord(studentEntry)) return null;
+
+  const obtained = course ? getObtainedMarksFromRecord(studentEntry, course) : null;
+  if (obtained != null && Number.isFinite(obtained)) {
+    const marks = roundMarks(obtained);
+    const percentage = roundPercentage((marks / courseTotal) * 100) ?? 0;
+    return { marks, percentage };
+  }
+
   const pct = Number(studentEntry.overallPercentage);
   const percentage = Number.isFinite(pct) ? roundPercentage(pct) ?? 0 : 0;
   const marks = roundMarks((percentage / 100) * courseTotal);
@@ -760,14 +768,14 @@ export const buildStudentReportData = ({
     .map(({ course, record }) => {
       const courseTotal = getCourseTotalMarks(course);
       const studentEntry = record?.students?.find((s) => String(s.registrationNumber) === decodedRegNo);
-      const subjectMarks = getStudentSubjectMarks(studentEntry, courseTotal);
+      const subjectMarks = getStudentSubjectMarks(studentEntry, courseTotal, course);
       if (!subjectMarks) return null;
       const { marks, percentage } = subjectMarks;
       let highestInClass = 0;
       if (record?.students?.length) {
         record.students.forEach((se) => {
           if (gradeByRegistration.get(String(se.registrationNumber)) !== currentStudentGrade) return;
-          const peerMarks = getStudentSubjectMarks(se, courseTotal);
+          const peerMarks = getStudentSubjectMarks(se, courseTotal, course);
           if (peerMarks && peerMarks.marks > highestInClass) highestInClass = peerMarks.marks;
         });
       }
@@ -799,7 +807,7 @@ export const buildStudentReportData = ({
       const reg = String(studentEntry.registrationNumber || '');
       if (!reg) return;
       if (gradeByRegistration.get(reg) !== currentStudentGrade) return;
-      const subjectMarks = getStudentSubjectMarks(studentEntry, courseTotal);
+      const subjectMarks = getStudentSubjectMarks(studentEntry, courseTotal, course);
       if (!subjectMarks) return;
       totalByStudent[reg] = (totalByStudent[reg] || 0) + subjectMarks.marks;
     });

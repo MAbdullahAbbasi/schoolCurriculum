@@ -1,13 +1,13 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import GradingScheme from '../models/GradingScheme.js';
-import { ROLE } from '../rbac/roles.js';
+import { ROLE, ADMIN_VIEW_ROLES } from '../rbac/roles.js';
 import { requireRoles } from '../rbac/guards.js';
 
 const router = express.Router();
 
 // GET all grading schemes
-router.get('/', requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), async (req, res) => {
+router.get('/', requireRoles(ADMIN_VIEW_ROLES), async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({

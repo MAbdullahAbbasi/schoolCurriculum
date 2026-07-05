@@ -3,9 +3,11 @@ import axios from 'axios';
 import { API_URL } from './config/api';
 import { ROLE_LABELS } from './roleLabels';
 import { IconDelete, IconEdit } from './ButtonIcons';
+import { canEditPortal } from './authUtils';
 import './CourseAdmins.css';
 
 const CourseAdmins = () => {
+  const canEdit = canEditPortal();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -359,6 +361,7 @@ const CourseAdmins = () => {
           </div>
         )}
 
+        {canEdit && (
         <div className="course-admins-top-actions">
           <div />
           <div className="course-admins-actions-right">
@@ -381,6 +384,7 @@ const CourseAdmins = () => {
             </button>
           </div>
         </div>
+        )}
 
         <div className="course-admins-table-wrap">
           <table className="course-admins-table">
@@ -398,13 +402,13 @@ const CourseAdmins = () => {
                   </div>
                 </th>
                 <th className="course-admins-th">Password</th>
-                <th className="course-admins-th course-admins-th-action">Action</th>
+                {canEdit && <th className="course-admins-th course-admins-th-action">Action</th>}
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="course-admins-empty">
+                  <td colSpan={canEdit ? 4 : 3} className="course-admins-empty">
                     No {ROLE_LABELS.forestKeeper.toLowerCase()}s found.
                   </td>
                 </tr>
@@ -423,6 +427,7 @@ const CourseAdmins = () => {
                       </div>
                     </td>
                     <td>{maskPassword(row.username)}</td>
+                    {canEdit && (
                     <td className="course-admins-td-actions">
                       <button
                         type="button"
@@ -447,6 +452,7 @@ const CourseAdmins = () => {
                         </span>
                       </button>
                     </td>
+                    )}
                   </tr>
                 ))
               )}

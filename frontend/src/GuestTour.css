@@ -1,0 +1,125 @@
+.guest-tour-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  pointer-events: auto;
+}
+
+.guest-tour-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(12, 22, 18, 0.55);
+  border: none;
+  cursor: default;
+}
+
+.guest-tour-spotlight {
+  position: fixed;
+  z-index: 10001;
+  border-radius: 10px;
+  box-shadow: 0 0 0 9999px rgba(12, 22, 18, 0.62);
+  pointer-events: none;
+  transition: top 0.2s ease, left 0.2s ease, width 0.2s ease, height 0.2s ease;
+  outline: 2px solid rgba(183, 228, 199, 0.95);
+  outline-offset: 2px;
+}
+
+.guest-tour-card {
+  position: fixed;
+  z-index: 10002;
+  width: min(420px, calc(100vw - 2rem));
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.22);
+  padding: 1.25rem 1.35rem 1rem;
+  color: #1a2e24;
+}
+
+.guest-tour-card--center {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.guest-tour-step-label {
+  margin: 0 0 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #40916c;
+}
+
+.guest-tour-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #1b4332;
+}
+
+.guest-tour-body {
+  margin: 0 0 1rem;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: #3d5a4c;
+}
+
+.guest-tour-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.guest-tour-actions-left,
+.guest-tour-actions-right {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.guest-tour-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.guest-tour-btn-primary {
+  background: linear-gradient(135deg, #2d6a4f 0%, #40916c 100%);
+  color: #fff;
+}
+
+.guest-tour-btn-primary:hover {
+  filter: brightness(1.05);
+}
+
+.guest-tour-btn-secondary {
+  background: #eef4f0;
+  color: #1b4332;
+}
+
+.guest-tour-btn-secondary:hover {
+  background: #dfece4;
+}
+
+.guest-tour-btn-ghost {
+  background: transparent;
+  color: #5a6c7d;
+}
+
+.guest-tour-btn-ghost:hover {
+  color: #1b4332;
+}
+
+@media (max-width: 768px) {
+  .guest-tour-card {
+    width: min(360px, calc(100vw - 1.5rem));
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+  }
+}

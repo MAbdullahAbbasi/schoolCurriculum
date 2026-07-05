@@ -8,6 +8,7 @@ import {
   normalizeChoiceGroups,
   validateQuestionChoiceGroups,
 } from './questionChoiceUtils';
+import { canEditPortal } from './authUtils';
 import './CreateCourseMarks.css';
 
 const slotKey = (q, part) => (part === 0 ? `q${q}` : `q${q}-p${part}`);
@@ -35,6 +36,7 @@ const normalizeGradeForMatch = (grade) => {
 };
 
 const CreateCourseMarks = () => {
+  const canEdit = canEditPortal();
   const navigate = useNavigate();
   const location = useLocation();
   const {
@@ -495,6 +497,7 @@ const CreateCourseMarks = () => {
           <button type="button" className="create-course-marks-back-btn" onClick={handleBack} disabled={creating}>
             <span className="btn-icon-wrap"><IconBack />Back</span>
           </button>
+          {canEdit && (
           <button
             type="button"
             className="create-course-marks-next-btn"
@@ -503,6 +506,7 @@ const CreateCourseMarks = () => {
           >
             <span className="btn-icon-wrap"><IconCreate />{creating ? 'Creating...' : 'Create course'}</span>
           </button>
+          )}
         </div>
       </div>
     </div>

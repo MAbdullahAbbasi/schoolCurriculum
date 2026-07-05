@@ -44,6 +44,7 @@ const Login = ({ onLoginSuccess }) => {
         localStorage.setItem('curriculum_auth', JSON.stringify({
           username: res.data.user?.username || username,
           token: res.data.token,
+          role: res.data.user?.role || null,
         }));
         onLoginSuccess?.();
       } else {

@@ -2,6 +2,20 @@ import Course from '../models/Course.js';
 import User from '../models/User.js';
 import { ROLE } from './roles.js';
 
+const WRITE_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
+
+/** Block mutating API calls for demo guest accounts. */
+export const denyGuestWrite = (req, res, next) => {
+  if (req.user?.role === ROLE.GUEST && WRITE_METHODS.includes(req.method)) {
+    return res.status(403).json({
+      success: false,
+      error: 'Forbidden',
+      message: 'Guest accounts can view the portal but cannot make changes.',
+    });
+  }
+  return next();
+};
+
 export const requireRoles = (allowedRoles = []) => {
   const allowed = new Set(allowedRoles);
   return (req, res, next) => {
@@ -74,8 +88,8 @@ export const requireCourseAccess = async (req, res, next) => {
     });
   }
 
-  // ADMIN + COURSE_ADMIN can access everything
-    if (role === ROLE.ADMIN || role === ROLE.COURSE_ADMIN) {
+  // ADMIN, COURSE_ADMIN, and GUEST can access any course (guest is read-only via denyGuestWrite).
+  if (role === ROLE.ADMIN || role === ROLE.COURSE_ADMIN || role === ROLE.GUEST) {
     req.course = await Course.findOne({ code: courseCode }).lean();
     return next();
   }

@@ -3,6 +3,7 @@ import axios from 'axios';
 import { API_URL } from './config/api';
 import { ROLE_LABELS } from './roleLabels';
 import { IconDelete, IconEdit } from './ButtonIcons';
+import { canEditPortal } from './authUtils';
 import './Educators.css';
 
 const GRADES = ['KG-II', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
@@ -23,6 +24,7 @@ const SUBJECTS = [
 ];
 
 const Educators = () => {
+  const canEdit = canEditPortal();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -538,6 +540,7 @@ const Educators = () => {
           </div>
         )}
 
+        {canEdit && (
         <div className="educators-top-actions">
           <div />
           <div className="educators-actions-right">
@@ -549,6 +552,7 @@ const Educators = () => {
             </button>
           </div>
         </div>
+        )}
 
         <div className="educators-table-wrap">
           <table className="educators-table">
@@ -563,13 +567,13 @@ const Educators = () => {
                 <th className="educators-th">Password</th>
                 <th className="educators-th">Grade</th>
                 <th className="educators-th">Subject</th>
-                <th className="educators-th educators-th-action">Action</th>
+                {canEdit && <th className="educators-th educators-th-action">Action</th>}
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="educators-empty">
+                  <td colSpan={canEdit ? 5 : 4} className="educators-empty">
                     No {ROLE_LABELS.gardener.toLowerCase()}s found.
                   </td>
                 </tr>
@@ -590,6 +594,7 @@ const Educators = () => {
                     <td>{maskPassword(row.username)}</td>
                     <td>{row.grade || '—'}</td>
                     <td>{row.subject || '—'}</td>
+                    {canEdit && (
                     <td className="educators-td-actions">
                       <button type="button" className="educators-action-btn educators-edit-btn" onClick={() => openEdit(row)}>
                         <span className="educators-action-inner">
@@ -604,6 +609,7 @@ const Educators = () => {
                         </span>
                       </button>
                     </td>
+                    )}
                   </tr>
                 ))
               )}

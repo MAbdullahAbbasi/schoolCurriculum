@@ -290,14 +290,14 @@ const StudentReportDetail = () => {
       .map(({ course, record }) => {
         const courseTotal = getCourseTotalMarks(course);
         const studentEntry = record?.students?.find((s) => String(s.registrationNumber) === decodedRegNo);
-        const subjectMarks = getStudentSubjectMarks(studentEntry, courseTotal);
+        const subjectMarks = getStudentSubjectMarks(studentEntry, courseTotal, course);
         if (!subjectMarks) return null;
         const { marks, percentage } = subjectMarks;
         let highestInClass = 0;
         if (record?.students?.length) {
           record.students.forEach((se) => {
             if (gradeByRegistration.get(String(se.registrationNumber)) !== currentStudentGrade) return;
-            const peerMarks = getStudentSubjectMarks(se, courseTotal);
+            const peerMarks = getStudentSubjectMarks(se, courseTotal, course);
             if (peerMarks && peerMarks.marks > highestInClass) highestInClass = peerMarks.marks;
           });
         }
@@ -332,7 +332,7 @@ const StudentReportDetail = () => {
         const reg = String(studentEntry.registrationNumber || '');
         if (!reg) return;
         if (gradeByRegistration.get(reg) !== currentStudentGrade) return;
-        const subjectMarks = getStudentSubjectMarks(studentEntry, courseTotal);
+        const subjectMarks = getStudentSubjectMarks(studentEntry, courseTotal, course);
         if (!subjectMarks) return;
         totalByStudent[reg] = (totalByStudent[reg] || 0) + subjectMarks.marks;
       });

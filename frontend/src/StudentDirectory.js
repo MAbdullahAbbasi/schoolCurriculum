@@ -5,9 +5,11 @@ import { API_URL } from './config/api';
 import { ROLE_LABELS } from './roleLabels';
 import { IconAdd, IconCancel, IconDelete, IconEdit, IconPromote, IconSelectAll } from './ButtonIcons';
 import { formatGradeOptionLabel, gradesFromStudents, sortStudentsByGrade } from './studentDataUtils';
+import { canEditPortal } from './authUtils';
 import './StudentData.css';
 
 const StudentDirectory = () => {
+  const canEdit = canEditPortal();
   const navigate = useNavigate();
   const [studentsData, setStudentsData] = useState([]);
   const [gradeFilter, setGradeFilter] = useState('');
@@ -157,6 +159,8 @@ const StudentDirectory = () => {
     <div className="student-data-container student-directory-page">
       <div className="student-directory-toolbar">
         <div className="student-directory-toolbar-primary">
+          {canEdit && (
+          <>
           <button
             type="button"
             className="student-directory-icon-btn student-directory-add-btn"
@@ -175,6 +179,8 @@ const StudentDirectory = () => {
           >
             <IconPromote />
           </button>
+          </>
+          )}
         </div>
         <div className="student-directory-toolbar-actions">
           <div className="grade-filter-wrapper">
@@ -195,7 +201,7 @@ const StudentDirectory = () => {
               ))}
             </select>
           </div>
-          {studentsData.length > 0 && (
+          {canEdit && studentsData.length > 0 && (
             <>
               <button
                 type="button"
@@ -269,7 +275,7 @@ const StudentDirectory = () => {
                   <th>Registration</th>
                   <th>Name</th>
                   <th>Grade</th>
-                  <th className="student-directory-th-actions">Actions</th>
+                  {canEdit && <th className="student-directory-th-actions">Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -305,6 +311,7 @@ const StudentDirectory = () => {
                       <td className="student-directory-reg">{reg || '—'}</td>
                       <td className="student-directory-name">{student.studentName || '—'}</td>
                       <td>{student.grade || '—'}</td>
+                      {canEdit && (
                       <td className="student-directory-actions" onClick={(e) => e.stopPropagation()}>
                         <button
                           type="button"
@@ -326,6 +333,7 @@ const StudentDirectory = () => {
                           <IconDelete />
                         </button>
                       </td>
+                      )}
                     </tr>
                   );
                 })}
@@ -337,12 +345,14 @@ const StudentDirectory = () => {
         !loading && (
           <div className="empty-state student-directory-empty">
             <p>No {ROLE_LABELS.seedling.toLowerCase()}s yet.</p>
+            {canEdit && (
             <button type="button" className="add-student-btn" onClick={() => navigate('/students-data/add')}>
               <span className="btn-icon-wrap">
                 <IconAdd />
                 Add your first {ROLE_LABELS.seedling.toLowerCase()}
               </span>
             </button>
+            )}
           </div>
         )
       )}

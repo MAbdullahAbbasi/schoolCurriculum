@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import { API_URL } from './config/api';
 import { IconAdd, IconCancel, IconClose, IconCreate, IconDelete, IconEdit, IconRemove, IconSave } from './ButtonIcons';
+import { canEditPortal } from './authUtils';
 import './GradingScheme.css';
 
 const STORAGE_KEY = 'curriculum_grading_scheme';
@@ -18,6 +19,7 @@ const newRow = () => ({ id: nextRowId++, percentage: '', grade: '' });
 const rowFromData = (data) => ({ id: nextRowId++, percentage: data.percentage ?? data.marks ?? '', grade: data.grade ?? '' });
 
 const GradingScheme = () => {
+  const canEdit = canEditPortal();
   const [schemes, setSchemes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -235,6 +237,7 @@ const GradingScheme = () => {
           </div>
         )}
 
+        {canEdit && (
         <div className="grading-scheme-actions">
           <button
             type="button"
@@ -254,6 +257,7 @@ const GradingScheme = () => {
             </button>
           )}
         </div>
+        )}
 
         {loading ? (
           <p className="grading-scheme-loading">Loading grading schemes...</p>
@@ -265,7 +269,7 @@ const GradingScheme = () => {
                   <th>Name</th>
                   <th>Start date</th>
                   <th>End date</th>
-                  <th>Actions</th>
+                  {canEdit && <th>Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -274,6 +278,7 @@ const GradingScheme = () => {
                     <td>{s.name || monthLabel(s.startDate, s.endDate) || '-'}</td>
                     <td>{formatDateDisplay(s.startDate)}</td>
                     <td>{formatDateDisplay(s.endDate)}</td>
+                    {canEdit && (
                     <td className="grading-scheme-actions-cell">
                       <button
                         type="button"
@@ -291,16 +296,17 @@ const GradingScheme = () => {
                         <span className="btn-icon-wrap"><IconDelete />{deletingId === s._id ? 'Deleting...' : 'Delete'}</span>
                       </button>
                     </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         ) : (
-          !loading && <p className="grading-scheme-empty">No grading schemes yet. Create one above.</p>
+          !loading && <p className="grading-scheme-empty">{canEdit ? 'No grading schemes yet. Create one above.' : 'No grading schemes yet.'}</p>
         )}
 
-        {editingScheme && (
+        {canEdit && editingScheme && (
           <>
             <div
               className="grading-scheme-overlay"

@@ -166,7 +166,7 @@ const Reports = () => {
         const record = recordsByCourse[course.code];
         const entry = record?.students?.find((s) => String(s.registrationNumber) === String(student.registrationNumber));
         const courseTotal = getCourseTotalMarks(course);
-        const subjectMarks = getStudentSubjectMarks(entry, courseTotal);
+        const subjectMarks = getStudentSubjectMarks(entry, courseTotal, course);
         if (subjectMarks) obtained += subjectMarks.marks;
       });
       obtained = roundMarks(obtained);

@@ -4,10 +4,12 @@ import axios from 'axios';
 import { API_URL } from './config/api';
 import { IconAdd, IconCancel, IconClearFilters, IconCreate, IconDelete, IconEdit, IconNext, IconSave, IconSelectAll, IconUpload, IconUploadFile } from './ButtonIcons';
 import { makeObjectiveKey, annotateCurriculumSourceIndices, resolveTopicsFromCurriculum } from './objectiveKeyUtils';
+import { canEditPortal } from './authUtils';
 import './Curriculum.css';
 
 const Curriculum = () => {
   const navigate = useNavigate();
+  const canEdit = canEditPortal();
   const [data, setData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [allSubjectsList, setAllSubjectsList] = useState([]); // all subject names from DB (for dropdown when filtering by subject)
@@ -690,6 +692,7 @@ const Curriculum = () => {
           </div>
         )}
 
+        {canEdit && (
         <div className="add-single-objective-section">
           <h4 className="add-objective-heading">Add objective individually</h4>
           <form onSubmit={handleAddSingleObjective} className="add-objective-form">
@@ -764,7 +767,10 @@ const Curriculum = () => {
             )}
           </form>
         </div>
+        )}
 
+        {canEdit && (
+        <>
         <p className="objectives-upload-hint">
           Use columns in this order: <strong>Grade</strong>, <strong>Subject</strong>, <strong>Code</strong>, <strong>Title</strong>, <strong>Description</strong>. First row must be headers. <strong>Grade</strong> can be a number (1, 2, 3…) or KG in any of these forms: KG-1/KG-I/KG 1/KG I, KG-2/KG-II/KG 2/KG II, KG-3/KG-III/KG 3/KG III.
         </p>
@@ -808,6 +814,8 @@ const Curriculum = () => {
             <span className="btn-icon-wrap"><IconCreate />Create Course</span>
           </button>
         </div>
+        </>
+        )}
 
       {/* Selection Mode Banner */}
       {isRefreshing && (
@@ -967,7 +975,7 @@ const Curriculum = () => {
                         <th>Code</th>
                         <th>Title</th>
                         <th>Description</th>
-                        <th>Action</th>
+                        {canEdit && <th>Action</th>}
                       </tr>
                     </thead>
                     <tbody>
@@ -1055,6 +1063,7 @@ const Curriculum = () => {
                               <>
                                 <td>{topic.title || '-'}</td>
                                 <td className="objectives-desc-cell">{topic.description || '-'}</td>
+                                {canEdit && (
                                 <td className="objectives-action-cell">
                                   <button
                                     type="button"
@@ -1080,6 +1089,7 @@ const Curriculum = () => {
                                     )}
                                   </button>
                                 </td>
+                                )}
                               </>
                             )}
                           </tr>

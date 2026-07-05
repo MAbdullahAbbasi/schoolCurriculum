@@ -12,6 +12,7 @@ import {
   computeEffectiveMaxForStudent,
 } from './questionChoiceUtils.js';
 import { IconCancel, IconEdit, IconNotAttempted, IconSave } from './ButtonIcons';
+import { canEditPortal, getAuthRole } from './authUtils';
 import './StudentRecordDetail.css';
 
 // Normalize grade for matching: any KG variant -> KG-1/KG-2/KG-3 (same logic as CreateCourseMarks; includes "K.G-II")
@@ -45,15 +46,8 @@ const StudentRecordDetail = () => {
   const [unlocking, setUnlocking] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: '' });
 
-  const role = (() => {
-    try {
-      const raw = localStorage.getItem('curriculum_auth');
-      const auth = raw ? JSON.parse(raw) : null;
-      return auth?.role || null;
-    } catch (_) {
-      return null;
-    }
-  })();
+  const role = getAuthRole();
+  const canEdit = canEditPortal(role);
   const isAdmin = role === 'ADMIN';
 
   const topics = useMemo(() => course?.topics || [], [course]);
@@ -200,19 +194,20 @@ const StudentRecordDetail = () => {
           setNotAttempted(nAttempted);
           const locked = Boolean(record.marksLocked);
           setMarksLocked(locked);
-          // Educators edit only when results are not locked; admins review first unless locked override.
-          if (locked) {
+          if (!canEdit) {
+            setIsEditMode(false);
+          } else if (locked) {
             setIsEditMode(false);
           } else {
             setIsEditMode(role === 'EDUCATOR');
           }
         } else {
           setMarksLocked(false);
-          setIsEditMode(true);
+          setIsEditMode(canEdit && role === 'EDUCATOR');
         }
       } catch {
         setMarksLocked(false);
-        setIsEditMode(true);
+        setIsEditMode(false);
       }
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -220,7 +215,7 @@ const StudentRecordDetail = () => {
     } finally {
       setLoading(false);
     }
-  }, [courseCode, role]);
+  }, [courseCode, role, canEdit]);
 
   useEffect(() => {
     fetchData();

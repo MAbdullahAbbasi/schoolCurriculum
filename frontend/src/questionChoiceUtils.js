@@ -281,6 +281,97 @@ export function isSlotCountedForStudent(
   return kept.has(q);
 }
 
+/** Build scoring slots from a course (same structure as the record entry page). */
+export function buildCourseQuestionSlots(course) {
+  if (!course) return [];
+  const topics = course.topics || [];
+  const questionPartMarks = course.questionPartMarks || [];
+  const questionParts = course.questionParts || [];
+  const courseQuestions = [...(course.questions || [])].sort(
+    (a, b) => Number(a.questionIndex) - Number(b.questionIndex)
+  );
+
+  if (questionPartMarks.length > 0) {
+    const sorted = [...questionPartMarks].sort(
+      (a, b) => Number(a.questionIndex) - Number(b.questionIndex) || Number(a.partIndex) - Number(b.partIndex)
+    );
+    return sorted.map((m) => {
+      const q = Number(m.questionIndex);
+      const part = Number(m.partIndex);
+      const slotKey = part === 0 ? `q${q}` : `q${q}-p${part}`;
+      return {
+        slotKey,
+        maxMarks: Number(m.marks) || 0,
+        questionIndex: q,
+        partIndex: part,
+        isCompulsory: isPartCompulsory(q, part, questionParts),
+        topicIndices: [],
+      };
+    });
+  }
+  if (!courseQuestions.length) return [];
+  return courseQuestions.map((q) => {
+    const indices = (q.topicIndices || []).map((i) => Number(i));
+    const maxMarks = indices.reduce((s, i) => s + (topics[i]?.marks || 0), 0);
+    return {
+      slotKey: `q${q.questionIndex}`,
+      maxMarks,
+      questionIndex: q.questionIndex,
+      partIndex: 0,
+      topicIndices: indices,
+      isCompulsory: true,
+    };
+  });
+}
+
+export function computeLeftOnChoiceSlotsForStudent(studentEntry, course, slots) {
+  if (!studentEntry || !course) return [];
+  if (Array.isArray(studentEntry.leftOnChoiceSlots)) {
+    return studentEntry.leftOnChoiceSlots;
+  }
+  const compulsoryQuestions = course.compulsoryQuestions;
+  if (compulsoryQuestions == null || Number(compulsoryQuestions) < 1) return [];
+  const qM = studentEntry.questionMarks || {};
+  const na = new Set(studentEntry.notAttemptedSlots || []);
+  const slotList = slots || buildCourseQuestionSlots(course);
+  const questionsWithMarks = new Set();
+  slotList.forEach((s) => {
+    if (na.has(s.slotKey)) return;
+    const v = qM[s.slotKey];
+    if (v != null && Number(v) > 0) questionsWithMarks.add(s.questionIndex);
+  });
+  if (questionsWithMarks.size < compulsoryQuestions) return [];
+  return slotList
+    .filter((s) => !na.has(s.slotKey) && !(Number(qM[s.slotKey]) > 0))
+    .map((s) => s.slotKey);
+}
+
+/** Obtained marks from stored question marks (matches record entry total row). */
+export function getObtainedMarksFromRecord(studentEntry, course) {
+  if (!studentEntry || !course) return null;
+  const questionMarks = studentEntry.questionMarks;
+  if (!questionMarks || typeof questionMarks !== 'object' || Object.keys(questionMarks).length === 0) {
+    return null;
+  }
+  const slots = buildCourseQuestionSlots(course);
+  const questionPartMarks = course.questionPartMarks || [];
+  const courseQuestions = course.questions || [];
+  if (slots.length === 0 && !courseQuestions.length && !questionPartMarks.length) {
+    return null;
+  }
+  const leftOnChoice = computeLeftOnChoiceSlotsForStudent(studentEntry, course, slots);
+  return computeObtainedTotalForStudent({
+    slots,
+    questionMarks,
+    notAttemptedSlots: studentEntry.notAttemptedSlots || [],
+    leftOnChoiceSlots: leftOnChoice,
+    questionPartMarks,
+    questionChoiceGroups: course.questionChoiceGroups,
+    questionParts: course.questionParts,
+    compulsoryQuestions: course.compulsoryQuestions ?? null,
+  });
+}
+
 export function computeObtainedTotalForStudent({
   slots,
   questionMarks,

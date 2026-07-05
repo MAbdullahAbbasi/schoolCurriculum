@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { APP_LABELS } from './roleLabels';
+import { getAuthRole, hasAdminNavAccess, hasAdminViewAccess } from './authUtils';
 import './CurriculumHeader.css';
 
 const svgProps = { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true };
@@ -82,23 +83,15 @@ const CurriculumHeader = () => {
   const path = location.pathname;
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const role = (() => {
-    try {
-      const raw = localStorage.getItem('curriculum_auth');
-      const auth = raw ? JSON.parse(raw) : null;
-      return auth?.role || null;
-    } catch (_) {
-      return null;
-    }
-  })();
+  const role = getAuthRole();
 
   const isAdmin = role === 'ADMIN';
   const isCourseAdmin = role === 'COURSE_ADMIN';
-  const isSuperAdmin = isAdmin;
+  const isSuperAdmin = hasAdminNavAccess(role);
 
-  const canViewObjectives = isAdmin || isCourseAdmin;
-  const canViewReports = isAdmin || isCourseAdmin;
-  const canViewGradingScheme = isAdmin || isCourseAdmin;
+  const canViewObjectives = hasAdminViewAccess(role);
+  const canViewReports = hasAdminViewAccess(role);
+  const canViewGradingScheme = hasAdminViewAccess(role);
 
   const isGroveActive =
     path === '/roles' ||

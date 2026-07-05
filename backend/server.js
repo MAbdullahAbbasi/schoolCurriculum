@@ -9,6 +9,7 @@ import recordRoutes from "./routes/recordRoutes.js";
 import gradingSchemeRoutes from "./routes/gradingSchemeRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import { authMiddleware } from "./middleware/authMiddleware.js";
+import { denyGuestWrite } from "./rbac/guards.js";
 import adminUserRoutes from "./routes/adminUserRoutes.js";
 import courseAdminManagementRoutes from "./routes/courseAdminManagementRoutes.js";
 import educatorManagementRoutes from "./routes/educatorManagementRoutes.js";
@@ -226,6 +227,7 @@ app.get("/", (req, res) => {
 
 // Protect all /api routes with JWT (except POST /api/auth/login)
 app.use("/api", authMiddleware);
+app.use("/api", denyGuestWrite);
 
 // Use curriculum routes
 app.use("/api/curriculum", curriculumRoutes);

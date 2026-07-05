@@ -2,7 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import Record from '../models/Record.js';
 import Course from '../models/Course.js';
-import { ROLE } from '../rbac/roles.js';
+import { ROLE, ADMIN_VIEW_ROLES } from '../rbac/roles.js';
 import { requireCourseAccess, requireRoles } from '../rbac/guards.js';
 import {
   effectiveTotalFromQuestionPartMarks,
@@ -15,7 +15,7 @@ import {
 const router = express.Router();
 
 // GET all records
-router.get('/', requireRoles([ROLE.ADMIN, ROLE.COURSE_ADMIN]), async (req, res) => {
+router.get('/', requireRoles(ADMIN_VIEW_ROLES), async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({

@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 import { createToken } from '../middleware/authMiddleware.js';
-import { ROLE, SUPER_ADMIN_USERNAME } from '../rbac/roles.js';
+import { ROLE, SUPER_ADMIN_USERNAME, GUEST_USERNAME, GUEST_PASSWORD } from '../rbac/roles.js';
 import { applyPasswordFields } from '../utils/userPassword.js';
 import Course from '../models/Course.js';
 import { normalizeGradeForMatch, normalizeSubjectForMatch } from '../rbac/guards.js';
@@ -108,6 +108,21 @@ const ensureSampleUsers = async () => {
       educatorAssignments: [{ grade: DEFAULT_EDUCATOR_GRADE, subject: DEFAULT_EDUCATOR_SUBJECT }],
     });
     console.log(`Created sample user: ${EDUCATOR_USERNAME} / ${EDUCATOR_PASSWORD}`);
+  }
+
+  // GUEST (view-only demo account for pitching the portal)
+  const guestExisting = await User.findOne({ username: GUEST_USERNAME });
+  if (!guestExisting) {
+    const fields = await applyPasswordFields({}, GUEST_PASSWORD);
+    await User.create({
+      username: GUEST_USERNAME,
+      passwordHash: fields.passwordHash,
+      passwordPlain: fields.passwordPlain,
+      role: ROLE.GUEST,
+    });
+    console.log(`Created guest user: ${GUEST_USERNAME} / ${GUEST_PASSWORD}`);
+  } else {
+    await User.updateOne({ username: GUEST_USERNAME }, { $set: { role: ROLE.GUEST } });
   }
 
   // For demo/testing: auto-assign the default educator to only those courses

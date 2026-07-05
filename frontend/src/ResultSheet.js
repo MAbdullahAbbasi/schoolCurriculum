@@ -129,7 +129,7 @@ const ResultSheet = () => {
       const record = recordsByCourse[course.code];
       const marksPerStudent = studentsInGrade.map((student) => {
         const entry = record?.students?.find((s) => String(s.registrationNumber) === String(student.registrationNumber));
-        return getStudentSubjectMarks(entry, courseTotal);
+        return getStudentSubjectMarks(entry, courseTotal, course);
       });
       return { subjectName, courseTotal, marksPerStudent };
     });

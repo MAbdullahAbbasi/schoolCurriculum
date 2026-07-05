@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { APP_LABELS } from './roleLabels';
+import { getAuthRole, hasAdminNavAccess, hasAdminViewAccess } from './authUtils';
 import './AppSidebar.css';
 
 const svgProps = { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true };
@@ -75,24 +76,14 @@ const AppSidebar = ({ open, onClose }) => {
   const location = useLocation();
   const path = location.pathname;
 
-  const role = (() => {
-    try {
-      const raw = localStorage.getItem('curriculum_auth');
-      const auth = raw ? JSON.parse(raw) : null;
-      return auth?.role || null;
-    } catch (_) {
-      return null;
-    }
-  })();
+  const role = getAuthRole();
 
   const isRootAdmin = role === 'SUPER_ADMIN';
-  const isAdmin = role === 'ADMIN';
-  const isCourseAdmin = role === 'COURSE_ADMIN';
-  const isSuperAdmin = isAdmin;
+  const isSuperAdmin = hasAdminNavAccess(role);
 
-  const canViewObjectives = isAdmin || isCourseAdmin;
-  const canViewReports = isAdmin || isCourseAdmin;
-  const canViewGradingScheme = isAdmin || isCourseAdmin;
+  const canViewObjectives = hasAdminViewAccess(role);
+  const canViewReports = hasAdminViewAccess(role);
+  const canViewGradingScheme = hasAdminViewAccess(role);
 
   useEffect(() => {
     if (window.innerWidth <= 768) onClose();
@@ -108,11 +99,12 @@ const AppSidebar = ({ open, onClose }) => {
     window.location.reload();
   };
 
-  const navBtn = (label, icon, to, activePrefixes, className = '') => (
+  const navBtn = (label, icon, to, activePrefixes, className = '', guestTourId = null) => (
     <button
       type="button"
       className={`sidebar-nav-btn ${pathMatches(path, activePrefixes) ? 'active' : ''} ${className}`}
       onClick={() => go(to)}
+      data-guest-tour={guestTourId || undefined}
     >
       <span className="sidebar-nav-icon">{icon}</span>
       <span className="sidebar-nav-label">{label}</span>
@@ -121,17 +113,17 @@ const AppSidebar = ({ open, onClose }) => {
 
   return (
     <aside className={`app-sidebar ${open ? 'app-sidebar--open' : ''}`} aria-label="Main navigation">
-      <div className="app-sidebar-brand">
+      <div className="app-sidebar-brand" data-guest-tour="sidebar-brand">
         <h1 className="app-sidebar-title">{APP_LABELS.brandTitle}</h1>
         <p className="app-sidebar-tagline">{APP_LABELS.brandTagline}</p>
       </div>
       <nav className="app-sidebar-nav">
         {isRootAdmin && navBtn('All logins', iconRootLogins, '/root-logins', ['/root-logins'])}
-        {!isRootAdmin && canViewObjectives && navBtn('Objectives', iconObjectives, '/', ['/', '/create-course'])}
-        {!isRootAdmin && isSuperAdmin && navBtn(APP_LABELS.groveNav, iconRoles, '/roles', ['/roles', '/course-admins', '/educators', '/students-data'])}
-        {!isRootAdmin && navBtn('Record', iconRecord, '/record', ['/record', '/studentRecord'])}
-        {!isRootAdmin && canViewReports && navBtn('Reports', iconReports, '/reports', ['/reports'])}
-        {!isRootAdmin && canViewGradingScheme && navBtn('Grading Scheme', iconGradingScheme, '/grading-scheme', ['/grading-scheme'])}
+        {!isRootAdmin && canViewObjectives && navBtn('Objectives', iconObjectives, '/', ['/', '/create-course'], '', 'nav-objectives')}
+        {!isRootAdmin && isSuperAdmin && navBtn(APP_LABELS.groveNav, iconRoles, '/roles', ['/roles', '/course-admins', '/educators', '/students-data'], '', 'nav-grove')}
+        {!isRootAdmin && navBtn('Record', iconRecord, '/record', ['/record', '/studentRecord'], '', 'nav-record')}
+        {!isRootAdmin && canViewReports && navBtn('Reports', iconReports, '/reports', ['/reports'], '', 'nav-reports')}
+        {!isRootAdmin && canViewGradingScheme && navBtn('Grading Scheme', iconGradingScheme, '/grading-scheme', ['/grading-scheme'], '', 'nav-grading')}
       </nav>
       <div className="app-sidebar-footer">
         <button type="button" className="sidebar-nav-btn sidebar-nav-logout" onClick={handleLogout}>

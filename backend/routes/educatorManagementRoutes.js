@@ -10,7 +10,7 @@ import { applyPasswordFields } from '../utils/userPassword.js';
 const router = express.Router();
 
 // Admin-only educator management
-router.use(requireRoles([ROLE.ADMIN]));
+router.use(requireRoles([ROLE.ADMIN, ROLE.GUEST]));
 
 const SALT_ROUNDS = 10;
 

@@ -5,6 +5,7 @@ import { API_URL } from './config/api';
 import { IconCancel, IconNext } from './ButtonIcons';
 import { resolveTopicsFromCurriculum } from './objectiveKeyUtils';
 import { formatGradingSchemeOptionLabel } from './reportUtils';
+import { canEditPortal } from './authUtils';
 import './CreateCourse.css';
 
 const defaultFormData = {
@@ -25,6 +26,7 @@ const defaultFormData = {
 };
 
 const CreateCourse = () => {
+  const canEdit = canEditPortal();
   const navigate = useNavigate();
   const location = useLocation();
   const { selectedTopics = [], data: curriculumData = [], resolvedTopics: preResolvedTopics = null } = location.state || {};
@@ -474,9 +476,11 @@ const CreateCourse = () => {
             <button type="button" className="create-course-cancel-btn" onClick={handleCancel}>
               <span className="btn-icon-wrap"><IconCancel />Cancel</span>
             </button>
+            {canEdit && (
             <button type="submit" className="create-course-submit-btn" disabled={totalQuestionsNum < 1}>
               <span className="btn-icon-wrap"><IconNext />Next</span>
             </button>
+            )}
           </div>
         </form>
       </div>

@@ -89,3 +89,31 @@
     padding-top: 3.5rem;
   }
 }
+
+.guest-mode-banner {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 0.65rem 1rem;
+  background: #fff8e6;
+  border-bottom: 1px solid #f0d78c;
+  color: #7a5b00;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.guest-tour-replay-btn {
+  margin-left: 0.75rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #7a5b00;
+  font-size: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.guest-tour-replay-btn:hover {
+  color: #5c4400;
+}
