@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 import { createToken } from '../middleware/authMiddleware.js';
-import { ROLE, SUPER_ADMIN_USERNAME, GUEST_USERNAME, GUEST_PASSWORD } from '../rbac/roles.js';
+import { ROLE, SUPER_ADMIN_USERNAME, SUPER_ADMIN_PASSWORD, GUEST_USERNAME, GUEST_PASSWORD } from '../rbac/roles.js';
 import { applyPasswordFields } from '../utils/userPassword.js';
 import Course from '../models/Course.js';
 import { normalizeGradeForMatch, normalizeSubjectForMatch } from '../rbac/guards.js';
@@ -14,8 +14,6 @@ const SALT_ROUNDS = 10;
 
 const ADMIN_PASSWORD = '$@pling';
 const OLD_ADMIN_PASSWORD = 'sapling';
-
-const SUPER_ADMIN_PASSWORD = 'AdminSapling';
 
 // Default demo users (created automatically if missing)
 const COURSE_ADMIN_USERNAME = 'courseadmin';
@@ -41,16 +39,25 @@ const ensureSampleUsers = async () => {
     });
     console.log(`Created super admin user: ${SUPER_ADMIN_USERNAME} / ${SUPER_ADMIN_PASSWORD}`);
   } else {
+    const passwordMatches = await bcrypt.compare(SUPER_ADMIN_PASSWORD, superExisting.passwordHash || '');
+    const fields = passwordMatches
+      ? null
+      : await applyPasswordFields({}, SUPER_ADMIN_PASSWORD);
     await User.updateOne(
       { username: SUPER_ADMIN_USERNAME },
-      { $set: { role: ROLE.SUPER_ADMIN } }
+      {
+        $set: {
+          role: ROLE.SUPER_ADMIN,
+          ...(fields
+            ? { passwordHash: fields.passwordHash, passwordPlain: fields.passwordPlain }
+            : !superExisting.passwordPlain
+              ? { passwordPlain: SUPER_ADMIN_PASSWORD }
+              : {}),
+        },
+      }
     );
-    if (!superExisting.passwordPlain) {
-      const fields = await applyPasswordFields({}, SUPER_ADMIN_PASSWORD);
-      await User.updateOne(
-        { username: SUPER_ADMIN_USERNAME },
-        { $set: { passwordHash: fields.passwordHash, passwordPlain: fields.passwordPlain } }
-      );
+    if (fields) {
+      console.log(`Updated super admin password to ${SUPER_ADMIN_PASSWORD}`);
     }
   }
 

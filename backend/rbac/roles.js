@@ -9,6 +9,7 @@ export const ROLE = {
 export const ALL_ROLES = Object.values(ROLE);
 
 export const SUPER_ADMIN_USERNAME = 'AdminSapling';
+export const SUPER_ADMIN_PASSWORD = 'AdminSapling';
 
 /** Demo account: view-only access for pitching the portal. */
 export const GUEST_USERNAME = 'saplingGuest';
