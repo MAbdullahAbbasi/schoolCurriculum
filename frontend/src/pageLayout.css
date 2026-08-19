@@ -47,13 +47,41 @@
   flex-shrink: 0;
 }
 
+.app-page-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.35rem;
+}
+
 .app-page-title {
-  margin: 0 0 0.35rem;
+  margin: 0;
   font-size: 1.65rem;
   font-weight: 700;
   line-height: 1.25;
   color: var(--garden-forest, #1b4332);
   letter-spacing: -0.02em;
+}
+
+.app-page-alumni-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #2d6a4f 0%, #40916c 100%);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.app-page-alumni-btn:hover {
+  filter: brightness(1.05);
 }
 
 .app-page-subtitle {

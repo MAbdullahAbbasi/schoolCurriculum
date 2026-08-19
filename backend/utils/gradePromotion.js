@@ -54,6 +54,20 @@ export function getNextGrade(grade) {
   return GRADE_SEQUENCE[idx + 1];
 }
 
+export function isClassTen(grade) {
+  return normalizeGradeForMatch(grade) === '10';
+}
+
+export function currentPassedOutYear() {
+  return new Date().getFullYear();
+}
+
+export function parsePassedOutYear(value, fallback = currentPassedOutYear()) {
+  const year = Number(value);
+  if (!Number.isInteger(year) || year < 1990 || year > 2100) return fallback;
+  return year;
+}
+
 export function formatGradeLabel(canon) {
   if (!canon) return '';
   const normalized = normalizeGradeForMatch(canon) || canon;

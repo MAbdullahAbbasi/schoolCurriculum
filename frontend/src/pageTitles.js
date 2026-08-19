@@ -18,6 +18,7 @@ const PAGE_RULES = [
   { test: (p) => p === '/roles', title: APP_LABELS.groveNav, subtitle: APP_LABELS.rolesDashboardSubtitle },
   { test: (p) => p === '/students-data/add', title: `Add ${ROLE_LABELS.seedling}`, subtitle: `Add one ${ROLE_LABELS.seedling.toLowerCase()} or import from Excel.` },
   { test: (p) => p === '/students-data/promote', title: 'Promote students', subtitle: 'Move a whole class or selected students to the next grade.' },
+  { test: (p) => p === '/students-data/alumni', title: 'Alumni', subtitle: 'Students who passed out of Class 10, grouped by year.' },
   { test: (p) => p.startsWith('/students-data/'), title: `${ROLE_LABELS.seedling} profile`, subtitle: `View and manage this ${ROLE_LABELS.seedling.toLowerCase()}'s record.` },
   { test: (p) => p === '/students-data', title: APP_LABELS.seedlingData, subtitle: `Browse the ${ROLE_LABELS.seedling.toLowerCase()} directory.` },
   { test: (p) => p === '/grading-scheme', title: 'Grading Scheme', subtitle: 'Define how percentage maps to grades for each validity period.' },

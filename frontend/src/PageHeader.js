@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import './pageLayout.css';
 
-const PageHeader = ({ title, subtitle, showBack }) => {
+const PageHeader = ({ title, subtitle, showBack, actions = null }) => {
   const navigate = useNavigate();
 
   const handleBack = () => {
@@ -29,7 +29,10 @@ const PageHeader = ({ title, subtitle, showBack }) => {
           Back
         </button>
       )}
-      <h1 className="app-page-title">{title}</h1>
+      <div className="app-page-title-row">
+        <h1 className="app-page-title">{title}</h1>
+        {actions}
+      </div>
       {subtitle ? <p className="app-page-subtitle">{subtitle}</p> : null}
     </header>
   );

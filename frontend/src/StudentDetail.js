@@ -3,11 +3,13 @@ import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from './config/api';
 import { ROLE_LABELS } from './roleLabels';
-import { IconBack, IconCancel, IconDelete, IconEdit, IconPromote, IconSave } from './ButtonIcons';
+import { IconBack, IconCancel, IconDelete, IconEdit, IconPromote, IconAlumni, IconSave } from './ButtonIcons';
 import {
   formatDateOfBirth,
   formatGradeDisplay,
   getNextGrade,
+  isClassTen,
+  currentPassedOutYear,
   requiresSubjectChoice,
   toDateInputValue,
 } from './studentDataUtils';
@@ -139,15 +141,19 @@ const StudentDetail = () => {
   };
 
   const handlePromote = async () => {
+    const passingOut = isClassTen(student?.grade);
     const next = getNextGrade(student?.grade);
-    if (!next) {
+    if (!next && !passingOut) {
       alert('This student is already at the highest grade.');
       return;
     }
-    const nextLabel = formatGradeDisplay(next);
+    const year = currentPassedOutYear();
+    const nextLabel = passingOut ? `alumni (${year})` : formatGradeDisplay(next);
     if (
       !window.confirm(
-        `Promote "${student?.studentName || registrationNumber}" to ${nextLabel}?`
+        passingOut
+          ? `Mark "${student?.studentName || registrationNumber}" as passed out for ${year}? They will move to Alumni.`
+          : `Promote "${student?.studentName || registrationNumber}" to ${nextLabel}?`
       )
     ) {
       return;
@@ -158,8 +164,13 @@ const StudentDetail = () => {
         mode: 'selected',
         sourceGrade: student.grade,
         registrationNumbers: [registrationNumber],
+        ...(passingOut ? { passedOutYear: year } : {}),
       });
-      alert(res.data.message || 'Student promoted.');
+      alert(res.data.message || (passingOut ? 'Student saved as alumni.' : 'Student promoted.'));
+      if (res.data.passedOut) {
+        navigate('/students-data/alumni');
+        return;
+      }
       const promoted = res.data.promoted?.[0];
       const newReg = promoted?.newRegistrationNumber || promoted?.toEnrollment;
       if (newReg && newReg !== registrationNumber) {
@@ -411,15 +422,17 @@ const StudentDetail = () => {
                 type="button"
                 className="promote-action-btn icon-btn icon-only-btn"
                 onClick={handlePromote}
-                disabled={promoting || !getNextGrade(student.grade)}
+                disabled={promoting || (!getNextGrade(student.grade) && !isClassTen(student.grade))}
                 title={
-                  getNextGrade(student.grade)
-                    ? 'Promote to next grade'
-                    : 'Already at highest grade'
+                  isClassTen(student.grade)
+                    ? 'Mark as passed out (alumni)'
+                    : getNextGrade(student.grade)
+                      ? 'Promote to next grade'
+                      : 'Already at highest grade'
                 }
-                aria-label="Promote to next grade"
+                aria-label={isClassTen(student.grade) ? 'Mark as passed out' : 'Promote to next grade'}
               >
-                <IconPromote />
+                {isClassTen(student.grade) ? <IconAlumni /> : <IconPromote />}
               </button>
             </>
           )}

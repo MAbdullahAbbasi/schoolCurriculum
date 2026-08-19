@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import AppSidebar from './AppSidebar';
 import PageHeader from './PageHeader';
 import GuestTour from './GuestTour';
@@ -12,6 +12,7 @@ import {
   markPortalTourCompleted,
 } from './authUtils';
 import { getPortalTourSteps } from './portalTourSteps';
+import { IconAlumni } from './ButtonIcons';
 import './AppLayout.css';
 import './pageLayout.css';
 
@@ -19,6 +20,7 @@ const AppLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [tourKey, setTourKey] = useState(0);
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);
+  const navigate = useNavigate();
   const { pathname } = useLocation();
   const { title, subtitle } = getPageMeta(pathname);
   const showBack = !isTopLevelPath(pathname);
@@ -96,7 +98,23 @@ const AppLayout = () => {
         </button>
         <div className="app-main-content" data-guest-tour="main-content">
           <div className="app-page-panel">
-            <PageHeader title={title} subtitle={subtitle} showBack={showBack} />
+            <PageHeader
+              title={title}
+              subtitle={subtitle}
+              showBack={showBack}
+              actions={
+                pathname === '/students-data' ? (
+                  <button
+                    type="button"
+                    className="app-page-alumni-btn"
+                    onClick={() => navigate('/students-data/alumni')}
+                  >
+                    <IconAlumni />
+                    Alumni
+                  </button>
+                ) : null
+              }
+            />
             <div className="app-page-body">
               <Outlet />
             </div>

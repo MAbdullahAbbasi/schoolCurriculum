@@ -3,13 +3,16 @@ import multer from 'multer';
 import XLSX from 'xlsx';
 import mongoose from 'mongoose';
 import StudentData from '../models/StudentData.js';
+import Alumni from '../models/Alumni.js';
 import Record from '../models/Record.js';
 import Course from '../models/Course.js';
 import User from '../models/User.js';
 import {
   getNextGrade,
   gradesMatch,
+  isClassTen,
   normalizeGradeForMatch,
+  parsePassedOutYear,
   updateEnrollmentClassInRegistration,
 } from '../utils/gradePromotion.js';
 
@@ -20,6 +23,52 @@ async function cascadeRegistrationNumberChange(oldReg, newReg) {
     { $set: { 'students.$[elem].registrationNumber': newReg } },
     { arrayFilters: [{ 'elem.registrationNumber': oldReg }] }
   );
+}
+
+async function graduateStudentsToAlumni(students, passedOutYear) {
+  const graduated = [];
+  const skipped = [];
+
+  for (const student of students) {
+    if (!isClassTen(student.grade)) {
+      skipped.push({
+        registrationNumber: student.registrationNumber,
+        studentName: student.studentName,
+        reason: 'Only Class 10 students can be marked as passed out.',
+      });
+      continue;
+    }
+
+    const registrationNumber = String(student.registrationNumber).trim();
+    const existing = await Alumni.findOne({ registrationNumber }).lean();
+    if (existing) {
+      skipped.push({
+        registrationNumber,
+        studentName: student.studentName,
+        reason: `Already saved as alumni for ${existing.passedOutYear}.`,
+      });
+      continue;
+    }
+
+    await Alumni.create({
+      registrationNumber,
+      studentName: student.studentName,
+      fathersName: student.fathersName || '',
+      grade: student.grade,
+      dateOfBirth: student.dateOfBirth || null,
+      subject: student.subject || '',
+      passedOutYear,
+    });
+    await StudentData.deleteOne({ registrationNumber });
+
+    graduated.push({
+      registrationNumber,
+      studentName: student.studentName,
+      passedOutYear,
+    });
+  }
+
+  return { graduated, skipped };
 }
 import { ROLE } from '../rbac/roles.js';
 import { requireRoles } from '../rbac/guards.js';
@@ -492,6 +541,48 @@ const updateStudentHandler = async (req, res) => {
 router.put('/', requireRoles([ROLE.ADMIN]), updateStudentHandler);
 router.put('/update', requireRoles([ROLE.ADMIN]), updateStudentHandler);
 
+router.get('/alumni/years', requireRoles([ROLE.ADMIN, ROLE.GUEST]), async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({ success: false, error: 'Database not connected' });
+    }
+    const years = await Alumni.distinct('passedOutYear');
+    years.sort((a, b) => Number(b) - Number(a));
+    res.json({ success: true, data: years });
+  } catch (error) {
+    console.error('Error listing alumni years:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to list alumni years',
+      message: error.message,
+    });
+  }
+});
+
+router.get('/alumni', requireRoles([ROLE.ADMIN, ROLE.GUEST]), async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({ success: false, error: 'Database not connected' });
+    }
+    const year = req.query.year != null && String(req.query.year).trim() !== ''
+      ? Number(req.query.year)
+      : null;
+    const filter = Number.isInteger(year) ? { passedOutYear: year } : {};
+    const alumni = await Alumni.find(filter)
+      .sort({ studentName: 1 })
+      .limit(2000)
+      .lean();
+    res.json({ success: true, data: alumni, year: Number.isInteger(year) ? year : null });
+  } catch (error) {
+    console.error('Error fetching alumni:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch alumni',
+      message: error.message,
+    });
+  }
+});
+
 // POST promote students to the next grade (whole class or selected from a class)
 router.post('/promote', requireRoles([ROLE.ADMIN]), async (req, res) => {
   try {
@@ -502,7 +593,7 @@ router.post('/promote', requireRoles([ROLE.ADMIN]), async (req, res) => {
       });
     }
 
-    const { mode, grade, sourceGrade, registrationNumbers } = req.body;
+    const { mode, grade, sourceGrade, registrationNumbers, passedOutYear } = req.body;
 
     if (mode !== 'class' && mode !== 'selected') {
       return res.status(400).json({
@@ -563,6 +654,21 @@ router.post('/promote', requireRoles([ROLE.ADMIN]), async (req, res) => {
         success: false,
         error: 'No students to promote',
         message: 'No students found in the selected class.',
+      });
+    }
+
+    if (isClassTen(students[0].grade)) {
+      const year = parsePassedOutYear(passedOutYear);
+      const { graduated, skipped } = await graduateStudentsToAlumni(students, year);
+      return res.json({
+        success: true,
+        passedOut: true,
+        message: `Saved ${graduated.length} Class 10 student(s) as alumni for ${year}${skipped.length ? `; ${skipped.length} skipped` : ''}.`,
+        graduatedCount: graduated.length,
+        skippedCount: skipped.length,
+        passedOutYear: year,
+        graduated,
+        skipped,
       });
     }
 

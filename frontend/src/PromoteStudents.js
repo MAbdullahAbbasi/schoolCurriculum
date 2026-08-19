@@ -3,13 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from './config/api';
 import { ROLE_LABELS } from './roleLabels';
-import { IconBack, IconPromote } from './ButtonIcons';
+import { IconBack, IconPromote, IconAlumni } from './ButtonIcons';
 import {
   formatGradeDisplay,
   formatGradeOptionLabel,
   getNextGrade,
   gradesFromStudents,
   gradesMatch,
+  isClassTen,
+  currentPassedOutYear,
+  passedOutYearOptions,
   normalizeGradeForMatch,
 } from './studentDataUtils';
 import './StudentData.css';
@@ -24,6 +27,7 @@ const PromoteStudents = () => {
   const [sourceGrade, setSourceGrade] = useState('');
   const [selectedRegistrationNumbers, setSelectedRegistrationNumbers] = useState(new Set());
   const [promotingSelected, setPromotingSelected] = useState(false);
+  const [passedOutYear, setPassedOutYear] = useState(() => String(currentPassedOutYear()));
 
   const gradesFromDb = useMemo(() => gradesFromStudents(studentsData), [studentsData]);
 
@@ -39,6 +43,8 @@ const PromoteStudents = () => {
 
   const classNextGrade = classGrade ? getNextGrade(classGrade) : null;
   const sourceNextGrade = sourceGrade ? getNextGrade(sourceGrade) : null;
+  const classIsPassOut = classGrade ? isClassTen(classGrade) : false;
+  const sourceIsPassOut = sourceGrade ? isClassTen(sourceGrade) : false;
 
   const fetchStudentsData = async () => {
     try {
@@ -66,15 +72,19 @@ const PromoteStudents = () => {
       alert('Select a class first.');
       return;
     }
-    if (!classNextGrade) {
+    if (!classNextGrade && !classIsPassOut) {
       alert('This class is already at the highest grade.');
       return;
     }
     const label = formatGradeDisplay(normalizeGradeForMatch(classGrade));
-    const nextLabel = formatGradeDisplay(classNextGrade);
+    const nextLabel = classIsPassOut
+      ? `alumni (${passedOutYear})`
+      : formatGradeDisplay(classNextGrade);
     if (
       !window.confirm(
-        `Promote all ${studentsInClass.length} student(s) in ${label} to ${nextLabel}?`
+        classIsPassOut
+          ? `Mark all ${studentsInClass.length} Class 10 student(s) as passed out for ${passedOutYear}? They will move to Alumni.`
+          : `Promote all ${studentsInClass.length} student(s) in ${label} to ${nextLabel}?`
       )
     ) {
       return;
@@ -84,6 +94,7 @@ const PromoteStudents = () => {
       const res = await axios.post(`${API_URL}/api/students-data/promote`, {
         mode: 'class',
         grade: classGrade,
+        ...(classIsPassOut ? { passedOutYear: Number(passedOutYear) } : {}),
       });
       alert(res.data.message || 'Promotion complete.');
       await fetchStudentsData();
@@ -124,7 +135,7 @@ const PromoteStudents = () => {
       alert('Select the class your students are in.');
       return;
     }
-    if (!sourceNextGrade) {
+    if (!sourceNextGrade && !sourceIsPassOut) {
       alert('This class is already at the highest grade.');
       return;
     }
@@ -133,10 +144,14 @@ const PromoteStudents = () => {
       alert('Select at least one student.');
       return;
     }
-    const nextLabel = formatGradeDisplay(sourceNextGrade);
+    const nextLabel = sourceIsPassOut
+      ? `alumni (${passedOutYear})`
+      : formatGradeDisplay(sourceNextGrade);
     if (
       !window.confirm(
-        `Promote ${regNums.length} selected student(s) to ${nextLabel}?`
+        sourceIsPassOut
+          ? `Mark ${regNums.length} selected Class 10 student(s) as passed out for ${passedOutYear}? They will move to Alumni.`
+          : `Promote ${regNums.length} selected student(s) to ${nextLabel}?`
       )
     ) {
       return;
@@ -147,6 +162,7 @@ const PromoteStudents = () => {
         mode: 'selected',
         sourceGrade,
         registrationNumbers: regNums,
+        ...(sourceIsPassOut ? { passedOutYear: Number(passedOutYear) } : {}),
       });
       alert(res.data.message || 'Promotion complete.');
       await fetchStudentsData();
@@ -193,7 +209,7 @@ const PromoteStudents = () => {
         <h3 className="add-student-title">Promote entire class</h3>
         <p className="promote-section-hint">
           Choose a class; every {ROLE_LABELS.seedling.toLowerCase()} in that class moves up one
-          grade.
+          grade. Class 10 students are saved as alumni for the year they pass out.
         </p>
         <div className="promote-controls">
           <div className="grade-filter-wrapper">
@@ -215,12 +231,34 @@ const PromoteStudents = () => {
               ))}
             </select>
           </div>
+          {classIsPassOut && (
+            <div className="grade-filter-wrapper">
+              <label htmlFor="promote-class-year" className="grade-filter-label">
+                Year passed out
+              </label>
+              <select
+                id="promote-class-year"
+                className="grade-filter-select"
+                value={passedOutYear}
+                onChange={(e) => setPassedOutYear(e.target.value)}
+                disabled={promotingClass}
+              >
+                {passedOutYearOptions().map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           {classGrade && (
             <p className="promote-target-hint">
               {studentsInClass.length} student(s) →{' '}
-              {classNextGrade
-                ? formatGradeDisplay(classNextGrade)
-                : 'Cannot promote (highest grade)'}
+              {classIsPassOut
+                ? `Alumni (${passedOutYear})`
+                : classNextGrade
+                  ? formatGradeDisplay(classNextGrade)
+                  : 'Cannot promote (highest grade)'}
             </p>
           )}
           <button
@@ -228,12 +266,21 @@ const PromoteStudents = () => {
             className="promote-action-btn"
             onClick={handlePromoteClass}
             disabled={
-              !classGrade || !classNextGrade || studentsInClass.length === 0 || promotingClass
+              !classGrade ||
+              (!classNextGrade && !classIsPassOut) ||
+              studentsInClass.length === 0 ||
+              promotingClass
             }
           >
             <span className="btn-icon-wrap">
-              <IconPromote />
-              {promotingClass ? 'Promoting...' : 'Promote class'}
+              {classIsPassOut ? <IconAlumni /> : <IconPromote />}
+              {promotingClass
+                ? classIsPassOut
+                  ? 'Saving alumni...'
+                  : 'Promoting...'
+                : classIsPassOut
+                  ? 'Pass out class'
+                  : 'Promote class'}
             </span>
           </button>
         </div>
@@ -243,7 +290,7 @@ const PromoteStudents = () => {
         <h3 className="add-student-title">Promote selected students</h3>
         <p className="promote-section-hint">
           Pick the class they are in, select one or more students, then promote them to the next
-          grade only.
+          grade. For Class 10, selected students are saved as alumni.
         </p>
         <div className="promote-controls">
           <div className="grade-filter-wrapper">
@@ -268,9 +315,31 @@ const PromoteStudents = () => {
               ))}
             </select>
           </div>
-          {sourceGrade && sourceNextGrade && (
+          {sourceIsPassOut && (
+            <div className="grade-filter-wrapper">
+              <label htmlFor="promote-source-year" className="grade-filter-label">
+                Year passed out
+              </label>
+              <select
+                id="promote-source-year"
+                className="grade-filter-select"
+                value={passedOutYear}
+                onChange={(e) => setPassedOutYear(e.target.value)}
+                disabled={promotingSelected}
+              >
+                {passedOutYearOptions().map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {sourceGrade && (sourceNextGrade || sourceIsPassOut) && (
             <p className="promote-target-hint">
-              Promotes to {formatGradeDisplay(sourceNextGrade)}
+              {sourceIsPassOut
+                ? `Saves as alumni for ${passedOutYear}`
+                : `Promotes to ${formatGradeDisplay(sourceNextGrade)}`}
             </p>
           )}
         </div>
@@ -328,15 +397,19 @@ const PromoteStudents = () => {
               onClick={handlePromoteSelected}
               disabled={
                 selectedRegistrationNumbers.size === 0 ||
-                !sourceNextGrade ||
+                (!sourceNextGrade && !sourceIsPassOut) ||
                 promotingSelected
               }
             >
               <span className="btn-icon-wrap">
-                <IconPromote />
+                {sourceIsPassOut ? <IconAlumni /> : <IconPromote />}
                 {promotingSelected
-                  ? 'Promoting...'
-                  : `Promote selected (${selectedRegistrationNumbers.size})`}
+                  ? sourceIsPassOut
+                    ? 'Saving alumni...'
+                    : 'Promoting...'
+                  : sourceIsPassOut
+                    ? `Pass out selected (${selectedRegistrationNumbers.size})`
+                    : `Promote selected (${selectedRegistrationNumbers.size})`}
               </span>
             </button>
           </>

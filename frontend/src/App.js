@@ -10,6 +10,7 @@ import StudentDirectory from './StudentDirectory';
 import AddStudent from './AddStudent';
 import StudentDetail from './StudentDetail';
 import PromoteStudents from './PromoteStudents';
+import Alumni from './Alumni';
 import StudentsRecord from './StudentsRecord';
 import StudentRecordDetail from './StudentRecordDetail';
 import Reports from './Reports';
@@ -210,6 +211,10 @@ function App() {
             <Route
               path="/students-data/promote"
               element={isAdminOrGuest ? <PromoteStudents /> : <Navigate to="/record" replace />}
+            />
+            <Route
+              path="/students-data/alumni"
+              element={isAdminOrGuest ? <Alumni /> : <Navigate to="/record" replace />}
             />
             <Route
               path="/students-data/:registrationNumber"

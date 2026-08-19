@@ -121,6 +121,15 @@ export const getNextGrade = (grade) => {
   return GRADE_SEQUENCE[idx + 1];
 };
 
+export const isClassTen = (grade) => normalizeGradeForMatch(grade) === '10';
+
+export const currentPassedOutYear = () => new Date().getFullYear();
+
+export const passedOutYearOptions = (span = 12) => {
+  const current = currentPassedOutYear();
+  return Array.from({ length: span }, (_, i) => current - i);
+};
+
 /** Display label for a grade (K.G-II, Class 1, Class 8, …). */
 export const formatGradeDisplay = (canonOrGrade) => {
   if (!canonOrGrade) return '';
