@@ -211,13 +211,36 @@
   background: #fff;
 }
 
+.add-field select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: #fff;
+  width: 100%;
+  box-sizing: border-box;
+  color: #212529;
+  cursor: pointer;
+}
+
 .add-field input:focus {
   outline: none;
   border-color: #3498db;
   box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
 }
 
+.add-field select:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
 .add-field input:disabled {
+  background: #e9ecef;
+  cursor: not-allowed;
+}
+
+.add-field select:disabled {
   background: #e9ecef;
   cursor: not-allowed;
 }
@@ -607,6 +630,11 @@
   outline: none;
   border-color: #2980b9;
   box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+select.student-edit-input {
+  cursor: pointer;
+  background: #fff;
 }
 
 .edit-record-btn {

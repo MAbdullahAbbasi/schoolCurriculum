@@ -4,7 +4,13 @@ import axios from 'axios';
 import { API_URL } from './config/api';
 import { ROLE_LABELS } from './roleLabels';
 import { IconAdd, IconBack, IconUpload } from './ButtonIcons';
-import { requiresSubjectChoice } from './studentDataUtils';
+import {
+  formatGradeOptionLabel,
+  isValidStudentEmail,
+  normalizeStudentEmail,
+  requiresSubjectChoice,
+  STUDENT_GRADE_OPTIONS,
+} from './studentDataUtils';
 import './StudentData.css';
 
 const AddStudent = () => {
@@ -19,13 +25,20 @@ const AddStudent = () => {
     grade: '',
     dateOfBirth: '',
     subject: '',
+    email: '',
   });
   const [addError, setAddError] = useState(null);
   const [addingStudent, setAddingStudent] = useState(false);
   const fileInputRef = useRef(null);
 
   const handleAddFormChange = (field, value) => {
-    setAddForm((prev) => ({ ...prev, [field]: value }));
+    setAddForm((prev) => {
+      const next = { ...prev, [field]: value };
+      if (field === 'grade' && !requiresSubjectChoice(value)) {
+        next.subject = '';
+      }
+      return next;
+    });
     setAddError(null);
   };
 
@@ -50,6 +63,13 @@ const AddStudent = () => {
       });
       return;
     }
+    if (!isValidStudentEmail(addForm.email)) {
+      setAddError({
+        message: 'Invalid email format.',
+        solution: 'Enter a valid email like student@example.com, or leave email blank.',
+      });
+      return;
+    }
     try {
       setAddingStudent(true);
       setAddError(null);
@@ -59,6 +79,7 @@ const AddStudent = () => {
         fathersName: addForm.fathersName != null ? String(addForm.fathersName).trim() : '',
         grade: addForm.grade.trim(),
         dateOfBirth: addForm.dateOfBirth,
+        email: normalizeStudentEmail(addForm.email),
         subject: requiresSubjectChoice(addForm.grade.trim()) ? addForm.subject : '',
       });
       navigate(`/students-data/${encodeURIComponent(addForm.registrationNumber.trim())}`);
@@ -181,13 +202,31 @@ const AddStudent = () => {
             </div>
             <div className="add-field">
               <label htmlFor="add-grade">Grade</label>
-              <input
+              <select
                 id="add-grade"
-                type="text"
                 value={addForm.grade}
                 onChange={(e) => handleAddFormChange('grade', e.target.value)}
-                placeholder="Grade"
                 disabled={addingStudent}
+                required
+              >
+                <option value="">Select grade</option>
+                {STUDENT_GRADE_OPTIONS.map((g) => (
+                  <option key={g} value={g}>
+                    {formatGradeOptionLabel(g)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="add-field">
+              <label htmlFor="add-email">Email</label>
+              <input
+                id="add-email"
+                type="email"
+                value={addForm.email}
+                onChange={(e) => handleAddFormChange('email', e.target.value)}
+                placeholder="Email (optional)"
+                disabled={addingStudent}
+                autoComplete="email"
               />
             </div>
             {requiresSubjectChoice(addForm.grade) && (
@@ -243,6 +282,7 @@ const AddStudent = () => {
         <h3 className="add-student-title">Import from Excel</h3>
         <p className="upload-requirements upload-requirements-above">
           Excel columns: Registration Number, Student Name, Fathers Name, Grade, Date of Birth.
+          Optional: Email. Grades must be KG-2 or 1–12.
           For Class 8/9/10 rows only, include a Subject column with values Biology or Computer.
         </p>
         {uploadError && (

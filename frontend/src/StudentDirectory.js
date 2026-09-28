@@ -4,7 +4,7 @@ import axios from 'axios';
 import { API_URL } from './config/api';
 import { ROLE_LABELS } from './roleLabels';
 import { IconAdd, IconCancel, IconDelete, IconEdit, IconPromote, IconSelectAll } from './ButtonIcons';
-import { formatGradeOptionLabel, gradesFromStudents, sortStudentsByGrade } from './studentDataUtils';
+import { formatGradeOptionLabel, studentMatchesGrade, sortStudentsByGrade, uniqueCanonicalGradesFromStudents } from './studentDataUtils';
 import { canEditPortal } from './authUtils';
 import './StudentData.css';
 
@@ -21,12 +21,12 @@ const StudentDirectory = () => {
   const [deletingSelected, setDeletingSelected] = useState(false);
   const [deletingRegistrationNumber, setDeletingRegistrationNumber] = useState(null);
 
-  const gradesFromDb = useMemo(() => gradesFromStudents(studentsData), [studentsData]);
+  const gradesFromDb = useMemo(() => uniqueCanonicalGradesFromStudents(studentsData), [studentsData]);
 
   const filteredStudents = useMemo(() => {
     const list = !gradeFilter
       ? studentsData
-      : studentsData.filter((s) => String(s.grade) === String(gradeFilter));
+      : studentsData.filter((s) => studentMatchesGrade(s, gradeFilter));
     return sortStudentsByGrade(list);
   }, [studentsData, gradeFilter]);
 

@@ -8,12 +8,12 @@ import {
   formatGradeDisplay,
   formatGradeOptionLabel,
   getNextGrade,
-  gradesFromStudents,
   gradesMatch,
   isClassTen,
   currentPassedOutYear,
   passedOutYearOptions,
   normalizeGradeForMatch,
+  uniqueCanonicalGradesFromStudents,
 } from './studentDataUtils';
 import './StudentData.css';
 
@@ -29,7 +29,7 @@ const PromoteStudents = () => {
   const [promotingSelected, setPromotingSelected] = useState(false);
   const [passedOutYear, setPassedOutYear] = useState(() => String(currentPassedOutYear()));
 
-  const gradesFromDb = useMemo(() => gradesFromStudents(studentsData), [studentsData]);
+  const gradesFromDb = useMemo(() => uniqueCanonicalGradesFromStudents(studentsData), [studentsData]);
 
   const studentsInClass = useMemo(() => {
     if (!classGrade) return [];

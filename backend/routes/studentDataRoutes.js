@@ -11,8 +11,11 @@ import {
   getNextGrade,
   gradesMatch,
   isClassTen,
+  isValidStudentEmail,
   normalizeGradeForMatch,
+  normalizeStudentEmail,
   parsePassedOutYear,
+  resolveAllowedStudentGrade,
   updateEnrollmentClassInRegistration,
 } from '../utils/gradePromotion.js';
 
@@ -57,6 +60,7 @@ async function graduateStudentsToAlumni(students, passedOutYear) {
       grade: student.grade,
       dateOfBirth: student.dateOfBirth || null,
       subject: student.subject || '',
+      email: student.email || '',
       passedOutYear,
     });
     await StudentData.deleteOne({ registrationNumber });
@@ -277,7 +281,7 @@ router.post('/', requireRoles([ROLE.ADMIN]), async (req, res) => {
       });
     }
 
-    const { registrationNumber, studentName, fathersName, grade, dateOfBirth, subject } = req.body;
+    const { registrationNumber, studentName, fathersName, grade, dateOfBirth, subject, email } = req.body;
 
     if (!registrationNumber || String(registrationNumber).trim() === '') {
       return res.status(400).json({
@@ -300,7 +304,16 @@ router.post('/', requireRoles([ROLE.ADMIN]), async (req, res) => {
         success: false,
         error: 'Validation failed',
         message: 'Grade is required.',
-        solution: 'Please enter the grade.',
+        solution: 'Please select a grade from the list.',
+      });
+    }
+    const gradeStr = resolveAllowedStudentGrade(grade);
+    if (!gradeStr) {
+      return res.status(400).json({
+        success: false,
+        error: 'Validation failed',
+        message: 'Invalid grade. Allowed values: KG-2, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12.',
+        solution: 'Select a grade from the dropdown.',
       });
     }
     if (!dateOfBirth) {
@@ -309,6 +322,14 @@ router.post('/', requireRoles([ROLE.ADMIN]), async (req, res) => {
         error: 'Validation failed',
         message: 'Date of Birth is required.',
         solution: 'Please enter a valid date (e.g. YYYY-MM-DD).',
+      });
+    }
+    if (!isValidStudentEmail(email)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Validation failed',
+        message: 'Invalid email format.',
+        solution: 'Enter a valid email like student@example.com, or leave email blank.',
       });
     }
 
@@ -333,7 +354,6 @@ router.post('/', requireRoles([ROLE.ADMIN]), async (req, res) => {
       });
     }
 
-    const gradeStr = String(grade).trim();
     let subjectValue = '';
     if (requiresSubjectChoice(gradeStr)) {
       const normalized = normalizeSubject(subject);
@@ -354,6 +374,7 @@ router.post('/', requireRoles([ROLE.ADMIN]), async (req, res) => {
       fathersName: (fathersName != null) ? String(fathersName).trim() : '',
       grade: gradeStr,
       dateOfBirth: dob,
+      email: normalizeStudentEmail(email),
       subject: subjectValue,
     });
     await newStudent.save();
@@ -401,6 +422,7 @@ const updateStudentHandler = async (req, res) => {
       grade,
       dateOfBirth,
       subject,
+      email,
     } = req.body;
 
     if (!registrationNumber || !registrationNumber.toString().trim()) {
@@ -435,9 +457,31 @@ const updateStudentHandler = async (req, res) => {
     }
     if (studentName !== undefined) updateFields.studentName = String(studentName).trim();
     if (fathersName !== undefined) updateFields.fathersName = String(fathersName).trim();
-    if (grade !== undefined) updateFields.grade = String(grade).trim();
+    if (email !== undefined) {
+      if (!isValidStudentEmail(email)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Validation failed',
+          message: 'Invalid email format.',
+          solution: 'Enter a valid email like student@example.com, or leave email blank.',
+        });
+      }
+      updateFields.email = normalizeStudentEmail(email);
+    }
+    if (grade !== undefined) {
+      const resolvedGrade = resolveAllowedStudentGrade(grade);
+      if (!resolvedGrade) {
+        return res.status(400).json({
+          success: false,
+          error: 'Validation failed',
+          message: 'Invalid grade. Allowed values: KG-2, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12.',
+          solution: 'Select a grade from the dropdown.',
+        });
+      }
+      updateFields.grade = resolvedGrade;
+    }
     const current = await StudentData.findOne({ registrationNumber: regNum }).select('grade subject').lean();
-    const effectiveGrade = grade !== undefined ? String(grade).trim() : current?.grade;
+    const effectiveGrade = grade !== undefined ? updateFields.grade : current?.grade;
     const needsSubject = requiresSubjectChoice(effectiveGrade);
 
     if (!needsSubject) {
@@ -495,7 +539,7 @@ const updateStudentHandler = async (req, res) => {
       const regForSync = regNum;
       const syncedReg = updateEnrollmentClassInRegistration(
         regForSync,
-        normalizeGradeForMatch(String(grade).trim())
+        normalizeGradeForMatch(updateFields.grade)
       );
       if (syncedReg !== regForSync) {
         const duplicate = await StudentData.findOne({ registrationNumber: syncedReg }).lean();
@@ -926,6 +970,7 @@ router.post('/upload', requireRoles([ROLE.ADMIN]), upload.single('file'), async 
       { key: findColumn(firstRow, ['date of birth', 'dob', 'birth date', 'birthdate', 'date']), name: 'Date of Birth' },
     ];
     const subjectColumnKey = findColumn(firstRow, ['subject']);
+    const emailColumnKey = findColumn(firstRow, ['email', 'e-mail', 'mail']);
     const missing = requiredColumns.filter(c => !c.key).map(c => c.name);
     if (missing.length > 0) {
       return res.status(400).json({
@@ -959,7 +1004,13 @@ router.post('/upload', requireRoles([ROLE.ADMIN]), upload.single('file'), async 
       if (!row[gradeKey] || String(row[gradeKey]).trim() === '') {
         throw new Error(`Row ${index + 2}: Grade is required`);
       }
-      mapped.grade = String(row[gradeKey]).trim();
+      const resolvedGrade = resolveAllowedStudentGrade(row[gradeKey]);
+      if (!resolvedGrade) {
+        throw new Error(
+          `Row ${index + 2}: Invalid grade "${String(row[gradeKey]).trim()}". Allowed: KG-2, 1–12.`
+        );
+      }
+      mapped.grade = resolvedGrade;
 
       // Class 8/9/10: Subject column is required and must be Biology or Computer
       if (requiresSubjectChoice(mapped.grade)) {
@@ -973,6 +1024,20 @@ router.post('/upload', requireRoles([ROLE.ADMIN]), upload.single('file'), async 
         mapped.subject = normalized;
       } else {
         mapped.subject = '';
+      }
+
+      if (emailColumnKey) {
+        const emailRaw = row[emailColumnKey];
+        if (emailRaw != null && String(emailRaw).trim() !== '') {
+          if (!isValidStudentEmail(emailRaw)) {
+            throw new Error(`Row ${index + 2}: Invalid email format`);
+          }
+          mapped.email = normalizeStudentEmail(emailRaw);
+        } else {
+          mapped.email = '';
+        }
+      } else {
+        mapped.email = '';
       }
 
       const dobKey = requiredColumns[4].key;

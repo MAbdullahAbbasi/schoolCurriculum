@@ -50,8 +50,15 @@ export const gradesFromStudents = (students) => {
   return Array.from(set).sort((a, b) => gradeSortOrder(a) - gradeSortOrder(b));
 };
 
-/** School ladder: only K.G-II, then Class 1–10 (no KG-1 / KG-3). */
-export const GRADE_SEQUENCE = ['KG-2', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
+/**
+ * School ladder for students: K.G-II, then Class 1–12.
+ * Class 10 still passes out to alumni (isClassTen); 11→12 uses getNextGrade.
+ */
+export const GRADE_SEQUENCE = ['KG-2', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+
+/** Allowed grade values for student add/edit dropdowns (canonical forms). */
+export const STUDENT_GRADE_OPTIONS = [...GRADE_SEQUENCE];
+export const ALLOWED_STUDENT_GRADES = STUDENT_GRADE_OPTIONS;
 
 /** Normalize grade for comparison (KG variants, numeric). */
 export const normalizeGradeForMatch = (grade) => {
@@ -96,6 +103,50 @@ export const normalizeGradeForMatch = (grade) => {
 
 export const gradesMatch = (gradeA, gradeB) =>
   normalizeGradeForMatch(gradeA) === normalizeGradeForMatch(gradeB);
+
+/** Resolve input to a canonical allowed student grade, or null. */
+export const resolveAllowedStudentGrade = (grade) => {
+  if (grade == null || String(grade).trim() === '') return null;
+  const raw = String(grade).trim();
+  if (ALLOWED_STUDENT_GRADES.includes(raw)) return raw;
+  const canon = normalizeGradeForMatch(raw);
+  if (ALLOWED_STUDENT_GRADES.includes(canon)) return canon;
+  return null;
+};
+
+/** Map stored grade to a dropdown value (preserves selection for existing records). */
+export const gradeToSelectValue = (grade) => {
+  const resolved = resolveAllowedStudentGrade(grade);
+  if (resolved) return resolved;
+  return grade != null && String(grade).trim() !== '' ? String(grade).trim() : '';
+};
+
+/**
+ * Options for grade <select>. Includes current grade if it is a legacy value
+ * outside the allowed list so edit does not wipe it before the user saves.
+ */
+export const getGradeSelectOptions = (currentGrade) => {
+  const opts = [...STUDENT_GRADE_OPTIONS];
+  const raw = currentGrade != null ? String(currentGrade).trim() : '';
+  const resolved = resolveAllowedStudentGrade(raw);
+  if (raw && !resolved && !opts.includes(raw)) {
+    opts.push(raw);
+  }
+  return opts;
+};
+
+/** Optional email: empty OK; otherwise local@domain.tld with no spaces. */
+export const isValidStudentEmail = (email) => {
+  if (email == null || String(email).trim() === '') return true;
+  const s = String(email).trim();
+  if (/\s/.test(s)) return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+};
+
+export const normalizeStudentEmail = (email) => {
+  if (email == null || String(email).trim() === '') return '';
+  return String(email).trim();
+};
 
 /** Unique canonical grades from student records (merges K.G-II, KG-2, KG II, etc.). */
 export const uniqueCanonicalGradesFromStudents = (students) => {
@@ -160,6 +211,8 @@ const CANON_TO_ENROLLMENT_CLASS = {
   8: 'VIII',
   9: 'IX',
   10: 'X',
+  11: 'XI',
+  12: 'XII',
 };
 
 export const splitEnrollment = (enrollment) => {

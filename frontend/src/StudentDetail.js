@@ -7,9 +7,14 @@ import { IconBack, IconCancel, IconDelete, IconEdit, IconPromote, IconAlumni, Ic
 import {
   formatDateOfBirth,
   formatGradeDisplay,
+  formatGradeOptionLabel,
+  getGradeSelectOptions,
   getNextGrade,
+  gradeToSelectValue,
   isClassTen,
+  isValidStudentEmail,
   currentPassedOutYear,
+  normalizeStudentEmail,
   requiresSubjectChoice,
   toDateInputValue,
 } from './studentDataUtils';
@@ -31,6 +36,7 @@ const StudentDetail = () => {
     grade: '',
     dateOfBirth: '',
     subject: '',
+    email: '',
   });
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -77,9 +83,10 @@ const StudentDetail = () => {
       enrollmentNumber: student.registrationNumber || registrationNumber,
       studentName: student.studentName || '',
       fathersName: student.fathersName || '',
-      grade: student.grade || '',
+      grade: gradeToSelectValue(student.grade),
       dateOfBirth: toDateInputValue(student.dateOfBirth),
       subject: student.subject || '',
+      email: student.email || '',
     });
     setEditing(true);
   };
@@ -93,11 +100,18 @@ const StudentDetail = () => {
       grade: '',
       dateOfBirth: '',
       subject: '',
+      email: '',
     });
   };
 
   const handleEditFormChange = (field, value) => {
-    setEditForm((prev) => ({ ...prev, [field]: value }));
+    setEditForm((prev) => {
+      const next = { ...prev, [field]: value };
+      if (field === 'grade' && !requiresSubjectChoice(value)) {
+        next.subject = '';
+      }
+      return next;
+    });
   };
 
   const handleSave = async () => {
@@ -107,6 +121,10 @@ const StudentDetail = () => {
     }
     if (requiresSubjectChoice(editForm.grade.trim()) && !editForm.subject) {
       alert('For Grades 8, 9, and 10, please select Subject (Biology or Computer).');
+      return;
+    }
+    if (!isValidStudentEmail(editForm.email)) {
+      alert('Invalid email format. Use student@example.com or leave blank.');
       return;
     }
     const newReg = editForm.enrollmentNumber.trim();
@@ -120,6 +138,7 @@ const StudentDetail = () => {
           editForm.fathersName != null ? String(editForm.fathersName).trim() : '',
         grade: editForm.grade.trim(),
         dateOfBirth: editForm.dateOfBirth,
+        email: normalizeStudentEmail(editForm.email),
         subject: requiresSubjectChoice(editForm.grade.trim()) ? editForm.subject : '',
       });
       setEditing(false);
@@ -322,14 +341,37 @@ const StudentDetail = () => {
             <dt>Grade</dt>
             <dd>
               {editing ? (
-                <input
-                  type="text"
+                <select
                   className="student-edit-input student-detail-input"
                   value={editForm.grade}
                   onChange={(e) => handleEditFormChange('grade', e.target.value)}
+                >
+                  <option value="">Select grade</option>
+                  {getGradeSelectOptions(student.grade).map((g) => (
+                    <option key={g} value={g}>
+                      {formatGradeOptionLabel(g)}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                formatGradeDisplay(student.grade) || student.grade || '—'
+              )}
+            </dd>
+          </div>
+          <div className="student-detail-field">
+            <dt>Email</dt>
+            <dd>
+              {editing ? (
+                <input
+                  type="email"
+                  className="student-edit-input student-detail-input"
+                  value={editForm.email}
+                  onChange={(e) => handleEditFormChange('email', e.target.value)}
+                  placeholder="Email (optional)"
+                  autoComplete="email"
                 />
               ) : (
-                student.grade || '—'
+                student.email || '—'
               )}
             </dd>
           </div>

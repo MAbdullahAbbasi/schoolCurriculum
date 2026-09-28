@@ -1,7 +1,13 @@
 /** Canonical grade ladder and promotion helpers (mirrors frontend studentDataUtils). */
 
-/** School ladder: only K.G-II, then Class 1–10 (no KG-1 / KG-3). */
-export const GRADE_SEQUENCE = ['KG-2', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
+/**
+ * School ladder for students: K.G-II, then Class 1–12.
+ * Class 10 still passes out to alumni (see isClassTen); 11→12 uses getNextGrade.
+ */
+export const GRADE_SEQUENCE = ['KG-2', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+
+/** Allowed values for student create/update (exact canonical forms). */
+export const ALLOWED_STUDENT_GRADES = [...GRADE_SEQUENCE];
 
 export function normalizeGradeForMatch(grade) {
   if (grade == null || grade === '') return '';
@@ -45,6 +51,36 @@ export function normalizeGradeForMatch(grade) {
 
 export function gradesMatch(gradeA, gradeB) {
   return normalizeGradeForMatch(gradeA) === normalizeGradeForMatch(gradeB);
+}
+
+/**
+ * Resolve input to a canonical allowed student grade, or null if not allowed.
+ * Accepts variants that normalize to an allowed value (e.g. "Class 7" → "7").
+ */
+export function resolveAllowedStudentGrade(grade) {
+  if (grade == null || String(grade).trim() === '') return null;
+  const raw = String(grade).trim();
+  if (ALLOWED_STUDENT_GRADES.includes(raw)) return raw;
+  const canon = normalizeGradeForMatch(raw);
+  if (ALLOWED_STUDENT_GRADES.includes(canon)) return canon;
+  return null;
+}
+
+export function isAllowedStudentGrade(grade) {
+  return resolveAllowedStudentGrade(grade) != null;
+}
+
+/** Optional email: empty is valid; otherwise require local@domain.tld with no spaces. */
+export function isValidStudentEmail(email) {
+  if (email == null || String(email).trim() === '') return true;
+  const s = String(email).trim();
+  if (/\s/.test(s)) return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+}
+
+export function normalizeStudentEmail(email) {
+  if (email == null || String(email).trim() === '') return '';
+  return String(email).trim();
 }
 
 export function getNextGrade(grade) {
@@ -91,6 +127,8 @@ const CANON_TO_ENROLLMENT_CLASS = {
   8: 'VIII',
   9: 'IX',
   10: 'X',
+  11: 'XI',
+  12: 'XII',
 };
 
 /**

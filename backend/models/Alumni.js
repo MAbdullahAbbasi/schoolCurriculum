@@ -31,6 +31,11 @@ const alumniSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
+    email: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     passedOutYear: {
       type: Number,
       required: true,

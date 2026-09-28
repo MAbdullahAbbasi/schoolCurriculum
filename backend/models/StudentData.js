@@ -26,6 +26,12 @@ const studentDataSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
+    // Optional student email (empty string when not provided).
+    email: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     // Class 8/9/10 only: "Biology" or "Computer" (student choice). Omitted or empty for other grades.
     subject: {
       type: String,
