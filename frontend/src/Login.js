@@ -35,21 +35,47 @@ const Login = ({ onLoginSuccess }) => {
       return;
     }
     setLoading(true);
+    const userId = username.trim();
     try {
-      const res = await axios.post(`${API_URL}/api/auth/login`, {
-        username: username.trim(),
+      // Staff login first
+      try {
+        const res = await axios.post(`${API_URL}/api/auth/login`, {
+          username: userId,
+          password,
+        });
+        if (res.data.success && res.data.token) {
+          localStorage.setItem('curriculum_auth', JSON.stringify({
+            username: res.data.user?.username || userId,
+            token: res.data.token,
+            role: res.data.user?.role || null,
+            portal: 'staff',
+          }));
+          onLoginSuccess?.();
+          return;
+        }
+      } catch (staffErr) {
+        // Fall through to student portal login
+        if (staffErr.response?.status !== 401 && staffErr.response?.status !== 400) {
+          throw staffErr;
+        }
+      }
+
+      const studentRes = await axios.post(`${API_URL}/api/student-portal/login`, {
+        username: userId,
         password,
       });
-      if (res.data.success && res.data.token) {
+      if (studentRes.data.success && studentRes.data.token) {
         localStorage.setItem('curriculum_auth', JSON.stringify({
-          username: res.data.user?.username || username,
-          token: res.data.token,
-          role: res.data.user?.role || null,
+          username: studentRes.data.user?.username || userId,
+          token: studentRes.data.token,
+          role: 'STUDENT',
+          portal: 'student',
+          studentName: studentRes.data.student?.studentName || studentRes.data.user?.studentName || '',
         }));
         onLoginSuccess?.();
-      } else {
-        setError(res.data.error || 'Login failed.');
+        return;
       }
+      setError(studentRes.data.error || 'Login failed.');
     } catch (err) {
       const msg = err.response?.data?.error || err.response?.data?.message || err.message || 'Login failed.';
       setError(msg);
@@ -63,7 +89,7 @@ const Login = ({ onLoginSuccess }) => {
       <div className="login-card login-card--forest">
         <div className="login-card-decoration" aria-hidden="true" />
         <h1 className="login-title">{APP_LABELS.brandTitle}</h1>
-        <p className="login-subtitle">Sign in to continue your journey</p>
+        <p className="login-subtitle">Staff or seedling registration number</p>
         <form onSubmit={handleSubmit} className="login-form">
           <div className="login-field">
             <label htmlFor="login-userid">User ID</label>

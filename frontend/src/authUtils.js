@@ -43,7 +43,7 @@ export function isGuestRole(role = getAuthRole()) {
 
 /** True when the user may change data in the portal (not a demo guest). */
 export function canEditPortal(role = getAuthRole()) {
-  return role != null && role !== 'GUEST';
+  return role != null && role !== 'GUEST' && role !== 'STUDENT';
 }
 
 /** Admin-facing pages (objectives, grove, reports) — includes read-only guest. */
@@ -59,4 +59,12 @@ export function hasAdminNavAccess(role = getAuthRole()) {
 /** Only ADMIN may view/change student portal credentials. */
 export function canManageStudentPortal(role = getAuthRole()) {
   return role === 'ADMIN';
+}
+
+export function isStudentPortalRole(role = getAuthRole()) {
+  return role === 'STUDENT';
+}
+
+export function getStoredAuthPortal() {
+  return getStoredAuth()?.portal || null;
 }

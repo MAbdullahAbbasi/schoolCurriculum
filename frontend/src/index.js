@@ -9,6 +9,7 @@ const AUTH_KEY = 'curriculum_auth';
 
 axios.interceptors.request.use((config) => {
   if (config.url?.includes('/api/auth/login')) return config;
+  if (config.url?.includes('/api/student-portal/login')) return config;
   try {
     const raw = localStorage.getItem(AUTH_KEY);
     const auth = raw ? JSON.parse(raw) : null;

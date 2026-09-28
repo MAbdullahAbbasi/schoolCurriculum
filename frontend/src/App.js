@@ -19,17 +19,40 @@ import ResultSheet from './ResultSheet';
 import StudentReportDetail from './StudentReportDetail';
 import GradingScheme from './GradingScheme';
 import Login from './Login';
+import StudentPortal from './StudentPortal';
 import { API_URL } from './config/api';
 import RolesDashboard from './RolesDashboard';
 import CourseAdmins from './CourseAdmins';
 import Educators from './Educators';
 import RootLogins from './RootLogins';
-import { isGuestRole } from './authUtils';
+import { isGuestRole, isStudentPortalRole } from './authUtils';
 
 const AUTH_KEY = 'curriculum_auth';
 const INACTIVITY_MS = 20 * 60 * 1000;   // 20 minutes
 const REFRESH_INTERVAL_MS = 2 * 60 * 1000;  // check every 2 min to refresh if active
 const ACTIVITY_THRESHOLD_MS = 90 * 1000;     // consider "active" if activity in last 90 sec
+
+function resolveSession(auth) {
+  if (auth?.portal === 'student' || auth?.role === 'STUDENT') {
+    return axios.get(`${API_URL}/api/student-portal/me`).then((res) => {
+      const role = res.data?.user?.role || 'STUDENT';
+      auth.role = role;
+      auth.portal = 'student';
+      if (res.data?.student?.studentName) {
+        auth.studentName = res.data.student.studentName;
+      }
+      localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
+      return role;
+    });
+  }
+  return axios.get(`${API_URL}/api/auth/me`).then((res) => {
+    const role = res.data?.user?.role || 'ADMIN';
+    auth.role = role;
+    auth.portal = 'staff';
+    localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
+    return role;
+  });
+}
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -50,18 +73,8 @@ function App() {
         return;
       }
 
-      // Role fetch is required for RBAC-aware UI.
-      axios
-        .get(`${API_URL}/api/auth/me`, {
-          headers: { Authorization: `Bearer ${auth.token}` },
-        })
-        .then((res) => {
-          const role = res.data?.user?.role || 'ADMIN';
-          setUserRole(role);
-
-          auth.role = role;
-          localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
-        })
+      resolveSession(auth)
+        .then((role) => setUserRole(role))
         .catch(() => {
           setIsAuthenticated(false);
           setUserRole(null);
@@ -86,16 +99,8 @@ function App() {
       if (!auth?.token) return;
 
       setChecking(true);
-      axios
-        .get(`${API_URL}/api/auth/me`, {
-          headers: { Authorization: `Bearer ${auth.token}` },
-        })
-        .then((res) => {
-          const role = res.data?.user?.role || 'ADMIN';
-          setUserRole(role);
-          auth.role = role;
-          localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
-        })
+      resolveSession(auth)
+        .then((role) => setUserRole(role))
         .catch(() => {
           setIsAuthenticated(false);
           setUserRole(null);
@@ -126,7 +131,7 @@ function App() {
         localStorage.removeItem(AUTH_KEY);
         window.location.reload();
       }
-    }, 60000); // check every 1 minute
+    }, 60000);
 
     const refreshInterval = setInterval(() => {
       if (Date.now() - lastActivityRef.current > ACTIVITY_THRESHOLD_MS) return;
@@ -134,14 +139,19 @@ function App() {
         const raw = localStorage.getItem(AUTH_KEY);
         const auth = raw ? JSON.parse(raw) : null;
         if (!auth?.token) return;
-        axios.get(`${API_URL}/api/auth/refresh`, {
-          headers: { Authorization: `Bearer ${auth.token}` },
-        }).then((res) => {
-          if (res.data?.token) {
-            auth.token = res.data.token;
-            localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
-          }
-        }).catch(() => {});
+        const refreshUrl =
+          auth.portal === 'student' || auth.role === 'STUDENT'
+            ? `${API_URL}/api/student-portal/refresh`
+            : `${API_URL}/api/auth/refresh`;
+        axios
+          .get(refreshUrl)
+          .then((res) => {
+            if (res.data?.token) {
+              auth.token = res.data.token;
+              localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
+            }
+          })
+          .catch(() => {});
       } catch (_) {}
     }, REFRESH_INTERVAL_MS);
 
@@ -169,6 +179,11 @@ function App() {
     return (
       <Login onLoginSuccess={handleLoginSuccess} />
     );
+  }
+
+  // Distinct student experience — not the staff AppLayout
+  if (isStudentPortalRole(userRole)) {
+    return <StudentPortal />;
   }
 
   const isGuest = isGuestRole(userRole);
