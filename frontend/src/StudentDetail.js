@@ -13,17 +13,20 @@ import {
   gradeToSelectValue,
   isClassTen,
   isValidStudentEmail,
+  isValidStudentPortalPassword,
   currentPassedOutYear,
   normalizeStudentEmail,
   requiresSubjectChoice,
   toDateInputValue,
 } from './studentDataUtils';
+import { canManageStudentPortal } from './authUtils';
 import './StudentData.css';
 
 const StudentDetail = () => {
   const { registrationNumber: regParam } = useParams();
   const registrationNumber = decodeURIComponent(regParam || '');
   const navigate = useNavigate();
+  const canManagePortal = canManageStudentPortal();
 
   const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -37,10 +40,13 @@ const StudentDetail = () => {
     dateOfBirth: '',
     subject: '',
     email: '',
+    assignStudentPortal: false,
+    portalPassword: '',
   });
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [promoting, setPromoting] = useState(false);
+  const [portalNotice, setPortalNotice] = useState(null);
 
   const loadStudent = useCallback(async () => {
     if (!registrationNumber) {
@@ -79,6 +85,7 @@ const StudentDetail = () => {
 
   const startEdit = () => {
     if (!student) return;
+    setPortalNotice(null);
     setEditForm({
       enrollmentNumber: student.registrationNumber || registrationNumber,
       studentName: student.studentName || '',
@@ -87,12 +94,15 @@ const StudentDetail = () => {
       dateOfBirth: toDateInputValue(student.dateOfBirth),
       subject: student.subject || '',
       email: student.email || '',
+      assignStudentPortal: false,
+      portalPassword: '',
     });
     setEditing(true);
   };
 
   const cancelEdit = () => {
     setEditing(false);
+    setPortalNotice(null);
     setEditForm({
       enrollmentNumber: '',
       studentName: '',
@@ -101,6 +111,8 @@ const StudentDetail = () => {
       dateOfBirth: '',
       subject: '',
       email: '',
+      assignStudentPortal: false,
+      portalPassword: '',
     });
   };
 
@@ -127,10 +139,18 @@ const StudentDetail = () => {
       alert('Invalid email format. Use student@example.com or leave blank.');
       return;
     }
+    const passwordTrimmed = editForm.portalPassword != null ? String(editForm.portalPassword).trim() : '';
+    if (passwordTrimmed && !isValidStudentPortalPassword(passwordTrimmed)) {
+      alert(
+        'Portal password must be exactly 8 characters and include uppercase, lowercase, a number, and a special character.'
+      );
+      return;
+    }
     const newReg = editForm.enrollmentNumber.trim();
     try {
       setSaving(true);
-      await axios.put(`${API_URL}/api/students-data/update`, {
+      setPortalNotice(null);
+      const payload = {
         registrationNumber,
         newRegistrationNumber: newReg !== registrationNumber ? newReg : undefined,
         studentName: editForm.studentName.trim(),
@@ -140,7 +160,20 @@ const StudentDetail = () => {
         dateOfBirth: editForm.dateOfBirth,
         email: normalizeStudentEmail(editForm.email),
         subject: requiresSubjectChoice(editForm.grade.trim()) ? editForm.subject : '',
-      });
+      };
+      if (canManagePortal && !student.portalAssigned && editForm.assignStudentPortal) {
+        payload.assignStudentPortal = true;
+      }
+      if (canManagePortal && student.portalAssigned && passwordTrimmed) {
+        payload.portalPassword = passwordTrimmed;
+      }
+      const res = await axios.put(`${API_URL}/api/students-data/update`, payload);
+      if (res.data?.portalCredentials?.password) {
+        setPortalNotice({
+          username: res.data.portalCredentials.username,
+          password: res.data.portalCredentials.password,
+        });
+      }
       setEditing(false);
       if (newReg !== registrationNumber) {
         navigate(`/students-data/${encodeURIComponent(newReg)}`, { replace: true });
@@ -375,6 +408,78 @@ const StudentDetail = () => {
               )}
             </dd>
           </div>
+          {canManagePortal && (
+            <div className="student-detail-field student-detail-field--portal">
+              <dt>Student Portal</dt>
+              <dd>
+                {editing ? (
+                  student.portalAssigned ? (
+                    <div className="student-portal-edit-block">
+                      <p className="student-portal-status">Portal assigned</p>
+                      <label className="student-portal-readonly-label" htmlFor="detail-portal-username">
+                        Username (registration number — read-only)
+                      </label>
+                      <input
+                        id="detail-portal-username"
+                        type="text"
+                        className="student-edit-input student-detail-input"
+                        value={editForm.enrollmentNumber || registrationNumber}
+                        readOnly
+                        disabled
+                      />
+                      <label className="student-portal-readonly-label" htmlFor="detail-portal-password">
+                        New portal password (optional)
+                      </label>
+                      <input
+                        id="detail-portal-password"
+                        type="text"
+                        className="student-edit-input student-detail-input"
+                        value={editForm.portalPassword}
+                        onChange={(e) => handleEditFormChange('portalPassword', e.target.value)}
+                        placeholder="Leave blank to keep current"
+                        autoComplete="new-password"
+                      />
+                      <p className="student-portal-hint">
+                        Exactly 8 characters with uppercase, lowercase, a number, and a special
+                        character.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="student-portal-edit-block">
+                      <label className="add-portal-assign-label" htmlFor="detail-assign-portal">
+                        <input
+                          id="detail-assign-portal"
+                          type="checkbox"
+                          checked={Boolean(editForm.assignStudentPortal)}
+                          onChange={(e) =>
+                            handleEditFormChange('assignStudentPortal', e.target.checked)
+                          }
+                        />
+                        <span>Assign Student Portal</span>
+                      </label>
+                      <p className="student-portal-hint">
+                        Username will be the registration number. A secure password is generated
+                        automatically when you save.
+                      </p>
+                    </div>
+                  )
+                ) : student.portalAssigned ? (
+                  <div className="student-portal-credentials">
+                    <div>
+                      <span className="student-portal-cred-label">Username:</span>{' '}
+                      {student.registrationNumber}
+                    </div>
+                    <div>
+                      <span className="student-portal-cred-label">Password:</span>{' '}
+                      {student.portalPasswordDisplay || '—'}
+                    </div>
+                  </div>
+                ) : (
+                  <span className="student-portal-not-assigned">Not Assigned</span>
+                )}
+              </dd>
+            </div>
+          )}
           {showSubject && (
             <div className="student-detail-field">
               <dt>Subject</dt>
@@ -424,6 +529,18 @@ const StudentDetail = () => {
             </dd>
           </div>
         </dl>
+
+        {portalNotice && (
+          <div className="portal-credentials-card portal-credentials-card--ok" role="status">
+            <h4 className="portal-credentials-title">Student Portal Credentials</h4>
+            <p className="portal-credentials-line">
+              <strong>Username:</strong> <code>{portalNotice.username}</code>
+            </p>
+            <p className="portal-credentials-line">
+              <strong>Password:</strong> <code>{portalNotice.password}</code>
+            </p>
+          </div>
+        )}
 
         <div className="student-detail-actions">
           {editing ? (

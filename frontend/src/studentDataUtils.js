@@ -148,6 +148,17 @@ export const normalizeStudentEmail = (email) => {
   return String(email).trim();
 };
 
+/** Same rules as backend student portal passwords (exactly 8 mixed chars). */
+export const isValidStudentPortalPassword = (password) => {
+  if (typeof password !== 'string' || password.length !== 8) return false;
+  if (/\s/.test(password)) return false;
+  if (!/[A-Z]/.test(password)) return false;
+  if (!/[a-z]/.test(password)) return false;
+  if (!/[0-9]/.test(password)) return false;
+  if (!/[^A-Za-z0-9]/.test(password)) return false;
+  return true;
+};
+
 /** Unique canonical grades from student records (merges K.G-II, KG-2, KG II, etc.). */
 export const uniqueCanonicalGradesFromStudents = (students) => {
   const seen = new Set();

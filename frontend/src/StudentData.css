@@ -1010,3 +1010,130 @@ select.student-edit-input {
     font-size: 1rem;
   }
 }
+
+/* Student portal assignment & credentials */
+.add-portal-assign {
+  margin: 0.75rem 0 1rem;
+  padding: 0.75rem 1rem;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+}
+
+.add-portal-assign-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #2c3e50;
+  cursor: pointer;
+}
+
+.add-portal-assign-hint,
+.student-portal-hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.8rem;
+  color: #6c757d;
+  line-height: 1.4;
+}
+
+.portal-credentials-card {
+  margin-top: 1.25rem;
+  padding: 1rem 1.25rem;
+  border-radius: 10px;
+  border: 1px solid #c3e6cb;
+  background: #d4edda;
+}
+
+.portal-credentials-card--warn {
+  border-color: #ffeeba;
+  background: #fff3cd;
+}
+
+.portal-credentials-card--ok {
+  border-color: #c3e6cb;
+  background: #d4edda;
+}
+
+.portal-credentials-title {
+  margin: 0 0 0.65rem;
+  font-size: 1.05rem;
+  color: #155724;
+}
+
+.portal-credentials-card--warn .portal-credentials-title {
+  color: #856404;
+}
+
+.portal-credentials-line {
+  margin: 0.35rem 0;
+  font-size: 0.95rem;
+}
+
+.portal-credentials-line code {
+  font-family: Consolas, Monaco, monospace;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+}
+
+.portal-credentials-note {
+  margin: 0.65rem 0 0;
+  font-size: 0.85rem;
+  color: #495057;
+}
+
+.portal-credentials-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.student-portal-credentials-cell {
+  font-size: 0.85rem;
+  line-height: 1.35;
+  min-width: 140px;
+}
+
+.student-portal-credentials {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.student-portal-cred-label {
+  font-weight: 600;
+  color: #495057;
+}
+
+.student-portal-not-assigned {
+  color: #868e96;
+  font-style: italic;
+}
+
+.student-portal-assigned {
+  color: #2b8a3e;
+  font-weight: 600;
+}
+
+.student-portal-edit-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-width: 320px;
+}
+
+.student-portal-readonly-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #495057;
+  margin-top: 0.35rem;
+}
+
+.student-portal-status {
+  margin: 0;
+  font-weight: 600;
+  color: #2b8a3e;
+}

@@ -5,11 +5,12 @@ import { API_URL } from './config/api';
 import { ROLE_LABELS } from './roleLabels';
 import { IconAdd, IconCancel, IconDelete, IconEdit, IconPromote, IconSelectAll } from './ButtonIcons';
 import { formatGradeOptionLabel, studentMatchesGrade, sortStudentsByGrade, uniqueCanonicalGradesFromStudents } from './studentDataUtils';
-import { canEditPortal } from './authUtils';
+import { canEditPortal, canManageStudentPortal } from './authUtils';
 import './StudentData.css';
 
 const StudentDirectory = () => {
   const canEdit = canEditPortal();
+  const canViewPortalSecrets = canManageStudentPortal();
   const navigate = useNavigate();
   const [studentsData, setStudentsData] = useState([]);
   const [gradeFilter, setGradeFilter] = useState('');
@@ -275,6 +276,7 @@ const StudentDirectory = () => {
                   <th>Registration</th>
                   <th>Name</th>
                   <th>Grade</th>
+                  <th>Portal Credentials</th>
                   {canEdit && <th className="student-directory-th-actions">Actions</th>}
                 </tr>
               </thead>
@@ -282,6 +284,7 @@ const StudentDirectory = () => {
                 {filteredStudents.map((student, index) => {
                   const reg = student.registrationNumber;
                   const isSelected = selectedRegistrationNumbers.has(reg);
+                  const portalAssigned = Boolean(student.portalAssigned);
                   return (
                     <tr
                       key={reg || index}
@@ -311,6 +314,26 @@ const StudentDirectory = () => {
                       <td className="student-directory-reg">{reg || '—'}</td>
                       <td className="student-directory-name">{student.studentName || '—'}</td>
                       <td>{student.grade || '—'}</td>
+                      <td className="student-portal-credentials-cell">
+                        {portalAssigned ? (
+                          canViewPortalSecrets && student.portalPasswordDisplay ? (
+                            <div className="student-portal-credentials">
+                              <div>
+                                <span className="student-portal-cred-label">Username:</span>{' '}
+                                {reg}
+                              </div>
+                              <div>
+                                <span className="student-portal-cred-label">Password:</span>{' '}
+                                {student.portalPasswordDisplay}
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="student-portal-assigned">Assigned</span>
+                          )
+                        ) : (
+                          <span className="student-portal-not-assigned">Not Assigned</span>
+                        )}
+                      </td>
                       {canEdit && (
                       <td className="student-directory-actions" onClick={(e) => e.stopPropagation()}>
                         <button

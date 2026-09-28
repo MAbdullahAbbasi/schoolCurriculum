@@ -39,6 +39,27 @@ const studentDataSchema = new mongoose.Schema(
       default: '',
       enum: ['', 'Biology', 'Computer'], // Class 8/9/10: Biology or Computer
     },
+    /**
+     * Student portal (separate from staff User accounts).
+     * Username is always registrationNumber — no separate username field.
+     */
+    portalAssigned: {
+      type: Boolean,
+      default: false,
+    },
+    portalPasswordHash: {
+      type: String,
+      default: '',
+    },
+    /** Admin-visible credential for Seedlings UI; auth uses portalPasswordHash. */
+    portalPasswordDisplay: {
+      type: String,
+      default: '',
+    },
+    portalAssignedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     collection: 'studentsData',

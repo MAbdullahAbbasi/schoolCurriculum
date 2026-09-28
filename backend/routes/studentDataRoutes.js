@@ -7,6 +7,8 @@ import Alumni from '../models/Alumni.js';
 import Record from '../models/Record.js';
 import Course from '../models/Course.js';
 import User from '../models/User.js';
+import { ROLE } from '../rbac/roles.js';
+import { requireRoles } from '../rbac/guards.js';
 import {
   getNextGrade,
   gradesMatch,
@@ -18,6 +20,11 @@ import {
   resolveAllowedStudentGrade,
   updateEnrollmentClassInRegistration,
 } from '../utils/gradePromotion.js';
+import {
+  buildStudentPortalCredentialFields,
+  createGeneratedPortalFields,
+  isValidStudentPortalPassword,
+} from '../utils/studentPortalPassword.js';
 
 async function cascadeRegistrationNumberChange(oldReg, newReg) {
   if (!oldReg || !newReg || oldReg === newReg) return;
@@ -26,6 +33,22 @@ async function cascadeRegistrationNumberChange(oldReg, newReg) {
     { $set: { 'students.$[elem].registrationNumber': newReg } },
     { arrayFilters: [{ 'elem.registrationNumber': oldReg }] }
   );
+}
+
+/** Strip hash always; password display only for ADMIN. */
+function sanitizeStudentForClient(studentObj, role) {
+  const out = { ...studentObj };
+  delete out._id;
+  delete out.__v;
+  delete out.createdAt;
+  delete out.updatedAt;
+  delete out.portalPasswordHash;
+  if (role !== ROLE.ADMIN) {
+    delete out.portalPasswordDisplay;
+  }
+  out.portalAssigned = Boolean(out.portalAssigned);
+  out.portalUsername = out.portalAssigned ? out.registrationNumber : '';
+  return out;
 }
 
 async function graduateStudentsToAlumni(students, passedOutYear) {
@@ -74,8 +97,6 @@ async function graduateStudentsToAlumni(students, passedOutYear) {
 
   return { graduated, skipped };
 }
-import { ROLE } from '../rbac/roles.js';
-import { requireRoles } from '../rbac/guards.js';
 
 const router = express.Router();
 
@@ -247,18 +268,14 @@ router.get('/', async (req, res) => {
     });
 
     // Convert to plain objects and format dates
+    const role = req.user?.role;
     const studentsData = students.map(student => {
       const studentObj = student.toObject();
       // Format date of birth as ISO string for frontend
       if (studentObj.dateOfBirth) {
         studentObj.dateOfBirth = new Date(studentObj.dateOfBirth).toISOString().split('T')[0]; // YYYY-MM-DD format
       }
-      // Remove MongoDB internal fields
-      delete studentObj._id;
-      delete studentObj.__v;
-      delete studentObj.createdAt;
-      delete studentObj.updatedAt;
-      return studentObj;
+      return sanitizeStudentForClient(studentObj, role);
     });
 
     res.json(studentsData);
@@ -281,7 +298,16 @@ router.post('/', requireRoles([ROLE.ADMIN]), async (req, res) => {
       });
     }
 
-    const { registrationNumber, studentName, fathersName, grade, dateOfBirth, subject, email } = req.body;
+    const {
+      registrationNumber,
+      studentName,
+      fathersName,
+      grade,
+      dateOfBirth,
+      subject,
+      email,
+      assignStudentPortal,
+    } = req.body;
 
     if (!registrationNumber || String(registrationNumber).trim() === '') {
       return res.status(400).json({
@@ -376,22 +402,52 @@ router.post('/', requireRoles([ROLE.ADMIN]), async (req, res) => {
       dateOfBirth: dob,
       email: normalizeStudentEmail(email),
       subject: subjectValue,
+      portalAssigned: false,
+      portalPasswordHash: '',
+      portalPasswordDisplay: '',
+      portalAssignedAt: null,
     });
     await newStudent.save();
+
+    let portalCredentials = null;
+    let portalError = null;
+    const wantPortal = Boolean(assignStudentPortal);
+
+    if (wantPortal) {
+      try {
+        const { plain, fields } = await createGeneratedPortalFields();
+        newStudent.portalAssigned = fields.portalAssigned;
+        newStudent.portalPasswordHash = fields.portalPasswordHash;
+        newStudent.portalPasswordDisplay = fields.portalPasswordDisplay;
+        newStudent.portalAssignedAt = fields.portalAssignedAt;
+        await newStudent.save();
+        portalCredentials = {
+          username: regNum,
+          password: plain,
+        };
+      } catch (portalErr) {
+        console.error('Student portal assignment failed after create:', portalErr);
+        portalError =
+          portalErr?.message ||
+          'Student was created, but the student portal could not be assigned. You can assign it from the edit screen.';
+      }
+    }
 
     const studentObj = newStudent.toObject();
     if (studentObj.dateOfBirth) {
       studentObj.dateOfBirth = new Date(studentObj.dateOfBirth).toISOString().split('T')[0];
     }
-    delete studentObj._id;
-    delete studentObj.__v;
-    delete studentObj.createdAt;
-    delete studentObj.updatedAt;
 
     res.status(201).json({
       success: true,
-      message: 'Student added successfully',
-      data: studentObj,
+      message: portalCredentials
+        ? 'Student added and student portal assigned successfully'
+        : portalError
+          ? 'Student added, but portal assignment failed'
+          : 'Student added successfully',
+      data: sanitizeStudentForClient(studentObj, req.user?.role),
+      portalCredentials,
+      portalError,
     });
   } catch (error) {
     console.error('Error adding student:', error);
@@ -423,6 +479,8 @@ const updateStudentHandler = async (req, res) => {
       dateOfBirth,
       subject,
       email,
+      assignStudentPortal,
+      portalPassword,
     } = req.body;
 
     if (!registrationNumber || !registrationNumber.toString().trim()) {
@@ -480,7 +538,16 @@ const updateStudentHandler = async (req, res) => {
       }
       updateFields.grade = resolvedGrade;
     }
-    const current = await StudentData.findOne({ registrationNumber: regNum }).select('grade subject').lean();
+    const current = await StudentData.findOne({ registrationNumber: regNum })
+      .select('grade subject portalAssigned')
+      .lean();
+    if (!current) {
+      return res.status(404).json({
+        success: false,
+        error: 'Student not found',
+        message: `No student with registration number "${registrationNumber}" found.`,
+      });
+    }
     const effectiveGrade = grade !== undefined ? updateFields.grade : current?.grade;
     const needsSubject = requiresSubjectChoice(effectiveGrade);
 
@@ -512,6 +579,64 @@ const updateStudentHandler = async (req, res) => {
         });
       }
       updateFields.dateOfBirth = d;
+    }
+
+    let portalCredentials = null;
+    let portalError = null;
+    const wantAssign = Boolean(assignStudentPortal);
+    const hasPasswordChange =
+      portalPassword !== undefined && portalPassword !== null && String(portalPassword).trim() !== '';
+
+    if (wantAssign && !current.portalAssigned) {
+      try {
+        const { plain, fields } = await createGeneratedPortalFields();
+        Object.assign(updateFields, fields);
+        portalCredentials = {
+          username: updateFields.registrationNumber || regNum,
+          password: plain,
+        };
+      } catch (portalErr) {
+        console.error('Student portal assignment failed on update:', portalErr);
+        portalError =
+          portalErr?.message ||
+          'Could not assign the student portal. Other student fields were not saved.';
+        return res.status(500).json({
+          success: false,
+          error: 'Portal assignment failed',
+          message: portalError,
+        });
+      }
+    } else if (hasPasswordChange) {
+      if (!current.portalAssigned && !wantAssign) {
+        return res.status(400).json({
+          success: false,
+          error: 'Validation failed',
+          message: 'Cannot set a portal password before the student portal is assigned.',
+        });
+      }
+      if (!isValidStudentPortalPassword(String(portalPassword))) {
+        return res.status(400).json({
+          success: false,
+          error: 'Validation failed',
+          message:
+            'Portal password must be exactly 8 characters and include uppercase, lowercase, a number, and a special character.',
+        });
+      }
+      try {
+        const fields = await buildStudentPortalCredentialFields(String(portalPassword));
+        Object.assign(updateFields, fields);
+        portalCredentials = {
+          username: updateFields.registrationNumber || regNum,
+          password: String(portalPassword),
+        };
+      } catch (portalErr) {
+        console.error('Student portal password update failed:', portalErr);
+        return res.status(500).json({
+          success: false,
+          error: 'Portal password update failed',
+          message: portalErr?.message || 'Could not update portal password.',
+        });
+      }
     }
 
     if (Object.keys(updateFields).length === 0) {
@@ -556,21 +681,26 @@ const updateStudentHandler = async (req, res) => {
 
     if (updateFields.registrationNumber) {
       await cascadeRegistrationNumberChange(regNum, updateFields.registrationNumber);
+      if (portalCredentials) {
+        portalCredentials.username = updateFields.registrationNumber;
+      }
     }
 
     const studentObj = updated.toObject();
     if (studentObj.dateOfBirth) {
       studentObj.dateOfBirth = new Date(studentObj.dateOfBirth).toISOString().split('T')[0];
     }
-    delete studentObj._id;
-    delete studentObj.__v;
-    delete studentObj.createdAt;
-    delete studentObj.updatedAt;
 
     res.json({
       success: true,
-      message: 'Student record updated successfully',
-      data: studentObj,
+      message: portalCredentials
+        ? current.portalAssigned && hasPasswordChange
+          ? 'Student record and portal password updated successfully'
+          : 'Student record updated and portal assigned successfully'
+        : 'Student record updated successfully',
+      data: sanitizeStudentForClient(studentObj, req.user?.role),
+      portalCredentials,
+      portalError,
     });
   } catch (error) {
     console.error('Error updating student:', error);

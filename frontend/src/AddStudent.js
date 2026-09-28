@@ -26,9 +26,11 @@ const AddStudent = () => {
     dateOfBirth: '',
     subject: '',
     email: '',
+    assignStudentPortal: false,
   });
   const [addError, setAddError] = useState(null);
   const [addingStudent, setAddingStudent] = useState(false);
+  const [portalSuccess, setPortalSuccess] = useState(null);
   const fileInputRef = useRef(null);
 
   const handleAddFormChange = (field, value) => {
@@ -39,6 +41,11 @@ const AddStudent = () => {
       }
       return next;
     });
+    setAddError(null);
+  };
+
+  const handleAssignPortalChange = (checked) => {
+    setAddForm((prev) => ({ ...prev, assignStudentPortal: checked }));
     setAddError(null);
   };
 
@@ -70,19 +77,44 @@ const AddStudent = () => {
       });
       return;
     }
+    const regNum = addForm.registrationNumber.trim();
     try {
       setAddingStudent(true);
       setAddError(null);
-      await axios.post(`${API_URL}/api/students-data`, {
-        registrationNumber: addForm.registrationNumber.trim(),
+      setPortalSuccess(null);
+      const response = await axios.post(`${API_URL}/api/students-data`, {
+        registrationNumber: regNum,
         studentName: addForm.studentName.trim(),
         fathersName: addForm.fathersName != null ? String(addForm.fathersName).trim() : '',
         grade: addForm.grade.trim(),
         dateOfBirth: addForm.dateOfBirth,
         email: normalizeStudentEmail(addForm.email),
         subject: requiresSubjectChoice(addForm.grade.trim()) ? addForm.subject : '',
+        assignStudentPortal: Boolean(addForm.assignStudentPortal),
       });
-      navigate(`/students-data/${encodeURIComponent(addForm.registrationNumber.trim())}`);
+
+      if (addForm.assignStudentPortal) {
+        if (response.data?.portalCredentials?.username && response.data?.portalCredentials?.password) {
+          setPortalSuccess({
+            registrationNumber: regNum,
+            username: response.data.portalCredentials.username,
+            password: response.data.portalCredentials.password,
+            warning: null,
+          });
+          return;
+        }
+        setPortalSuccess({
+          registrationNumber: regNum,
+          username: null,
+          password: null,
+          warning:
+            response.data?.portalError ||
+            'Student was created, but the student portal was not assigned. You can assign it from the edit screen.',
+        });
+        return;
+      }
+
+      navigate(`/students-data/${encodeURIComponent(regNum)}`);
     } catch (err) {
       const data = err.response?.data;
       setAddError({
@@ -269,6 +301,22 @@ const AddStudent = () => {
               />
             </div>
           </div>
+          <div className="add-portal-assign">
+            <label className="add-portal-assign-label" htmlFor="add-assign-portal">
+              <input
+                id="add-assign-portal"
+                type="checkbox"
+                checked={Boolean(addForm.assignStudentPortal)}
+                onChange={(e) => handleAssignPortalChange(e.target.checked)}
+                disabled={addingStudent}
+              />
+              <span>Assign Student Portal</span>
+            </label>
+            <p className="add-portal-assign-hint">
+              When checked, a portal account is created automatically. Username is the registration
+              number; a secure 8-character password is generated on the server.
+            </p>
+          </div>
           <button type="submit" className="add-student-btn" disabled={addingStudent}>
             <span className="btn-icon-wrap">
               <IconAdd />
@@ -276,6 +324,53 @@ const AddStudent = () => {
             </span>
           </button>
         </form>
+        {portalSuccess && (
+          <div
+            className={`portal-credentials-card ${portalSuccess.warning ? 'portal-credentials-card--warn' : 'portal-credentials-card--ok'}`}
+            role="status"
+          >
+            {portalSuccess.username && portalSuccess.password ? (
+              <>
+                <h4 className="portal-credentials-title">Student Portal Assigned Successfully</h4>
+                <p className="portal-credentials-line">
+                  <strong>Username:</strong> <code>{portalSuccess.username}</code>
+                </p>
+                <p className="portal-credentials-line">
+                  <strong>Password:</strong> <code>{portalSuccess.password}</code>
+                </p>
+                <p className="portal-credentials-note">
+                  Share these credentials with the student or parent. The password is also shown in
+                  the Seedlings directory for admins.
+                </p>
+              </>
+            ) : (
+              <>
+                <h4 className="portal-credentials-title">{ROLE_LABELS.seedling} created</h4>
+                <p className="portal-credentials-note">{portalSuccess.warning}</p>
+              </>
+            )}
+            <div className="portal-credentials-actions">
+              <button
+                type="button"
+                className="add-student-btn"
+                onClick={() =>
+                  navigate(
+                    `/students-data/${encodeURIComponent(portalSuccess.registrationNumber)}`
+                  )
+                }
+              >
+                Open {ROLE_LABELS.seedling.toLowerCase()} profile
+              </button>
+              <button
+                type="button"
+                className="student-page-back-btn"
+                onClick={() => navigate('/students-data')}
+              >
+                Back to directory
+              </button>
+            </div>
+          </div>
+        )}
       </section>
 
       <section className="add-student-section student-upload-section">

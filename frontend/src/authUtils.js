@@ -55,3 +55,8 @@ export function hasAdminViewAccess(role = getAuthRole()) {
 export function hasAdminNavAccess(role = getAuthRole()) {
   return role === 'ADMIN' || role === 'GUEST';
 }
+
+/** Only ADMIN may view/change student portal credentials. */
+export function canManageStudentPortal(role = getAuthRole()) {
+  return role === 'ADMIN';
+}

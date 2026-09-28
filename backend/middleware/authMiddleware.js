@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import { ROLE } from '../rbac/roles.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'school-curriculum-secret-change-in-production';
 const JWT_EXPIRY = '20m';
@@ -21,14 +22,17 @@ export const verifyToken = (token) => {
 };
 
 /**
- * Protects /api/* routes. Skips only POST /api/auth/login.
+ * Protects /api/* routes. Skips staff login and student-portal login.
  * On valid token: next(). Token expiry is 20m and is NOT extended on normal API calls.
  * Client uses inactivity timer and calls GET /api/auth/refresh when user is active to extend session.
  */
 export const authMiddleware = async (req, res, next) => {
   const url = req.originalUrl || req.url || '';
-  const isLogin = (url === '/api/auth/login' || url.endsWith('/auth/login')) && req.method === 'POST';
-  if (isLogin) {
+  const isStaffLogin = (url === '/api/auth/login' || url.endsWith('/auth/login')) && req.method === 'POST';
+  const isStudentPortalLogin =
+    (url === '/api/student-portal/login' || url.endsWith('/student-portal/login')) &&
+    req.method === 'POST';
+  if (isStaffLogin || isStudentPortalLogin) {
     return next();
   }
 
