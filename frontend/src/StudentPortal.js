@@ -75,7 +75,7 @@ const StudentPortal = () => {
 
   const handleLogout = () => {
     localStorage.removeItem(AUTH_KEY);
-    window.location.reload();
+    window.location.href = '/';
   };
 
   const handleChangePassword = async (e) => {

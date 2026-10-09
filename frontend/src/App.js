@@ -26,6 +26,14 @@ import CourseAdmins from './CourseAdmins';
 import Educators from './Educators';
 import RootLogins from './RootLogins';
 import { isGuestRole, isStudentPortalRole } from './authUtils';
+import PublicLayout from './publicSite/PublicLayout';
+import LandingPage from './publicSite/pages/LandingPage';
+import AboutPage from './publicSite/pages/AboutPage';
+import AcademicsPage from './publicSite/pages/AcademicsPage';
+import FeaturesPage from './publicSite/pages/FeaturesPage';
+import ArticlesPage from './publicSite/pages/ArticlesPage';
+import ArticleDetailPage from './publicSite/pages/ArticleDetailPage';
+import ContactPage from './publicSite/pages/ContactPage';
 
 const AUTH_KEY = 'curriculum_auth';
 const INACTIVITY_MS = 20 * 60 * 1000;   // 20 minutes
@@ -129,7 +137,7 @@ function App() {
     const inactivityInterval = setInterval(() => {
       if (Date.now() - lastActivityRef.current >= INACTIVITY_MS) {
         localStorage.removeItem(AUTH_KEY);
-        window.location.reload();
+        window.location.href = '/';
       }
     }, 60000);
 
@@ -164,6 +172,11 @@ function App() {
 
   const handleLoginSuccess = () => {
     lastActivityRef.current = Date.now();
+    try {
+      const raw = localStorage.getItem(AUTH_KEY);
+      const auth = raw ? JSON.parse(raw) : null;
+      if (auth?.role) setUserRole(auth.role);
+    } catch (_) {}
     setIsAuthenticated(true);
   };
 
@@ -175,15 +188,36 @@ function App() {
     );
   }
 
+  // Public marketing site + login (unauthenticated)
   if (!isAuthenticated) {
     return (
-      <Login onLoginSuccess={handleLoginSuccess} />
+      <Router>
+        <Routes>
+          <Route element={<PublicLayout />}>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/academics" element={<AcademicsPage />} />
+            <Route path="/features" element={<FeaturesPage />} />
+            <Route path="/articles" element={<ArticlesPage />} />
+            <Route path="/articles/:slug" element={<ArticleDetailPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+          </Route>
+          <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Router>
     );
   }
 
   // Distinct student experience — not the staff AppLayout
   if (isStudentPortalRole(userRole)) {
-    return <StudentPortal />;
+    return (
+      <Router>
+        <Routes>
+          <Route path="*" element={<StudentPortal />} />
+        </Routes>
+      </Router>
+    );
   }
 
   const isGuest = isGuestRole(userRole);

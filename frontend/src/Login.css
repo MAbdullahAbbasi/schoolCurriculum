@@ -1,3 +1,25 @@
+.login-home-link {
+  margin: 1.25rem 0 0;
+  text-align: center;
+  font-size: 0.92rem;
+}
+
+.login-home-link a {
+  color: #1b4332;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.login-home-link a:hover {
+  text-decoration: underline;
+}
+
+.login-home-link a:focus-visible {
+  outline: 3px solid #c9a227;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
 .login-page {
   min-height: 100vh;
   display: flex;

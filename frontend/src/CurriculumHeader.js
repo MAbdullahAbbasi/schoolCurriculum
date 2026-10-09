@@ -128,7 +128,7 @@ const CurriculumHeader = () => {
   };
   const handleLogout = () => {
     localStorage.removeItem('curriculum_auth');
-    window.location.reload();
+    window.location.href = '/';
   };
 
   return (

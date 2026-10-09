@@ -96,7 +96,7 @@ const AppSidebar = ({ open, onClose }) => {
 
   const handleLogout = () => {
     localStorage.removeItem('curriculum_auth');
-    window.location.reload();
+    window.location.href = '/';
   };
 
   const navBtn = (label, icon, to, activePrefixes, className = '', guestTourId = null) => (

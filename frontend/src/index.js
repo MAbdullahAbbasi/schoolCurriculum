@@ -23,7 +23,7 @@ axios.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem(AUTH_KEY);
-      window.location.reload();
+      window.location.href = '/';
     }
     return Promise.reject(error);
   }

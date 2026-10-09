@@ -71,7 +71,7 @@ const Educators = () => {
 
   const logoutAndReload = () => {
     localStorage.removeItem('curriculum_auth');
-    window.location.reload();
+    window.location.href = '/';
   };
 
   const toggleAll = (checked) => {
