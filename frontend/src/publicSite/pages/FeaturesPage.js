@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import HeroCarousel from '../HeroCarousel';
 
 const FEATURES = [
   {
@@ -58,16 +59,13 @@ export default function FeaturesPage() {
 
   return (
     <div className="ps-page">
-      <header className="ps-page-hero">
-        <div className="ps-container">
-          <p className="ps-label">Features</p>
-          <h1>Platform Features</h1>
-          <p className="ps-page-hero__lead">
-            An overview of what The Learning Grove helps school teams manage—
-            focused on verified application capabilities.
-          </p>
-        </div>
-      </header>
+      <HeroCarousel
+        variant="page"
+        ariaLabel="Features"
+        eyebrow="Features"
+        title="Platform Features"
+        lead="An overview of what The Learning Grove helps school teams manage—focused on verified application capabilities."
+      />
 
       <section className="ps-section">
         <div className="ps-container">

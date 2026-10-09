@@ -1,20 +1,18 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import HeroCarousel from '../HeroCarousel';
 import { ARTICLES } from '../data/articles';
 
 export default function ArticlesPage() {
   return (
     <div className="ps-page">
-      <header className="ps-page-hero">
-        <div className="ps-container">
-          <p className="ps-label">Articles</p>
-          <h1>Explore Ideas in Education</h1>
-          <p className="ps-page-hero__lead">
-            Practical articles on curriculum clarity, assessment, reporting, and
-            supporting students through progression.
-          </p>
-        </div>
-      </header>
+      <HeroCarousel
+        variant="page"
+        ariaLabel="Articles"
+        eyebrow="Articles"
+        title="Explore Ideas in Education"
+        lead="Practical articles on curriculum clarity, assessment, reporting, and supporting students through progression."
+      />
 
       <section className="ps-section">
         <div className="ps-container">

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import HeroCarousel from '../HeroCarousel';
 
 /**
  * Contact page without a fake form.
@@ -9,17 +10,13 @@ import { Link } from 'react-router-dom';
 export default function ContactPage() {
   return (
     <div className="ps-page">
-      <header className="ps-page-hero">
-        <div className="ps-container">
-          <p className="ps-label">Contact</p>
-          <h1>Contact The Learning Grove</h1>
-          <p className="ps-page-hero__lead">
-            Reach your school administrators through your institution’s usual
-            channels. This public site does not publish unverified contact
-            details.
-          </p>
-        </div>
-      </header>
+      <HeroCarousel
+        variant="page"
+        ariaLabel="Contact"
+        eyebrow="Contact"
+        title="Contact The Learning Grove"
+        lead="Reach your school administrators through your institution’s usual channels. This public site does not publish unverified contact details."
+      />
 
       <section className="ps-section">
         <div className="ps-container ps-prose">

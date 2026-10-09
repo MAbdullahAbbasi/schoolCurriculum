@@ -1,19 +1,17 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import HeroCarousel from '../HeroCarousel';
 
 export default function AboutPage() {
   return (
     <div className="ps-page">
-      <header className="ps-page-hero">
-        <div className="ps-container">
-          <p className="ps-label">About</p>
-          <h1>About The Learning Grove</h1>
-          <p className="ps-page-hero__lead">
-            A connected application for curriculum, assessment, student records,
-            and academic reporting.
-          </p>
-        </div>
-      </header>
+      <HeroCarousel
+        variant="page"
+        ariaLabel="About"
+        eyebrow="About"
+        title="About The Learning Grove"
+        lead="A connected application for curriculum, assessment, student records, and academic reporting."
+      />
 
       <section className="ps-section">
         <div className="ps-container ps-prose">

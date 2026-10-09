@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import HeroCarousel from '../HeroCarousel';
 
 const STAGES = [
   {
@@ -36,17 +37,13 @@ export default function AcademicsPage() {
 
   return (
     <div className="ps-page">
-      <header className="ps-page-hero">
-        <div className="ps-container">
-          <p className="ps-label">Academics</p>
-          <h1>Academic Stages on the Platform</h1>
-          <p className="ps-page-hero__lead">
-            The groupings below describe grade categories supported in student
-            management. They are presentation categories for the software and
-            should not be read as a published institutional prospectus.
-          </p>
-        </div>
-      </header>
+      <HeroCarousel
+        variant="page"
+        ariaLabel="Academics"
+        eyebrow="Academics"
+        title="Academic Stages on the Platform"
+        lead="The groupings below describe grade categories supported in student management. They are presentation categories for the software and should not be read as a published institutional prospectus."
+      />
 
       <section className="ps-section">
         <div className="ps-container">

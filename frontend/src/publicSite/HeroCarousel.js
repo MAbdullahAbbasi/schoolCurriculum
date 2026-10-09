@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-const SLIDES = [
+export const HERO_SLIDES = [
   {
     src: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=1920&q=80',
     alt: 'Teacher guiding students in a bright classroom',
@@ -22,7 +22,18 @@ const SLIDES = [
 
 const INTERVAL_MS = 6500;
 
-export default function HeroCarousel() {
+/**
+ * Shared hero with rotating educational background images.
+ * Use variant="home" for the landing CTA hero, or "page" for inner pages.
+ */
+export default function HeroCarousel({
+  variant = 'home',
+  eyebrow,
+  title,
+  lead,
+  actions,
+  ariaLabel = 'Page hero',
+}) {
   const [index, setIndex] = useState(0);
   const [failed, setFailed] = useState({});
   const reduceMotion = useRef(
@@ -33,7 +44,7 @@ export default function HeroCarousel() {
   useEffect(() => {
     if (reduceMotion.current) return undefined;
     const id = window.setInterval(() => {
-      setIndex((i) => (i + 1) % SLIDES.length);
+      setIndex((i) => (i + 1) % HERO_SLIDES.length);
     }, INTERVAL_MS);
     return () => window.clearInterval(id);
   }, []);
@@ -49,10 +60,42 @@ export default function HeroCarousel() {
     }
   };
 
+  const isHome = variant === 'home';
+  const resolvedEyebrow = eyebrow ?? (isHome ? 'Welcome to The Learning Grove' : null);
+  const resolvedTitle = title ?? (isHome ? 'Growing Minds. Building Futures.' : '');
+  const resolvedLead =
+    lead ??
+    (isHome
+      ? 'Discover a learning environment where curriculum, assessment, and student progress come together to support meaningful academic growth.'
+      : null);
+
+  const resolvedActions =
+    actions !== undefined
+      ? actions
+      : isHome
+        ? (
+          <>
+            <a
+              href="#academics"
+              className="ps-btn ps-btn--light"
+              onClick={scrollToLearning}
+            >
+              Explore Our Learning
+            </a>
+            <Link to="/login" className="ps-btn ps-btn--outline-light">
+              Get Started
+            </Link>
+          </>
+        )
+        : null;
+
   return (
-    <section className="ps-hero" aria-label="Welcome">
+    <section
+      className={`ps-hero${isHome ? '' : ' ps-hero--page'}`}
+      aria-label={ariaLabel}
+    >
       <div className="ps-hero__media" aria-hidden="true">
-        {SLIDES.map((slide, i) => {
+        {HERO_SLIDES.map((slide, i) => {
           const broken = failed[i];
           return (
             <div
@@ -77,29 +120,19 @@ export default function HeroCarousel() {
         <div className="ps-hero__overlay" />
       </div>
 
-      <div className="ps-container ps-hero__content">
-        <p className="ps-hero__eyebrow">Welcome to The Learning Grove</p>
-        <h1 className="ps-hero__title">Growing Minds. Building Futures.</h1>
-        <p className="ps-hero__lead">
-          Discover a learning environment where curriculum, assessment, and
-          student progress come together to support meaningful academic growth.
-        </p>
-        <div className="ps-hero__actions">
-          <a
-            href="#academics"
-            className="ps-btn ps-btn--light"
-            onClick={scrollToLearning}
-          >
-            Explore Our Learning
-          </a>
-          <Link to="/login" className="ps-btn ps-btn--outline-light">
-            Get Started
-          </Link>
-        </div>
+      <div className={`ps-container ps-hero__content${isHome ? '' : ' ps-hero__content--page'}`}>
+        {resolvedEyebrow ? (
+          <p className="ps-hero__eyebrow">{resolvedEyebrow}</p>
+        ) : null}
+        <h1 className="ps-hero__title">{resolvedTitle}</h1>
+        {resolvedLead ? <p className="ps-hero__lead">{resolvedLead}</p> : null}
+        {resolvedActions ? (
+          <div className="ps-hero__actions">{resolvedActions}</div>
+        ) : null}
       </div>
 
       <div className="ps-hero__dots" role="tablist" aria-label="Hero slides">
-        {SLIDES.map((slide, i) => (
+        {HERO_SLIDES.map((slide, i) => (
           <button
             key={slide.src}
             type="button"

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
+import HeroCarousel from '../HeroCarousel';
 import { getArticleBySlug } from '../data/articles';
 
 export default function ArticleDetailPage() {
@@ -13,13 +14,13 @@ export default function ArticleDetailPage() {
   return (
     <div className="ps-page">
       <article className="ps-article">
-        <header className="ps-page-hero">
-          <div className="ps-container ps-article__header">
-            <p className="ps-label">{article.category}</p>
-            <h1>{article.title}</h1>
-            <p className="ps-meta">{article.readMinutes} min read</p>
-          </div>
-        </header>
+        <HeroCarousel
+          variant="page"
+          ariaLabel={article.title}
+          eyebrow={article.category}
+          title={article.title}
+          lead={`${article.readMinutes} min read · ${article.excerpt}`}
+        />
 
         <div className="ps-container">
           <div className="ps-article__cover">
