@@ -4,6 +4,7 @@ import { IconLogin, IconView, IconEyeOff } from './ButtonIcons';
 import axios from 'axios';
 import { API_URL } from './config/api';
 import { APP_LABELS } from './roleLabels';
+import BrandMark from './publicSite/BrandMark';
 import './Login.css';
 
 const Login = ({ onLoginSuccess }) => {
@@ -23,7 +24,6 @@ const Login = ({ onLoginSuccess }) => {
     setLoading(true);
     const userId = username.trim();
     try {
-      // Staff login first
       try {
         const res = await axios.post(`${API_URL}/api/auth/login`, {
           username: userId,
@@ -40,7 +40,6 @@ const Login = ({ onLoginSuccess }) => {
           return;
         }
       } catch (staffErr) {
-        // Fall through to student portal login
         if (staffErr.response?.status !== 401 && staffErr.response?.status !== 400) {
           throw staffErr;
         }
@@ -72,55 +71,104 @@ const Login = ({ onLoginSuccess }) => {
 
   return (
     <div className="login-page">
-      <div className="login-card login-card--forest">
-        <div className="login-card-decoration" aria-hidden="true" />
-        <h1 className="login-title">{APP_LABELS.brandTitle}</h1>
-        <p className="login-subtitle">Staff or seedling registration number</p>
-        <form onSubmit={handleSubmit} className="login-form">
-          <div className="login-field">
-            <label htmlFor="login-userid">User ID</label>
-            <input
-              id="login-userid"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Enter user ID"
-              autoComplete="username"
-              disabled={loading}
+      <div className="login-shell">
+        <aside className="login-aside" aria-hidden="true">
+          <div className="login-aside__media">
+            <img
+              src="https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=1400&q=80"
+              alt=""
+              loading="eager"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.parentElement?.classList.add('is-fallback');
+              }}
             />
+            <div className="login-aside__overlay" />
           </div>
-          <div className="login-field">
-            <label htmlFor="login-password">Password</label>
-            <div className="login-password-wrap">
-              <input
-                id="login-password"
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password"
-                autoComplete="current-password"
-                disabled={loading}
-              />
-              <button
-                type="button"
-                className="login-password-toggle"
-                onClick={() => setShowPassword((v) => !v)}
-                disabled={loading}
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-                aria-pressed={showPassword}
-              >
-                {showPassword ? <IconEyeOff /> : <IconView />}
-              </button>
+          <div className="login-aside__content">
+            <BrandMark size={48} />
+            <p className="login-aside__eyebrow">The Learning Grove</p>
+            <h2 className="login-aside__title">Growing Minds. Building Futures.</h2>
+            <p className="login-aside__lead">
+              Sign in to manage curriculum, assessments, student records, and
+              academic reporting in one structured place.
+            </p>
+          </div>
+        </aside>
+
+        <main className="login-main">
+          <Link to="/" className="login-back">
+            ← Back to home
+          </Link>
+
+          <div className="login-card">
+            <div className="login-card__brand">
+              <BrandMark size={42} />
+              <div>
+                <h1 className="login-title">{APP_LABELS.brandTitle}</h1>
+                <p className="login-subtitle">
+                  Staff accounts or seedling registration numbers
+                </p>
+              </div>
             </div>
+
+            <form onSubmit={handleSubmit} className="login-form" noValidate>
+              <div className="login-field">
+                <label htmlFor="login-userid">User ID</label>
+                <input
+                  id="login-userid"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Enter your user ID"
+                  autoComplete="username"
+                  disabled={loading}
+                />
+              </div>
+              <div className="login-field">
+                <label htmlFor="login-password">Password</label>
+                <div className="login-password-wrap">
+                  <input
+                    id="login-password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    autoComplete="current-password"
+                    disabled={loading}
+                  />
+                  <button
+                    type="button"
+                    className="login-password-toggle"
+                    onClick={() => setShowPassword((v) => !v)}
+                    disabled={loading}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    aria-pressed={showPassword}
+                  >
+                    {showPassword ? <IconEyeOff /> : <IconView />}
+                  </button>
+                </div>
+              </div>
+
+              {error ? (
+                <p className="login-error" role="alert">
+                  {error}
+                </p>
+              ) : null}
+
+              <button type="submit" className="login-submit" disabled={loading}>
+                <span className="btn-icon-wrap">
+                  <IconLogin />
+                  {loading ? 'Signing in…' : 'Sign in'}
+                </span>
+              </button>
+            </form>
+
+            <p className="login-footnote">
+              Need access? Contact your school administrator for an account.
+            </p>
           </div>
-          {error && <p className="login-error">{error}</p>}
-          <button type="submit" className="login-submit" disabled={loading}>
-            <span className="btn-icon-wrap"><IconLogin />{loading ? 'Signing in...' : 'Sign in'}</span>
-          </button>
-        </form>
-        <p className="login-home-link">
-          <Link to="/">← Back to The Learning Grove</Link>
-        </p>
+        </main>
       </div>
     </div>
   );
