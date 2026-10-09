@@ -1,12 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import HeroCarousel from '../HeroCarousel';
+import { ABOUT_HERO_SLIDES } from '../data/heroSlides';
 
 export default function AboutPage() {
   return (
     <div className="ps-page">
       <HeroCarousel
         variant="page"
+        slides={ABOUT_HERO_SLIDES}
         ariaLabel="About"
         eyebrow="About"
         title="About The Learning Grove"

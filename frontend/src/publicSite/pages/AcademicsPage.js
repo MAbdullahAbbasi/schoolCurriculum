@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import HeroCarousel from '../HeroCarousel';
+import { ACADEMICS_HERO_SLIDES } from '../data/heroSlides';
 
 const STAGES = [
   {
@@ -39,6 +40,7 @@ export default function AcademicsPage() {
     <div className="ps-page">
       <HeroCarousel
         variant="page"
+        slides={ACADEMICS_HERO_SLIDES}
         ariaLabel="Academics"
         eyebrow="Academics"
         title="Academic Stages on the Platform"

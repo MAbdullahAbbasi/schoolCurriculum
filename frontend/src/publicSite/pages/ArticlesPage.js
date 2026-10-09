@@ -2,12 +2,14 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import HeroCarousel from '../HeroCarousel';
 import { ARTICLES } from '../data/articles';
+import { ARTICLES_HERO_SLIDES } from '../data/heroSlides';
 
 export default function ArticlesPage() {
   return (
     <div className="ps-page">
       <HeroCarousel
         variant="page"
+        slides={ARTICLES_HERO_SLIDES}
         ariaLabel="Articles"
         eyebrow="Articles"
         title="Explore Ideas in Education"

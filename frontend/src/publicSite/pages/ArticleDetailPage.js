@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import HeroCarousel from '../HeroCarousel';
 import { getArticleBySlug } from '../data/articles';
+import { ARTICLE_DETAIL_HERO_SLIDES } from '../data/heroSlides';
 
 export default function ArticleDetailPage() {
   const { slug } = useParams();
@@ -16,6 +17,7 @@ export default function ArticleDetailPage() {
       <article className="ps-article">
         <HeroCarousel
           variant="page"
+          slides={ARTICLE_DETAIL_HERO_SLIDES}
           ariaLabel={article.title}
           eyebrow={article.category}
           title={article.title}

@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import HeroCarousel from '../HeroCarousel';
 import { ARTICLES } from '../data/articles';
+import { HOME_HERO_SLIDES } from '../data/heroSlides';
 
 const INTRO_FEATURES = [
   {
@@ -170,7 +171,7 @@ function FeatureIcon({ index }) {
 export default function LandingPage() {
   return (
     <>
-      <HeroCarousel />
+      <HeroCarousel slides={HOME_HERO_SLIDES} />
 
       <section className="ps-section" aria-labelledby="intro-heading">
         <div className="ps-container">

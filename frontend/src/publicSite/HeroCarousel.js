@@ -1,39 +1,23 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-
-export const HERO_SLIDES = [
-  {
-    src: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=1920&q=80',
-    alt: 'Teacher guiding students in a bright classroom',
-  },
-  {
-    src: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=1920&q=80',
-    alt: 'Children learning together with books',
-  },
-  {
-    src: 'https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?auto=format&fit=crop&w=1920&q=80',
-    alt: 'Students collaborating on a learning activity',
-  },
-  {
-    src: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=1920&q=80',
-    alt: 'Stack of educational books ready for study',
-  },
-];
+import { HOME_HERO_SLIDES } from './data/heroSlides';
 
 const INTERVAL_MS = 6500;
 
 /**
  * Shared hero with rotating educational background images.
- * Use variant="home" for the landing CTA hero, or "page" for inner pages.
+ * Pass a unique `slides` array per page. Use variant="home" or "page".
  */
 export default function HeroCarousel({
   variant = 'home',
+  slides = HOME_HERO_SLIDES,
   eyebrow,
   title,
   lead,
   actions,
   ariaLabel = 'Page hero',
 }) {
+  const slideList = Array.isArray(slides) && slides.length > 0 ? slides : HOME_HERO_SLIDES;
   const [index, setIndex] = useState(0);
   const [failed, setFailed] = useState({});
   const reduceMotion = useRef(
@@ -42,12 +26,17 @@ export default function HeroCarousel({
   );
 
   useEffect(() => {
-    if (reduceMotion.current) return undefined;
+    setIndex(0);
+    setFailed({});
+  }, [slideList]);
+
+  useEffect(() => {
+    if (reduceMotion.current || slideList.length < 2) return undefined;
     const id = window.setInterval(() => {
-      setIndex((i) => (i + 1) % HERO_SLIDES.length);
+      setIndex((i) => (i + 1) % slideList.length);
     }, INTERVAL_MS);
     return () => window.clearInterval(id);
-  }, []);
+  }, [slideList]);
 
   const scrollToLearning = (e) => {
     e.preventDefault();
@@ -95,7 +84,7 @@ export default function HeroCarousel({
       aria-label={ariaLabel}
     >
       <div className="ps-hero__media" aria-hidden="true">
-        {HERO_SLIDES.map((slide, i) => {
+        {slideList.map((slide, i) => {
           const broken = failed[i];
           return (
             <div
@@ -132,7 +121,7 @@ export default function HeroCarousel({
       </div>
 
       <div className="ps-hero__dots" role="tablist" aria-label="Hero slides">
-        {HERO_SLIDES.map((slide, i) => (
+        {slideList.map((slide, i) => (
           <button
             key={slide.src}
             type="button"

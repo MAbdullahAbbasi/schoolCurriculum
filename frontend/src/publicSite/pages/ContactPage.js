@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import HeroCarousel from '../HeroCarousel';
+import { CONTACT_HERO_SLIDES } from '../data/heroSlides';
 
 /**
  * Contact page without a fake form.
@@ -12,6 +13,7 @@ export default function ContactPage() {
     <div className="ps-page">
       <HeroCarousel
         variant="page"
+        slides={CONTACT_HERO_SLIDES}
         ariaLabel="Contact"
         eyebrow="Contact"
         title="Contact The Learning Grove"

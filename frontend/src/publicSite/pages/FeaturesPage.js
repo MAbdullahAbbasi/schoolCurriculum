@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import HeroCarousel from '../HeroCarousel';
+import { FEATURES_HERO_SLIDES } from '../data/heroSlides';
 
 const FEATURES = [
   {
@@ -61,6 +62,7 @@ export default function FeaturesPage() {
     <div className="ps-page">
       <HeroCarousel
         variant="page"
+        slides={FEATURES_HERO_SLIDES}
         ariaLabel="Features"
         eyebrow="Features"
         title="Platform Features"
