@@ -349,6 +349,17 @@
   color: var(--tl-muted);
 }
 
+.tl-login__note a {
+  color: var(--tl-forest);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.tl-login__note a:hover {
+  color: var(--tl-forest-deep);
+}
+
 .tl-login__dots {
   display: flex;
   justify-content: center;

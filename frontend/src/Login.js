@@ -215,7 +215,8 @@ const Login = ({ onLoginSuccess }) => {
           ) : null}
 
           <p className="tl-login__note">
-            Need an account? Ask your school administrator for access.
+            Need access?{' '}
+            <Link to="/request-access">Contact administration</Link>
           </p>
         </div>
 

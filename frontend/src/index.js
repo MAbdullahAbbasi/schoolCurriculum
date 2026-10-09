@@ -10,6 +10,7 @@ const AUTH_KEY = 'curriculum_auth';
 axios.interceptors.request.use((config) => {
   if (config.url?.includes('/api/auth/login')) return config;
   if (config.url?.includes('/api/student-portal/login')) return config;
+  if (config.url?.includes('/api/access-requests')) return config;
   try {
     const raw = localStorage.getItem(AUTH_KEY);
     const auth = raw ? JSON.parse(raw) : null;
@@ -21,6 +22,10 @@ axios.interceptors.request.use((config) => {
 axios.interceptors.response.use(
   (response) => response,
   (error) => {
+    const url = error.config?.url || '';
+    if (url.includes('/api/access-requests')) {
+      return Promise.reject(error);
+    }
     if (error.response?.status === 401) {
       localStorage.removeItem(AUTH_KEY);
       window.location.href = '/';

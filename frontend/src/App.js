@@ -19,6 +19,7 @@ import ResultSheet from './ResultSheet';
 import StudentReportDetail from './StudentReportDetail';
 import GradingScheme from './GradingScheme';
 import Login from './Login';
+import AccessRequest from './AccessRequest';
 import StudentPortal from './StudentPortal';
 import { API_URL } from './config/api';
 import RolesDashboard from './RolesDashboard';
@@ -203,6 +204,7 @@ function App() {
             <Route path="/contact" element={<ContactPage />} />
           </Route>
           <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
+          <Route path="/request-access" element={<AccessRequest />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>

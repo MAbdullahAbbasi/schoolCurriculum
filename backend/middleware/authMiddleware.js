@@ -46,7 +46,12 @@ export const authMiddleware = async (req, res, next) => {
   const isStudentPortalLogin =
     (url === '/api/student-portal/login' || url.endsWith('/student-portal/login')) &&
     req.method === 'POST';
-  if (isStaffLogin || isStudentPortalLogin) {
+  const isAccessRequest =
+    (url === '/api/access-requests' ||
+      url.endsWith('/access-requests') ||
+      url.includes('/access-requests?')) &&
+    req.method === 'POST';
+  if (isStaffLogin || isStudentPortalLogin || isAccessRequest) {
     return next();
   }
 
