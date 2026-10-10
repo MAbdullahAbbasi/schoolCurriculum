@@ -95,11 +95,12 @@
   top: 0;
   z-index: 100;
   padding: 0.65rem 1rem;
-  background: #fff8e6;
-  border-bottom: 1px solid #f0d78c;
-  color: #7a5b00;
+  background: rgba(247, 243, 235, 0.98);
+  border-bottom: 1px solid rgba(201, 162, 39, 0.45);
+  color: #5c4a12;
   font-size: 0.9rem;
   text-align: center;
+  font-family: var(--font-sans, 'DM Sans', 'Segoe UI', sans-serif);
 }
 
 .guest-tour-replay-btn {
@@ -107,7 +108,7 @@
   padding: 0;
   border: none;
   background: none;
-  color: #7a5b00;
+  color: var(--brand-forest, #1b4332);
   font-size: inherit;
   font-weight: 600;
   text-decoration: underline;
@@ -115,5 +116,5 @@
 }
 
 .guest-tour-replay-btn:hover {
-  color: #5c4400;
+  color: var(--brand-forest-deep, #081c15);
 }
