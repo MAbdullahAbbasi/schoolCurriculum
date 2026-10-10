@@ -679,14 +679,24 @@ const updateStudentHandler = async (req, res) => {
       }
     }
 
+    let finalStudent = updated;
     if (updateFields.registrationNumber) {
-      await cascadeRegistrationNumberChange(regNum, updateFields.registrationNumber);
+      // Persist enrollment-synced registration on StudentData (cascade alone only updates Records)
+      const renamed = await StudentData.findOneAndUpdate(
+        { registrationNumber: regNum },
+        { $set: { registrationNumber: updateFields.registrationNumber } },
+        { new: true, runValidators: true }
+      );
+      if (renamed) {
+        finalStudent = renamed;
+        await cascadeRegistrationNumberChange(regNum, updateFields.registrationNumber);
+      }
       if (portalCredentials) {
         portalCredentials.username = updateFields.registrationNumber;
       }
     }
 
-    const studentObj = updated.toObject();
+    const studentObj = finalStudent.toObject();
     if (studentObj.dateOfBirth) {
       studentObj.dateOfBirth = new Date(studentObj.dateOfBirth).toISOString().split('T')[0];
     }

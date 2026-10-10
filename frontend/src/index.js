@@ -23,7 +23,13 @@ axios.interceptors.response.use(
   (response) => response,
   (error) => {
     const url = error.config?.url || '';
-    if (url.includes('/api/access-requests')) {
+    // Public auth flows: never force-redirect on expected 401s
+    // (staff login 401 is normal before falling through to student portal login).
+    if (
+      url.includes('/api/access-requests') ||
+      url.includes('/api/auth/login') ||
+      url.includes('/api/student-portal/login')
+    ) {
       return Promise.reject(error);
     }
     if (error.response?.status === 401) {

@@ -63,7 +63,7 @@ router.post('/login', async (req, res) => {
     }
 
     const username = String(req.body?.username || req.body?.registrationNumber || '').trim();
-    const password = req.body?.password != null ? String(req.body.password) : '';
+    const password = req.body?.password != null ? String(req.body.password).trim() : '';
 
     if (!username || !password) {
       return res.status(400).json({
@@ -73,12 +73,19 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    const student = await StudentData.findOne({ registrationNumber: username }).lean();
+    // Exact match first, then case-insensitive (legacy / typed casing differences)
+    let student = await StudentData.findOne({ registrationNumber: username }).lean();
+    if (!student) {
+      const escaped = username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      student = await StudentData.findOne({
+        registrationNumber: { $regex: `^${escaped}$`, $options: 'i' },
+      }).lean();
+    }
     if (!student?.portalAssigned || !student.portalPasswordHash) {
       return res.status(401).json({
         success: false,
         error: 'Not authenticated',
-        message: 'Invalid username or password, or portal not assigned.',
+        message: 'Invalid username or password, or portal not assigned. Use the full registration number.',
       });
     }
 

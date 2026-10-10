@@ -30,11 +30,12 @@ const Login = ({ onLoginSuccess }) => {
     }
     setLoading(true);
     const userId = username.trim();
+    const passwordValue = password.trim();
     try {
       try {
         const res = await axios.post(`${API_URL}/api/auth/login`, {
           username: userId,
-          password,
+          password: passwordValue,
         });
         if (res.data.success && res.data.token) {
           localStorage.setItem('curriculum_auth', JSON.stringify({
@@ -54,7 +55,7 @@ const Login = ({ onLoginSuccess }) => {
 
       const studentRes = await axios.post(`${API_URL}/api/student-portal/login`, {
         username: userId,
-        password,
+        password: passwordValue,
       });
       if (studentRes.data.success && studentRes.data.token) {
         localStorage.setItem('curriculum_auth', JSON.stringify({
@@ -67,9 +68,17 @@ const Login = ({ onLoginSuccess }) => {
         onLoginSuccess?.();
         return;
       }
-      setError(studentRes.data.error || 'Login failed.');
+      setError(
+        studentRes.data.message ||
+          studentRes.data.error ||
+          'Login failed. Use the full registration number and portal password.'
+      );
     } catch (err) {
-      const msg = err.response?.data?.error || err.response?.data?.message || err.message || 'Login failed.';
+      const msg =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        'Login failed.';
       setError(msg);
     } finally {
       setLoading(false);
@@ -114,7 +123,7 @@ const Login = ({ onLoginSuccess }) => {
               <div>
                 <h1 className="login-title">{APP_LABELS.brandTitle}</h1>
                 <p className="login-subtitle">
-                  Staff accounts or seedling registration numbers
+                  Staff user ID, or a student&apos;s full registration number
                 </p>
               </div>
             </div>
