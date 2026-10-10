@@ -1,15 +1,28 @@
 :root {
-  --garden-forest-dark: #081c15;
-  --garden-forest: #1b4332;
+  /* Canonical brand (aligned with public site + login) */
+  --brand-forest: #1b4332;
+  --brand-forest-deep: #081c15;
+  --brand-sage: #52b788;
+  --brand-sage-soft: #95d5b2;
+  --brand-cream: #f7f3eb;
+  --brand-gold: #c9a227;
+  --brand-ink: #1a1f1c;
+  --brand-muted: #5c6860;
+  --font-sans: 'DM Sans', 'Segoe UI', sans-serif;
+  --font-display: 'Fraunces', Georgia, serif;
+
+  /* Legacy garden aliases → brand (keeps existing CSS working) */
+  --garden-forest-dark: var(--brand-forest-deep);
+  --garden-forest: var(--brand-forest);
   --garden-forest-mid: #2d6a4f;
   --garden-moss: #40916c;
   --garden-moss-light: #d8f3dc;
-  --garden-leaf: #52b788;
-  --garden-leaf-light: #95d5b2;
+  --garden-leaf: var(--brand-sage);
+  --garden-leaf-light: var(--brand-sage-soft);
   --garden-earth: #606c38;
-  --garden-bloom: #bc6c25;
-  --garden-cream: #f8f5f0;
-  --garden-soil: #4a3728;
+  --garden-bloom: var(--brand-gold);
+  --garden-cream: var(--brand-cream);
+  --garden-soil: var(--brand-ink);
   --sidebar-width: 260px;
 }
 
@@ -20,13 +33,16 @@
 body {
   margin: 0;
   padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(180deg, #f0f7f2 0%, var(--garden-cream) 35%, #eef6f0 100%);
-  color: var(--garden-forest);
+  background: linear-gradient(
+    180deg,
+    #eef6f0 0%,
+    var(--brand-cream) 40%,
+    #e8f0ea 100%
+  );
+  color: var(--brand-forest);
 }
 
 code {
@@ -43,4 +59,14 @@ code {
 }
 .btn-icon-wrap svg {
   flex-shrink: 0;
+}
+
+/* Shared focus accent for authenticated UI */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid var(--brand-gold);
+  outline-offset: 2px;
 }

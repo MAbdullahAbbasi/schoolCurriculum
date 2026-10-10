@@ -1,20 +1,20 @@
 .sp-shell {
-  --sp-ink: #14301a;
-  --sp-leaf: #2e7d32;
-  --sp-leaf-deep: #1b5e20;
-  --sp-mist: #e8f5e9;
-  --sp-sand: #f4f7f2;
+  --sp-ink: var(--brand-ink, #1a1f1c);
+  --sp-leaf: var(--brand-sage, #52b788);
+  --sp-leaf-deep: var(--brand-forest, #1b4332);
+  --sp-mist: #d8f3dc;
+  --sp-sand: var(--brand-cream, #f7f3eb);
   --sp-card: #ffffff;
-  --sp-accent: #f9a825;
+  --sp-accent: var(--brand-gold, #c9a227);
   min-height: 100vh;
   position: relative;
   overflow-x: hidden;
   background:
-    radial-gradient(1200px 600px at 10% -10%, rgba(129, 199, 132, 0.35), transparent 60%),
-    radial-gradient(900px 500px at 100% 0%, rgba(249, 168, 37, 0.18), transparent 55%),
-    linear-gradient(180deg, #edf7ee 0%, var(--sp-sand) 45%, #e3efe4 100%);
+    radial-gradient(1200px 600px at 10% -10%, rgba(82, 183, 136, 0.28), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(201, 162, 39, 0.16), transparent 55%),
+    linear-gradient(180deg, #eef6f0 0%, var(--sp-sand) 45%, #e8f0ea 100%);
   color: var(--sp-ink);
-  font-family: 'Segoe UI', 'Trebuchet MS', 'Gill Sans', sans-serif;
+  font-family: var(--font-sans, 'DM Sans', 'Segoe UI', sans-serif);
 }
 
 .sp-bg-orb {
@@ -82,20 +82,9 @@
   gap: 0.75rem;
 }
 
-.sp-brand-mark {
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 10px;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(145deg, var(--sp-leaf), var(--sp-leaf-deep));
-  color: #fff;
-  font-size: 0.85rem;
-  box-shadow: 0 8px 18px rgba(27, 94, 32, 0.25);
-}
-
 .sp-brand-title {
-  font-weight: 800;
+  font-family: var(--font-display, 'Fraunces', Georgia, serif);
+  font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--sp-leaf-deep);
 }
@@ -141,6 +130,7 @@
 
 .sp-hero-title {
   margin: 0;
+  font-family: var(--font-display, 'Fraunces', Georgia, serif);
   font-size: clamp(1.8rem, 4vw, 2.6rem);
   line-height: 1.1;
   letter-spacing: -0.03em;

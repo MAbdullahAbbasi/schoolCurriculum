@@ -1,4 +1,4 @@
-.map-questions-container {
+﻿.map-questions-container {
   min-height: 100vh;
   background: #fff;
   padding: 2rem;
@@ -46,14 +46,14 @@
 }
 
 .map-q-btn-active {
-  background: #3498db;
-  border-color: #3498db;
+  background: #1b4332;
+  border-color: #1b4332;
   color: white;
 }
 
 .map-q-btn-active:hover {
-  background: #2980b9;
-  border-color: #2980b9;
+  background: #081c15;
+  border-color: #081c15;
 }
 
 .map-q-btn-done {
@@ -91,8 +91,8 @@
 }
 
 .map-part-btn-active {
-  background: #3498db;
-  border-color: #3498db;
+  background: #1b4332;
+  border-color: #1b4332;
   color: white;
 }
 
@@ -224,13 +224,13 @@
   font-weight: 600;
   border-radius: 8px;
   border: none;
-  background: #3498db;
+  background: #1b4332;
   color: white;
   cursor: pointer;
 }
 
 .map-questions-create-btn:hover:not(:disabled) {
-  background: #2980b9;
+  background: #081c15;
 }
 
 .map-questions-create-btn:disabled,

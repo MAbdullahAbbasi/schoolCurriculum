@@ -1,4 +1,4 @@
-.student-data-container {
+﻿.student-data-container {
   min-height: 100vh;
   background: linear-gradient(180deg, #f8fdf9 0%, #ffffff 45%, #f4fbf6 100%);
   padding: 2rem;
@@ -17,7 +17,7 @@
   font-weight: 700;
   color: #2c3e50;
   margin: 0 0 0.5rem 0;
-  background: linear-gradient(135deg, #3498db 0%, #2ecc71 100%);
+  background: linear-gradient(135deg, #1b4332 0%, #52b788 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -80,7 +80,7 @@
 .upload-requirements {
   display: block;
   font-size: 0.85rem;
-  color: #3498db;
+  color: #1b4332;
   font-weight: 500;
   margin-top: 0.5rem;
 }
@@ -225,13 +225,13 @@
 
 .add-field input:focus {
   outline: none;
-  border-color: #3498db;
+  border-color: #1b4332;
   box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
 }
 
 .add-field select:focus {
   outline: none;
-  border-color: #3498db;
+  border-color: #1b4332;
   box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
 }
 
@@ -282,7 +282,7 @@
 }
 
 .add-student-btn {
-  background: linear-gradient(135deg, #3498db 0%, #2ecc71 100%);
+  background: linear-gradient(135deg, #1b4332 0%, #52b788 100%);
   color: white;
   border: none;
   padding: 0.65rem 1.5rem;
@@ -298,7 +298,7 @@
 .add-student-btn:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
-  background: linear-gradient(135deg, #2980b9 0%, #27ae60 100%);
+  background: linear-gradient(135deg, #081c15 0%, #2d6a4f 100%);
 }
 
 .add-student-btn:disabled {
@@ -357,7 +357,7 @@
   width: 50px;
   height: 50px;
   border: 4px solid #e0e0e0;
-  border-top: 4px solid #3498db;
+  border-top: 4px solid #1b4332;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -419,7 +419,7 @@
 
 .grade-filter-select:focus {
   outline: none;
-  border-color: #3498db;
+  border-color: #1b4332;
 }
 
 .table-actions {
@@ -430,7 +430,7 @@
 }
 
 .select-mode-btn {
-  background: #3498db;
+  background: #1b4332;
   color: white;
   border: none;
   padding: 0.6rem 1.25rem;
@@ -442,7 +442,7 @@
 }
 
 .select-mode-btn:hover:not(:disabled) {
-  background: #2980b9;
+  background: #081c15;
   transform: translateY(-1px);
 }
 
@@ -565,7 +565,7 @@
 }
 
 .students-table thead {
-  background: linear-gradient(135deg, #3498db 0%, #2ecc71 100%);
+  background: linear-gradient(135deg, #1b4332 0%, #52b788 100%);
   color: white;
 }
 
@@ -621,14 +621,14 @@
   width: 100%;
   max-width: 200px;
   padding: 0.5rem 0.75rem;
-  border: 1px solid #3498db;
+  border: 1px solid #1b4332;
   border-radius: 6px;
   font-size: 0.9rem;
 }
 
 .student-edit-input:focus {
   outline: none;
-  border-color: #2980b9;
+  border-color: #081c15;
   box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
 }
 
@@ -638,7 +638,7 @@ select.student-edit-input {
 }
 
 .edit-record-btn {
-  background: #3498db;
+  background: #1b4332;
   color: white;
   border: none;
   padding: 0.5rem 1rem;
@@ -650,12 +650,12 @@ select.student-edit-input {
 }
 
 .edit-record-btn:hover {
-  background: #2980b9;
+  background: #081c15;
   transform: translateY(-1px);
 }
 
 .save-record-btn {
-  background: #27ae60;
+  background: #2d6a4f;
   color: white;
   border: none;
   padding: 0.5rem 1rem;

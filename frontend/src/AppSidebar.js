@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { APP_LABELS } from './roleLabels';
 import { getAuthRole, hasAdminNavAccess, hasAdminViewAccess } from './authUtils';
+import BrandMark from './publicSite/BrandMark';
 import './AppSidebar.css';
 
 const svgProps = { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true };
@@ -114,8 +115,13 @@ const AppSidebar = ({ open, onClose }) => {
   return (
     <aside className={`app-sidebar ${open ? 'app-sidebar--open' : ''}`} aria-label="Main navigation">
       <div className="app-sidebar-brand" data-guest-tour="sidebar-brand">
-        <h1 className="app-sidebar-title">{APP_LABELS.brandTitle}</h1>
-        <p className="app-sidebar-tagline">{APP_LABELS.brandTagline}</p>
+        <div className="app-sidebar-brand-row">
+          <BrandMark size={40} />
+          <div>
+            <h1 className="app-sidebar-title">{APP_LABELS.brandTitle}</h1>
+            <p className="app-sidebar-tagline">{APP_LABELS.brandTagline}</p>
+          </div>
+        </div>
       </div>
       <nav className="app-sidebar-nav">
         {isRootAdmin && navBtn('All logins', iconRootLogins, '/root-logins', ['/root-logins'], '', 'nav-root-logins')}

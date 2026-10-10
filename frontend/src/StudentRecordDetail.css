@@ -1,4 +1,4 @@
-.student-record-detail-container {
+﻿.student-record-detail-container {
   min-height: 100vh;
   background: #ffffff;
   padding: 2rem;
@@ -282,7 +282,7 @@
 
 .score-input:focus {
   outline: none;
-  border-color: #3498db;
+  border-color: #1b4332;
   box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
 }
 
@@ -550,7 +550,7 @@
 }
 
 .save-record-button {
-  background: linear-gradient(135deg, #3498db 0%, #2ecc71 100%);
+  background: linear-gradient(135deg, #1b4332 0%, #52b788 100%);
   color: white;
   border: none;
   padding: 0.75rem 2rem;
@@ -595,7 +595,7 @@
   width: 50px;
   height: 50px;
   border: 4px solid #f3f3f3;
-  border-top: 4px solid #3498db;
+  border-top: 4px solid #1b4332;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 1rem;
@@ -642,7 +642,7 @@
 }
 
 .toast-success {
-  background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+  background: linear-gradient(135deg, #52b788 0%, #2d6a4f 100%);
   color: white;
 }
 

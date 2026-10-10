@@ -1,4 +1,4 @@
-.curriculum-header {
+﻿.curriculum-header {
   position: relative;
   text-align: center;
   margin-bottom: 4rem;
@@ -24,7 +24,7 @@
   font-weight: 700;
   color: #2c3e50;
   margin: 0 0 0.5rem 0;
-  background: linear-gradient(135deg, #3498db 0%, #2ecc71 100%);
+  background: linear-gradient(135deg, #1b4332 0%, #52b788 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -259,8 +259,8 @@
 
 .nav-drawer-btn.active {
   background: #fff;
-  border-color: #3498db;
-  color: #3498db;
+  border-color: #1b4332;
+  color: #1b4332;
   font-weight: 600;
 }
 

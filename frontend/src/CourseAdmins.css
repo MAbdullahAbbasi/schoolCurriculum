@@ -1,4 +1,4 @@
-.course-admins-container {
+﻿.course-admins-container {
   min-height: 100vh;
   background: #fff;
   padding: 2rem;
@@ -42,7 +42,7 @@
 }
 
 .btn-primary {
-  background: #2ecc71;
+  background: #52b788;
   color: #fff;
   border: 1px solid #26b862;
   padding: 0.6rem 0.9rem;

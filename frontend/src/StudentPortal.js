@@ -4,6 +4,7 @@ import { API_URL } from './config/api';
 import { APP_LABELS, ROLE_LABELS } from './roleLabels';
 import { formatGradeDisplay, isValidStudentPortalPassword } from './studentDataUtils';
 import { IconSave, IconCancel } from './ButtonIcons';
+import BrandMark from './publicSite/BrandMark';
 import './StudentPortal.css';
 
 const AUTH_KEY = 'curriculum_auth';
@@ -158,9 +159,7 @@ const StudentPortal = () => {
 
       <header className="sp-topbar">
         <div className="sp-brand">
-          <span className="sp-brand-mark" aria-hidden="true">
-            ◆
-          </span>
+          <BrandMark size={38} />
           <div>
             <div className="sp-brand-title">{APP_LABELS.brandTitle}</div>
             <div className="sp-brand-sub">{ROLE_LABELS.seedling} Portal</div>

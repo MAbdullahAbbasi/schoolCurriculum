@@ -1,4 +1,4 @@
-.create-course-container {
+﻿.create-course-container {
   min-height: 100vh;
   background: #fff;
   padding: 2rem;
@@ -280,13 +280,13 @@
   font-weight: 600;
   border-radius: 8px;
   border: none;
-  background: #3498db;
+  background: #1b4332;
   color: white;
   cursor: pointer;
 }
 
 .create-course-submit-btn:hover:not(:disabled) {
-  background: #2980b9;
+  background: #081c15;
 }
 
 .create-course-submit-btn:disabled,
