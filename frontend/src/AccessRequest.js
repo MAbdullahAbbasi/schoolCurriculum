@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from './config/api';
 import BrandMark from './publicSite/BrandMark';
-import { HOME_HERO_SLIDES } from './publicSite/data/heroSlides';
 import './Login.css';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -13,8 +12,6 @@ export default function AccessRequest() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-  const [slideIndex] = useState(0);
-  const [imgFailed, setImgFailed] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -49,77 +46,87 @@ export default function AccessRequest() {
     }
   };
 
-  const slide = HOME_HERO_SLIDES[slideIndex];
-
   return (
-    <div className="tl-login">
-      <div className="tl-login__bg" aria-hidden="true">
-        <div className={`tl-login__slide is-active${imgFailed ? ' is-fallback' : ''}`}>
-          {!imgFailed && (
+    <div className="login-page">
+      <div className="login-shell">
+        <aside className="login-aside" aria-hidden="true">
+          <div className="login-aside__media">
             <img
-              src={slide.src}
+              src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1400&q=80"
               alt=""
               loading="eager"
-              onError={() => setImgFailed(true)}
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.parentElement?.classList.add('is-fallback');
+              }}
             />
-          )}
-        </div>
-        <div className="tl-login__overlay" />
-      </div>
-
-      <div className="tl-login__frame">
-        <Link to="/login" className="tl-login__back">
-          ← Back to sign in
-        </Link>
-
-        <div className="tl-login__panel">
-          <header className="tl-login__header">
+            <div className="login-aside__overlay" />
+          </div>
+          <div className="login-aside__content">
             <BrandMark size={48} />
-            <p className="tl-login__eyebrow">Request access</p>
-            <h1 className="tl-login__title">Contact administration</h1>
-            <p className="tl-login__lead">
-              Enter your registered email. We will notify the school administrator
-              that you are requesting access to The Learning Grove.
+            <p className="login-aside__eyebrow">The Learning Grove</p>
+            <h2 className="login-aside__title">Request access with care.</h2>
+            <p className="login-aside__lead">
+              Share your registered email and we will notify the school
+              administrator that you need an account.
             </p>
-          </header>
+          </div>
+        </aside>
 
-          <form onSubmit={handleSubmit} className="tl-login__form" noValidate>
-            <div className="tl-login__field">
-              <label htmlFor="access-email">Registered email</label>
-              <input
-                id="access-email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                autoComplete="email"
-                disabled={loading}
-              />
+        <main className="login-main">
+          <Link to="/login" className="login-back">
+            ← Back to sign in
+          </Link>
+
+          <div className="login-card">
+            <div className="login-card__brand">
+              <BrandMark size={42} />
+              <div>
+                <h1 className="login-title">Contact administration</h1>
+                <p className="login-subtitle">
+                  Enter your registered email to request access
+                </p>
+              </div>
             </div>
 
-            {error ? (
-              <p className="tl-login__error" role="alert">
-                {error}
-              </p>
-            ) : null}
+            <form onSubmit={handleSubmit} className="login-form" noValidate>
+              <div className="login-field">
+                <label htmlFor="access-email">Registered email</label>
+                <input
+                  id="access-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                  disabled={loading}
+                />
+              </div>
 
-            {success ? (
-              <p className="tl-login__info" role="status">
-                {success}
-              </p>
-            ) : null}
+              {error ? (
+                <p className="login-error" role="alert">
+                  {error}
+                </p>
+              ) : null}
 
-            <button type="submit" className="tl-login__submit" disabled={loading}>
-              <span className="tl-login__submit-inner">
-                {loading ? 'Sending…' : 'Send access request'}
-              </span>
-            </button>
-          </form>
+              {success ? (
+                <p className="login-info" role="status">
+                  {success}
+                </p>
+              ) : null}
 
-          <p className="tl-login__note">
-            Already have an account? <Link to="/login">Sign in</Link>
-          </p>
-        </div>
+              <button type="submit" className="login-submit" disabled={loading}>
+                <span className="btn-icon-wrap">
+                  {loading ? 'Sending…' : 'Send access request'}
+                </span>
+              </button>
+            </form>
+
+            <p className="login-footnote">
+              Already have an account? <Link to="/login">Sign in</Link>
+            </p>
+          </div>
+        </main>
       </div>
     </div>
   );
