@@ -9,7 +9,8 @@
     "dev": "nodemon server.js",
     "seed": "node scripts/seedData.js",
     "convert-excel": "node scripts/convertExcelToJson.js",
-    "keep-first-216": "node scripts/keepFirst216Objectives.js"
+    "keep-first-216": "node scripts/keepFirst216Objectives.js",
+    "sync-updates": "node scripts/syncAppUpdates.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

@@ -51,7 +51,11 @@ export const authMiddleware = async (req, res, next) => {
       url.endsWith('/access-requests') ||
       url.includes('/access-requests?')) &&
     req.method === 'POST';
-  if (isStaffLogin || isStudentPortalLogin || isAccessRequest) {
+  const isUpdatesWebhook =
+    (url === '/api/updates/github-webhook' ||
+      url.endsWith('/updates/github-webhook')) &&
+    req.method === 'POST';
+  if (isStaffLogin || isStudentPortalLogin || isAccessRequest || isUpdatesWebhook) {
     return next();
   }
 

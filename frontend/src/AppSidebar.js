@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { APP_LABELS } from './roleLabels';
-import { getAuthRole, hasAdminNavAccess, hasAdminViewAccess } from './authUtils';
+import { canViewUpdates, getAuthRole, hasAdminNavAccess, hasAdminViewAccess } from './authUtils';
 import BrandMark from './publicSite/BrandMark';
 import ThemeToggle from './theme/ThemeToggle';
 import './AppSidebar.css';
@@ -71,6 +71,20 @@ const iconLogout = (
   </svg>
 );
 
+const iconUpdates = (
+  <svg {...svgProps}>
+    <path d="M12 3v4" />
+    <path d="M12 17v4" />
+    <path d="m4.9 4.9 2.8 2.8" />
+    <path d="m16.3 16.3 2.8 2.8" />
+    <path d="M3 12h4" />
+    <path d="M17 12h4" />
+    <path d="m4.9 19.1 2.8-2.8" />
+    <path d="m16.3 7.7 2.8-2.8" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+);
+
 const pathMatches = (path, prefixes) => prefixes.some((p) => (p === '/' ? path === '/' : path === p || path.startsWith(`${p}/`)));
 
 const AppSidebar = ({ open, onClose }) => {
@@ -86,6 +100,7 @@ const AppSidebar = ({ open, onClose }) => {
   const canViewObjectives = hasAdminViewAccess(role);
   const canViewReports = hasAdminViewAccess(role);
   const canViewGradingScheme = hasAdminViewAccess(role);
+  const showUpdates = canViewUpdates(role);
 
   useEffect(() => {
     if (window.innerWidth <= 768) onClose();
@@ -131,6 +146,7 @@ const AppSidebar = ({ open, onClose }) => {
         {!isRootAdmin && navBtn('Record', iconRecord, '/record', ['/record', '/studentRecord'], '', 'nav-record')}
         {!isRootAdmin && canViewReports && navBtn('Reports', iconReports, '/reports', ['/reports'], '', 'nav-reports')}
         {!isRootAdmin && canViewGradingScheme && navBtn('Grading Scheme', iconGradingScheme, '/grading-scheme', ['/grading-scheme'], '', 'nav-grading')}
+        {showUpdates && navBtn('Updates', iconUpdates, '/updates', ['/updates'], '', 'nav-updates')}
       </nav>
       <div className="app-sidebar-footer">
         <div className="app-sidebar-theme">

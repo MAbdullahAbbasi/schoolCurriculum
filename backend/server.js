@@ -16,6 +16,8 @@ import educatorManagementRoutes from "./routes/educatorManagementRoutes.js";
 import superAdminRoutes from "./routes/superAdminRoutes.js";
 import studentPortalRoutes from "./routes/studentPortalRoutes.js";
 import accessRequestRoutes from "./routes/accessRequestRoutes.js";
+import updatesRoutes from "./routes/updatesRoutes.js";
+import { syncAppUpdatesFromSource } from "./utils/githubCommits.js";
 
 dotenv.config();
 
@@ -38,7 +40,16 @@ mongoose.connection.on('disconnected', () => {
 app.use(cors({
   exposedHeaders: ['X-New-Token'],
 }));
-app.use(express.json());
+app.use(
+  express.json({
+    verify: (req, res, buf) => {
+      // Preserve raw body for GitHub webhook signature verification
+      if (req.originalUrl?.includes('/api/updates/github-webhook')) {
+        req.rawBody = buf;
+      }
+    },
+  })
+);
 
 // Check if MONGO_URI is set
 if (!process.env.MONGO_URI) {
@@ -263,6 +274,9 @@ app.use("/api/student-portal", studentPortalRoutes);
 // Public: request account access (emails admin when SMTP is configured)
 app.use("/api/access-requests", accessRequestRoutes);
 
+// Admin / Super Admin: application updates (GitHub commits)
+app.use("/api/updates", updatesRoutes);
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
@@ -272,6 +286,15 @@ app.listen(PORT, () => {
       console.log("   1. Your IP address is whitelisted in MongoDB Atlas");
       console.log("   2. Your MONGO_URI in .env is correct");
       console.log("   3. Your network connection is working");
+    } else {
+      // Backfill historical commits + pull latest in the background
+      syncAppUpdatesFromSource()
+        .then((stats) => {
+          console.log(`📦 App updates synced (${stats.source}): fetched ${stats.fetched}, inserted ${stats.inserted}`);
+        })
+        .catch((err) => {
+          console.warn('App updates sync skipped:', err.message);
+        });
     }
   });
 };

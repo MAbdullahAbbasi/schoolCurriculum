@@ -21,12 +21,13 @@ import GradingScheme from './GradingScheme';
 import Login from './Login';
 import AccessRequest from './AccessRequest';
 import StudentPortal from './StudentPortal';
+import Updates from './Updates';
 import { API_URL } from './config/api';
 import RolesDashboard from './RolesDashboard';
 import CourseAdmins from './CourseAdmins';
 import Educators from './Educators';
 import RootLogins from './RootLogins';
-import { isGuestRole, isStudentPortalRole } from './authUtils';
+import { canViewUpdates, isGuestRole, isStudentPortalRole } from './authUtils';
 import PublicLayout from './publicSite/PublicLayout';
 import LandingPage from './publicSite/pages/LandingPage';
 import AboutPage from './publicSite/pages/AboutPage';
@@ -295,6 +296,10 @@ function App() {
             <Route
               path="/grading-scheme"
               element={canAccessGradingScheme ? <GradingScheme /> : <Navigate to="/record" replace />}
+            />
+            <Route
+              path="/updates"
+              element={canViewUpdates(userRole) ? <Updates /> : <Navigate to="/" replace />}
             />
             <Route path="/login" element={<Navigate to="/" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
