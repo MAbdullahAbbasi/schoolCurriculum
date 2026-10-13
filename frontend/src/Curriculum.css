@@ -1659,6 +1659,14 @@
   border-color: #52b788 !important;
 }
 
+[data-theme='dark'] .objectives-upload-hint {
+  color: var(--text-secondary, #a8b8af) !important;
+}
+
+[data-theme='dark'] .objectives-upload-hint strong {
+  color: #95d5b2 !important;
+}
+
 [data-theme='dark'] .curriculum-refresh-hint {
   background: rgba(82, 183, 136, 0.12);
   border-color: rgba(82, 183, 136, 0.3);
