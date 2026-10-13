@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { API_URL } from './config/api';
 import BrandMark from './publicSite/BrandMark';
+import ThemeToggle from './theme/ThemeToggle';
 import './Login.css';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -74,9 +75,12 @@ export default function AccessRequest() {
         </aside>
 
         <main className="login-main">
-          <Link to="/login" className="login-back">
-            ← Back to sign in
-          </Link>
+          <div className="login-main__top">
+            <Link to="/login" className="login-back">
+              ← Back to sign in
+            </Link>
+            <ThemeToggle />
+          </div>
 
           <div className="login-card">
             <div className="login-card__brand">

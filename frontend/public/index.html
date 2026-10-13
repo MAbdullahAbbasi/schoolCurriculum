@@ -25,6 +25,20 @@
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
     <title>The Learning Grove</title>
+    <script>
+      (function () {
+        try {
+          var key = 'tl_theme_preference';
+          var p = localStorage.getItem(key) || 'system';
+          if (p !== 'light' && p !== 'dark' && p !== 'system') p = 'system';
+          var dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var resolved = p === 'system' ? (dark ? 'dark' : 'light') : p;
+          document.documentElement.setAttribute('data-theme', resolved);
+          document.documentElement.setAttribute('data-theme-preference', p);
+          document.documentElement.style.colorScheme = resolved;
+        } catch (e) {}
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

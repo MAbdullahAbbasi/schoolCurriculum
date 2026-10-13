@@ -329,6 +329,10 @@
   .ps-nav__actions .ps-btn {
     display: none;
   }
+
+  .ps-nav__theme .theme-toggle__btn span {
+    display: none;
+  }
 }
 
 /* Hero */

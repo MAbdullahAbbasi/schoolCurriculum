@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { APP_LABELS } from './roleLabels';
 import { getAuthRole, hasAdminNavAccess, hasAdminViewAccess } from './authUtils';
 import BrandMark from './publicSite/BrandMark';
+import ThemeToggle from './theme/ThemeToggle';
 import './AppSidebar.css';
 
 const svgProps = { width: 20, height: 20, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true };
@@ -132,6 +133,9 @@ const AppSidebar = ({ open, onClose }) => {
         {!isRootAdmin && canViewGradingScheme && navBtn('Grading Scheme', iconGradingScheme, '/grading-scheme', ['/grading-scheme'], '', 'nav-grading')}
       </nav>
       <div className="app-sidebar-footer">
+        <div className="app-sidebar-theme">
+          <ThemeToggle variant="on-dark" />
+        </div>
         <button type="button" className="sidebar-nav-btn sidebar-nav-logout" onClick={handleLogout}>
           <span className="sidebar-nav-icon">{iconLogout}</span>
           <span className="sidebar-nav-label">Log out</span>

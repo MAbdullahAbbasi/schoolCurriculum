@@ -1,0 +1,426 @@
+/* Global light / dark theme surfaces — applied via html[data-theme] */
+
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+
+  --surface-page: #eef6f0;
+  --surface-page-mid: #f7f3eb;
+  --surface-page-end: #e8f0ea;
+  --surface-card: #ffffff;
+  --surface-elevated: #f7f3eb;
+  --surface-muted: #f0ebe3;
+  --surface-border: rgba(27, 67, 50, 0.12);
+  --surface-border-strong: rgba(27, 67, 50, 0.22);
+  --text-primary: #1a1f1c;
+  --text-secondary: #5c6860;
+  --text-on-forest: #f7f3eb;
+  --input-bg: #f7f3eb;
+  --input-bg-focus: #ffffff;
+  --shadow-soft: 0 8px 28px rgba(8, 28, 21, 0.08);
+
+  --brand-forest: #1b4332;
+  --brand-forest-deep: #081c15;
+  --brand-sage: #52b788;
+  --brand-sage-soft: #95d5b2;
+  --brand-cream: #f7f3eb;
+  --brand-gold: #c9a227;
+  --brand-ink: #1a1f1c;
+  --brand-muted: #5c6860;
+
+  --garden-moss-light: #d8f3dc;
+  --garden-cream: var(--brand-cream);
+  --garden-soil: var(--brand-ink);
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --surface-page: #0b1210;
+  --surface-page-mid: #101816;
+  --surface-page-end: #0e1512;
+  --surface-card: #16201b;
+  --surface-elevated: #1c2923;
+  --surface-muted: #203028;
+  --surface-border: rgba(216, 243, 220, 0.12);
+  --surface-border-strong: rgba(216, 243, 220, 0.22);
+  --text-primary: #e8f0ea;
+  --text-secondary: #a8b8af;
+  --text-on-forest: #e8f0ea;
+  --input-bg: #101816;
+  --input-bg-focus: #1a2620;
+  --shadow-soft: 0 12px 36px rgba(0, 0, 0, 0.35);
+
+  /* Keep brand greens readable on dark surfaces */
+  --brand-forest: #95d5b2;
+  --brand-forest-deep: #d8f3dc;
+  --brand-sage: #52b788;
+  --brand-sage-soft: #74c69d;
+  --brand-cream: #16201b;
+  --brand-gold: #d4af37;
+  --brand-ink: #e8f0ea;
+  --brand-muted: #a8b8af;
+
+  --garden-forest-dark: #081c15;
+  --garden-forest: #1b4332;
+  --garden-forest-mid: #2d6a4f;
+  --garden-moss: #40916c;
+  --garden-moss-light: #1e3329;
+  --garden-leaf: #52b788;
+  --garden-leaf-light: #74c69d;
+  --garden-cream: var(--surface-elevated);
+  --garden-soil: var(--text-primary);
+  --garden-bloom: var(--brand-gold);
+}
+
+body {
+  background: linear-gradient(
+    180deg,
+    var(--surface-page) 0%,
+    var(--surface-page-mid) 40%,
+    var(--surface-page-end) 100%
+  );
+  color: var(--text-primary);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+/* ── Authenticated shell ── */
+[data-theme='dark'] .app-page-panel {
+  background: var(--surface-card);
+  border-color: var(--surface-border);
+  box-shadow: var(--shadow-soft);
+}
+
+[data-theme='dark'] .app-page-header {
+  background: linear-gradient(
+    180deg,
+    rgba(30, 48, 40, 0.95) 0%,
+    rgba(22, 32, 27, 0.65) 55%,
+    rgba(22, 32, 27, 0) 100%
+  );
+  border-bottom-color: var(--surface-border);
+}
+
+[data-theme='dark'] .app-page-title,
+[data-theme='dark'] .app-page-back-btn {
+  color: var(--text-primary);
+}
+
+[data-theme='dark'] .app-page-back-btn {
+  background: rgba(82, 183, 136, 0.12);
+  border-color: rgba(82, 183, 136, 0.28);
+}
+
+[data-theme='dark'] .app-page-subtitle,
+[data-theme='dark'] .app-page-body,
+[data-theme='dark'] .app-page-body p,
+[data-theme='dark'] .app-page-body label,
+[data-theme='dark'] .app-page-body th,
+[data-theme='dark'] .app-page-body td,
+[data-theme='dark'] .app-page-body h1,
+[data-theme='dark'] .app-page-body h2,
+[data-theme='dark'] .app-page-body h3,
+[data-theme='dark'] .app-page-body h4 {
+  color: var(--text-primary);
+}
+
+[data-theme='dark'] .app-page-body {
+  color: var(--text-primary);
+}
+
+[data-theme='dark'] .app-page-body input,
+[data-theme='dark'] .app-page-body select,
+[data-theme='dark'] .app-page-body textarea,
+[data-theme='dark'] .login-field input,
+[data-theme='dark'] .tl-login__field input {
+  background: var(--input-bg);
+  color: var(--text-primary);
+  border-color: var(--surface-border-strong);
+}
+
+[data-theme='dark'] .app-page-body input:focus,
+[data-theme='dark'] .app-page-body select:focus,
+[data-theme='dark'] .app-page-body textarea:focus {
+  background: var(--input-bg-focus);
+}
+
+[data-theme='dark'] .app-page-body table,
+[data-theme='dark'] .app-page-body .card,
+[data-theme='dark'] .app-page-body .panel,
+[data-theme='dark'] .app-page-body .modal-content,
+[data-theme='dark'] .app-page-body .section-card {
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+  border-color: var(--surface-border);
+}
+
+[data-theme='dark'] .guest-mode-banner {
+  background: rgba(32, 40, 28, 0.98);
+  border-bottom-color: rgba(212, 175, 55, 0.35);
+  color: #f0e6b8;
+}
+
+[data-theme='dark'] .sidebar-toggle-btn {
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+  border-color: rgba(82, 183, 136, 0.35);
+}
+
+/* Sidebar stays forest-branded in both themes; keep readable cream text */
+.app-sidebar {
+  color: #f7f3eb;
+}
+
+/* ── Login / access request ── */
+[data-theme='dark'] .login-page {
+  --login-cream: var(--surface-page-mid);
+  --login-cream-dark: var(--surface-muted);
+  --login-ink: var(--text-primary);
+  --login-muted: var(--text-secondary);
+  --login-white: var(--surface-card);
+  --login-forest: #95d5b2;
+  --login-forest-deep: #d8f3dc;
+  background: var(--surface-page);
+}
+
+[data-theme='dark'] .login-main {
+  background:
+    radial-gradient(circle at top right, rgba(82, 183, 136, 0.12), transparent 42%),
+    var(--surface-page-mid);
+}
+
+[data-theme='dark'] .login-card {
+  background: var(--surface-card);
+  border-color: var(--surface-border);
+  box-shadow: var(--shadow-soft);
+}
+
+[data-theme='dark'] .login-title,
+[data-theme='dark'] .login-field label,
+[data-theme='dark'] .login-back {
+  color: var(--text-primary);
+}
+
+[data-theme='dark'] .login-subtitle,
+[data-theme='dark'] .login-footnote {
+  color: var(--text-secondary);
+}
+
+[data-theme='dark'] .login-field input {
+  background: var(--input-bg);
+  color: var(--text-primary);
+}
+
+[data-theme='dark'] .login-google {
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+  border-color: var(--surface-border-strong);
+}
+
+[data-theme='dark'] .login-submit {
+  background: #2d6a4f;
+  color: #fff;
+}
+
+[data-theme='dark'] .login-footnote a {
+  color: #95d5b2;
+}
+
+/* ── Public site ── */
+[data-theme='dark'] .ps-root {
+  --ps-forest: #95d5b2;
+  --ps-forest-deep: #d8f3dc;
+  --ps-sage: #52b788;
+  --ps-sage-soft: #74c69d;
+  --ps-cream: #16201b;
+  --ps-cream-dark: #1e2b24;
+  --ps-gold: #d4af37;
+  --ps-ink: #e8f0ea;
+  --ps-muted: #a8b8af;
+  --ps-white: #16201b;
+  --ps-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  --ps-shadow-sm: 0 6px 18px rgba(0, 0, 0, 0.28);
+  background: var(--surface-page);
+  color: var(--ps-ink);
+}
+
+[data-theme='dark'] .ps-nav {
+  background: rgba(11, 18, 16, 0.92);
+  border-bottom-color: var(--surface-border);
+}
+
+[data-theme='dark'] .ps-nav__brand,
+[data-theme='dark'] .ps-nav__brand-text {
+  color: #d8f3dc;
+}
+
+[data-theme='dark'] .ps-nav__link {
+  color: var(--text-secondary);
+}
+
+[data-theme='dark'] .ps-nav__link:hover,
+[data-theme='dark'] .ps-nav__link.is-active {
+  color: #d8f3dc;
+  background: rgba(82, 183, 136, 0.14);
+}
+
+[data-theme='dark'] .ps-nav__mobile {
+  background: #101816;
+  border-top-color: var(--surface-border);
+}
+
+[data-theme='dark'] .ps-nav__mobile-link {
+  color: var(--text-primary);
+  border-bottom-color: var(--surface-border);
+}
+
+[data-theme='dark'] .ps-btn--ghost {
+  color: #d8f3dc;
+  border-color: rgba(216, 243, 220, 0.28);
+}
+
+[data-theme='dark'] .ps-btn--primary {
+  background: #2d6a4f;
+  color: #fff;
+}
+
+[data-theme='dark'] .ps-section--cream,
+[data-theme='dark'] .ps-section--muted {
+  background: #121c18;
+}
+
+[data-theme='dark'] .ps-card,
+[data-theme='dark'] .ps-stage-card,
+[data-theme='dark'] .ps-article-card,
+[data-theme='dark'] .ps-detail-card,
+[data-theme='dark'] .ps-timeline__item,
+[data-theme='dark'] .ps-why-grid li {
+  background: var(--surface-card);
+  border-color: var(--surface-border);
+  color: var(--text-primary);
+}
+
+[data-theme='dark'] .ps-card h2,
+[data-theme='dark'] .ps-card h3,
+[data-theme='dark'] .ps-stage-card h3,
+[data-theme='dark'] .ps-article-card h2,
+[data-theme='dark'] .ps-article-card h3,
+[data-theme='dark'] .ps-detail-card h2,
+[data-theme='dark'] .ps-prose h2 {
+  color: #d8f3dc;
+}
+
+[data-theme='dark'] .ps-card p,
+[data-theme='dark'] .ps-stage-card p,
+[data-theme='dark'] .ps-article-card p,
+[data-theme='dark'] .ps-section__header p,
+[data-theme='dark'] .ps-prose p,
+[data-theme='dark'] .ps-prose li,
+[data-theme='dark'] .ps-detail-card p {
+  color: var(--text-secondary);
+}
+
+[data-theme='dark'] .ps-text-link {
+  color: #95d5b2;
+}
+
+[data-theme='dark'] .ps-footer {
+  background: #070c0a;
+}
+
+/* ── Student portal ── */
+[data-theme='dark'] .sp-shell {
+  --sp-ink: var(--text-primary);
+  --sp-leaf: #52b788;
+  --sp-leaf-deep: #95d5b2;
+  --sp-mist: #1e3329;
+  --sp-sand: var(--surface-page-mid);
+  --sp-card: var(--surface-card);
+  --sp-accent: var(--brand-gold);
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(82, 183, 136, 0.14), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(212, 175, 55, 0.1), transparent 55%),
+    linear-gradient(180deg, #0b1210 0%, #101816 45%, #0e1512 100%);
+  color: var(--text-primary);
+}
+
+[data-theme='dark'] .sp-topbar {
+  background: rgba(16, 24, 22, 0.88);
+  border-bottom-color: var(--surface-border);
+}
+
+[data-theme='dark'] .sp-brand-title,
+[data-theme='dark'] .sp-hero-title {
+  color: #d8f3dc;
+}
+
+[data-theme='dark'] .sp-brand-sub,
+[data-theme='dark'] .sp-hero-meta,
+[data-theme='dark'] .sp-hero-tagline {
+  color: var(--text-secondary);
+}
+
+[data-theme='dark'] .sp-stat-card,
+[data-theme='dark'] .sp-course-card,
+[data-theme='dark'] .sp-password-panel,
+[data-theme='dark'] .sp-profile-strip,
+[data-theme='dark'] .sp-error-panel {
+  background: var(--surface-card);
+  border-color: var(--surface-border);
+  color: var(--text-primary);
+}
+
+[data-theme='dark'] .sp-btn-ghost {
+  color: #d8f3dc;
+  border-color: rgba(216, 243, 220, 0.25);
+}
+
+[data-theme='dark'] .sp-btn-soft {
+  background: rgba(82, 183, 136, 0.14);
+  color: #d8f3dc;
+}
+
+/* ── Common hardcoded whites / light panels across feature pages ── */
+[data-theme='dark'] .card,
+[data-theme='dark'] .modal,
+[data-theme='dark'] .modal-content,
+[data-theme='dark'] .dropdown-menu,
+[data-theme='dark'] .popover,
+[data-theme='dark'] .tooltip-panel,
+[data-theme='dark'] .white-box,
+[data-theme='dark'] .content-card,
+[data-theme='dark'] .form-card,
+[data-theme='dark'] .table-container,
+[data-theme='dark'] .students-table-wrap,
+[data-theme='dark'] .record-card,
+[data-theme='dark'] .scheme-card,
+[data-theme='dark'] .roles-card,
+[data-theme='dark'] .empty-state {
+  background-color: var(--surface-card) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--surface-border) !important;
+}
+
+[data-theme='dark'] input:not([type='checkbox']):not([type='radio']):not([type='range']),
+[data-theme='dark'] select,
+[data-theme='dark'] textarea {
+  background-color: var(--input-bg);
+  color: var(--text-primary);
+  border-color: var(--surface-border-strong);
+}
+
+[data-theme='dark'] option {
+  background: var(--surface-card);
+  color: var(--text-primary);
+}
+
+/* Prefer readable sage links/buttons over bright blue leftovers in dark */
+[data-theme='dark'] a:not(.ps-btn):not(.login-back):not(.theme-toggle__btn) {
+  color: #95d5b2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body {
+    transition: none;
+  }
+}

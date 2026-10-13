@@ -1,3 +1,5 @@
+@import './theme/theme.css';
+
 :root {
   /* Canonical brand (aligned with public site + login) */
   --brand-forest: #1b4332;
@@ -36,13 +38,6 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(
-    180deg,
-    #eef6f0 0%,
-    var(--brand-cream) 40%,
-    #e8f0ea 100%
-  );
-  color: var(--brand-forest);
 }
 
 code {

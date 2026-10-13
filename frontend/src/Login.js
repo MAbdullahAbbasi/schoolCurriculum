@@ -5,6 +5,7 @@ import axios from 'axios';
 import { API_URL } from './config/api';
 import { APP_LABELS } from './roleLabels';
 import BrandMark from './publicSite/BrandMark';
+import ThemeToggle from './theme/ThemeToggle';
 import './Login.css';
 
 const Login = ({ onLoginSuccess }) => {
@@ -113,9 +114,12 @@ const Login = ({ onLoginSuccess }) => {
         </aside>
 
         <main className="login-main">
-          <Link to="/" className="login-back">
-            ← Back to home
-          </Link>
+          <div className="login-main__top">
+            <Link to="/" className="login-back">
+              ← Back to home
+            </Link>
+            <ThemeToggle />
+          </div>
 
           <div className="login-card">
             <div className="login-card__brand">

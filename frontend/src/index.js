@@ -4,6 +4,10 @@ import axios from 'axios';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import { ThemeProvider } from './theme/ThemeContext';
+import { applyResolvedTheme, readStoredThemePreference } from './theme/theme';
+
+applyResolvedTheme(readStoredThemePreference());
 
 const AUTH_KEY = 'curriculum_auth';
 
@@ -43,7 +47,9 @@ axios.interceptors.response.use(
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <App />
+    <ThemeProvider>
+      <App />
+    </ThemeProvider>
   </React.StrictMode>
 );
 

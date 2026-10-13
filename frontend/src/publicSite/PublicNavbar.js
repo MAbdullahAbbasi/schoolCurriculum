@@ -1,6 +1,7 @@
 import React, { useEffect, useId, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import BrandMark from './BrandMark';
+import ThemeToggle from '../theme/ThemeToggle';
 
 const NAV_LINKS = [
   { to: '/', label: 'Home', end: true },
@@ -57,6 +58,7 @@ export default function PublicNavbar() {
         </nav>
 
         <div className="ps-nav__actions">
+          <ThemeToggle className="ps-nav__theme" />
           <Link to="/login" className="ps-btn ps-btn--ghost ps-btn--sm">
             Login
           </Link>
@@ -95,6 +97,7 @@ export default function PublicNavbar() {
             </NavLink>
           ))}
           <div className="ps-nav__mobile-actions">
+            <ThemeToggle />
             <Link to="/login" className="ps-btn ps-btn--ghost">
               Login
             </Link>
