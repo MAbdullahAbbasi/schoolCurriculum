@@ -621,7 +621,6 @@ const StudentsRecord = () => {
                   <table className="course-edit-table">
                     <thead>
                       <tr>
-                        <th>Objective Code</th>
                         <th>Topic Name</th>
                         <th>Marks</th>
                         <th>Grade</th>
@@ -631,13 +630,6 @@ const StudentsRecord = () => {
                     <tbody>
                       {editForm.topics.map((t, i) => (
                         <tr key={i}>
-                          <td>
-                            <input
-                              className="course-edit-input"
-                              value={t.courseCode}
-                              onChange={(e) => updateTopicItem(i, 'courseCode', e.target.value)}
-                            />
-                          </td>
                           <td>
                             <input
                               className="course-edit-input"
