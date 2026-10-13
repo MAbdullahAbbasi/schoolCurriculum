@@ -123,3 +123,39 @@
     overflow-y: auto;
   }
 }
+
+[data-theme='dark'] .guest-tour-card {
+  background: var(--surface-card, #16201b);
+  color: var(--text-primary, #e8f0ea);
+  border: 1px solid var(--surface-border, rgba(216, 243, 220, 0.12));
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+}
+
+[data-theme='dark'] .guest-tour-step-label {
+  color: #95d5b2;
+}
+
+[data-theme='dark'] .guest-tour-title {
+  color: #f7f3eb;
+}
+
+[data-theme='dark'] .guest-tour-body {
+  color: var(--text-secondary, #a8b8af);
+}
+
+[data-theme='dark'] .guest-tour-btn-secondary {
+  background: rgba(82, 183, 136, 0.14);
+  color: #d8f3dc;
+}
+
+[data-theme='dark'] .guest-tour-btn-secondary:hover {
+  background: rgba(82, 183, 136, 0.24);
+}
+
+[data-theme='dark'] .guest-tour-btn-ghost {
+  color: var(--text-secondary, #a8b8af);
+}
+
+[data-theme='dark'] .guest-tour-btn-ghost:hover {
+  color: #d8f3dc;
+}

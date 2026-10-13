@@ -1,0 +1,561 @@
+/**
+ * Dark-mode corrections for authenticated admin pages.
+ * Loaded after theme.css; uses !important to beat page-level hardcoded whites.
+ */
+
+/* ── Shared table / panel surfaces ── */
+[data-theme='dark'] .app-page-body table,
+[data-theme='dark'] .students-table,
+[data-theme='dark'] .course-admins-table,
+[data-theme='dark'] .educators-table,
+[data-theme='dark'] .updates-table,
+[data-theme='dark'] .reports-table,
+[data-theme='dark'] .courses-record-table,
+[data-theme='dark'] .grading-scheme-table,
+[data-theme='dark'] .grading-scheme-list-table,
+[data-theme='dark'] .result-sheet-table,
+[data-theme='dark'] .students-record-table,
+[data-theme='dark'] .matrix-table {
+  background: var(--surface-card, #16201b) !important;
+  color: var(--text-primary, #e8f0ea) !important;
+}
+
+[data-theme='dark'] .table-wrapper,
+[data-theme='dark'] .students-table-section,
+[data-theme='dark'] .course-admins-table-wrap,
+[data-theme='dark'] .educators-table-wrap,
+[data-theme='dark'] .updates-table-wrap,
+[data-theme='dark'] .reports-table-wrapper,
+[data-theme='dark'] .courses-table-wrapper,
+[data-theme='dark'] .grading-scheme-table-wrapper,
+[data-theme='dark'] .grading-scheme-list-wrapper,
+[data-theme='dark'] .student-data-container .content-card,
+[data-theme='dark'] .student-directory-panel,
+[data-theme='dark'] .reports-sessions-panel,
+[data-theme='dark'] .reports-top-three-card,
+[data-theme='dark'] .reports-top-three-item {
+  background: var(--surface-card, #16201b) !important;
+  border-color: var(--surface-border, rgba(216, 243, 220, 0.12)) !important;
+  color: var(--text-primary, #e8f0ea) !important;
+}
+
+/* Table headers: forest gradient + light text (never light-on-white) */
+[data-theme='dark'] .app-page-body thead,
+[data-theme='dark'] .app-page-body th,
+[data-theme='dark'] .students-table thead,
+[data-theme='dark'] .students-table th,
+[data-theme='dark'] .course-admins-th,
+[data-theme='dark'] .course-admins-th-select,
+[data-theme='dark'] .course-admins-th-action,
+[data-theme='dark'] .educators-th,
+[data-theme='dark'] .educators-th-action,
+[data-theme='dark'] .updates-table th,
+[data-theme='dark'] .reports-table thead,
+[data-theme='dark'] .reports-th,
+[data-theme='dark'] .courses-record-table thead,
+[data-theme='dark'] .courses-record-table th,
+[data-theme='dark'] .courses-record-th-checkbox,
+[data-theme='dark'] .grading-scheme-table th,
+[data-theme='dark'] .grading-scheme-list-table th,
+[data-theme='dark'] .result-sheet-table thead,
+[data-theme='dark'] .result-sheet-table th,
+[data-theme='dark'] .students-record-table thead,
+[data-theme='dark'] .students-record-table th,
+[data-theme='dark'] .matrix-table thead th,
+[data-theme='dark'] .student-report-objectives-table thead,
+[data-theme='dark'] .student-report-marksheet-table thead,
+[data-theme='dark'] .student-report-card-table thead {
+  background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%) !important;
+  color: #f7f3eb !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+[data-theme='dark'] .app-page-body td,
+[data-theme='dark'] .students-table td,
+[data-theme='dark'] .course-admins-table td,
+[data-theme='dark'] .educators-table td,
+[data-theme='dark'] .reports-td,
+[data-theme='dark'] .courses-record-table td,
+[data-theme='dark'] .grading-scheme-table td,
+[data-theme='dark'] .grading-scheme-list-table td,
+[data-theme='dark'] .result-sheet-table td {
+  color: var(--text-primary, #e8f0ea) !important;
+  border-color: var(--surface-border, rgba(216, 243, 220, 0.12)) !important;
+  background: transparent !important;
+}
+
+/* Zebra rows: both odd and even stay dark with light text */
+[data-theme='dark'] .students-table tbody tr,
+[data-theme='dark'] .course-admins-table tbody tr,
+[data-theme='dark'] .educators-table tbody tr,
+[data-theme='dark'] .updates-table tbody tr,
+[data-theme='dark'] .reports-table tbody tr,
+[data-theme='dark'] .courses-record-table tbody tr,
+[data-theme='dark'] .grading-scheme-list-table tbody tr {
+  background: #14201a !important;
+  color: var(--text-primary, #e8f0ea) !important;
+}
+
+[data-theme='dark'] .students-table tbody tr:nth-child(even),
+[data-theme='dark'] .course-admins-table tbody tr:nth-child(even),
+[data-theme='dark'] .educators-table tbody tr:nth-child(even),
+[data-theme='dark'] .reports-table tbody tr:nth-child(even),
+[data-theme='dark'] .courses-record-table tbody tr:nth-child(even) {
+  background: #1a2922 !important;
+}
+
+[data-theme='dark'] .students-table tbody tr:hover,
+[data-theme='dark'] .students-table tbody tr:nth-child(even):hover,
+[data-theme='dark'] .course-admins-table tbody tr:hover,
+[data-theme='dark'] .educators-table tbody tr:hover,
+[data-theme='dark'] .courses-record-row:hover,
+[data-theme='dark'] .student-directory-table .student-directory-row:hover {
+  background: rgba(82, 183, 136, 0.14) !important;
+}
+
+[data-theme='dark'] .students-table tbody tr.editing-row {
+  background: rgba(82, 183, 136, 0.18) !important;
+}
+
+/* ── Seedlings / Alumni directory ── */
+[data-theme='dark'] .student-data-container,
+[data-theme='dark'] .students-table-section h3,
+[data-theme='dark'] .grade-filter-label,
+[data-theme='dark'] .student-directory-count,
+[data-theme='dark'] .student-directory-reg,
+[data-theme='dark'] .student-directory-name {
+  color: var(--text-primary, #e8f0ea) !important;
+}
+
+[data-theme='dark'] .student-directory-count {
+  opacity: 1 !important;
+  font-weight: 650;
+}
+
+[data-theme='dark'] .grade-filter-select,
+[data-theme='dark'] .student-edit-input,
+[data-theme='dark'] .add-field input,
+[data-theme='dark'] .add-field select {
+  background: var(--input-bg, #101816) !important;
+  color: var(--text-primary, #e8f0ea) !important;
+  border-color: var(--surface-border-strong, rgba(216, 243, 220, 0.22)) !important;
+}
+
+[data-theme='dark'] .student-directory-table .student-directory-row {
+  background: #14201a !important;
+  color: var(--text-primary, #e8f0ea) !important;
+}
+
+[data-theme='dark'] .student-directory-table .student-directory-row:nth-child(even) {
+  background: #1a2922 !important;
+}
+
+[data-theme='dark'] .student-directory-table .student-directory-row--selected {
+  background: rgba(82, 183, 136, 0.18) !important;
+}
+
+[data-theme='dark'] .portal-not-assigned,
+[data-theme='dark'] .students-table td em,
+[data-theme='dark'] .students-table .muted,
+[data-theme='dark'] .course-admins-empty,
+[data-theme='dark'] .educators-empty,
+[data-theme='dark'] .reports-empty-cell,
+[data-theme='dark'] .promote-section-hint,
+[data-theme='dark'] .courses-record-search-hint,
+[data-theme='dark'] .courses-record-empty-search {
+  color: var(--text-secondary, #a8b8af) !important;
+}
+
+[data-theme='dark'] .student-promote-page .promote-section,
+[data-theme='dark'] .add-student-form,
+[data-theme='dark'] .form-section {
+  background: var(--surface-card, #16201b) !important;
+  border-color: var(--surface-border) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme='dark'] .add-field label {
+  color: #d8f3dc !important;
+}
+
+/* Action buttons in tables */
+[data-theme='dark'] .course-admins-edit-btn,
+[data-theme='dark'] .educators-edit-btn,
+[data-theme='dark'] .btn-edit,
+[data-theme='dark'] .icon-btn-edit,
+[data-theme='dark'] .course-row-edit-btn,
+[data-theme='dark'] .grading-scheme-row-edit-btn {
+  background: rgba(82, 183, 136, 0.16) !important;
+  border-color: rgba(82, 183, 136, 0.4) !important;
+  color: #d8f3dc !important;
+}
+
+[data-theme='dark'] .course-admins-delete-btn,
+[data-theme='dark'] .educators-delete-btn,
+[data-theme='dark'] .btn-delete,
+[data-theme='dark'] .icon-btn-delete,
+[data-theme='dark'] .course-row-delete-btn,
+[data-theme='dark'] .grading-scheme-row-delete-btn {
+  background: rgba(185, 28, 28, 0.2) !important;
+  border-color: rgba(248, 113, 113, 0.45) !important;
+  color: #fecaca !important;
+}
+
+/* Modals */
+[data-theme='dark'] .course-admins-modal-card,
+[data-theme='dark'] .educators-modal-card,
+[data-theme='dark'] .form-modal-content,
+[data-theme='dark'] .course-edit-modal,
+[data-theme='dark'] .grading-scheme-editor {
+  background: var(--surface-card, #16201b) !important;
+  border-color: var(--surface-border) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme='dark'] .course-admins-modal-title,
+[data-theme='dark'] .educators-modal-title,
+[data-theme='dark'] .course-admins-label,
+[data-theme='dark'] .educators-label,
+[data-theme='dark'] .course-edit-title,
+[data-theme='dark'] .course-edit-label,
+[data-theme='dark'] .grading-scheme-editor-header h3,
+[data-theme='dark'] .grading-scheme-editor-label {
+  color: #d8f3dc !important;
+}
+
+[data-theme='dark'] .course-admins-input,
+[data-theme='dark'] .educators-input,
+[data-theme='dark'] .course-edit-input,
+[data-theme='dark'] .grading-scheme-input {
+  background: var(--input-bg, #101816) !important;
+  border-color: var(--surface-border-strong) !important;
+  color: var(--text-primary, #e8f0ea) !important;
+}
+
+[data-theme='dark'] .educators-hint,
+[data-theme='dark'] .course-admins-hint {
+  color: var(--text-secondary, #a8b8af) !important;
+}
+
+[data-theme='dark'] .app-page-body input[type='checkbox'] {
+  accent-color: #52b788;
+}
+
+/* ── The Grove (Roles dashboard) ── */
+[data-theme='dark'] .roles-dashboard-container {
+  background: transparent !important;
+}
+
+[data-theme='dark'] .roles-dashboard-container::before {
+  opacity: 0.35;
+}
+
+[data-theme='dark'] .roles-card {
+  background: rgba(22, 32, 27, 0.92) !important;
+  border-color: rgba(82, 183, 136, 0.28) !important;
+  box-shadow: var(--shadow-soft);
+}
+
+[data-theme='dark'] .roles-dashboard-title {
+  background: none !important;
+  -webkit-text-fill-color: #f7f3eb !important;
+  color: #f7f3eb !important;
+}
+
+[data-theme='dark'] .roles-card-label {
+  color: #d8f3dc !important;
+}
+
+[data-theme='dark'] .roles-card-hint,
+[data-theme='dark'] .roles-card-hint--muted,
+[data-theme='dark'] .roles-dashboard-subtitle {
+  color: var(--text-secondary, #a8b8af) !important;
+}
+
+[data-theme='dark'] .roles-card-icon,
+[data-theme='dark'] .roles-card-svg--keeper,
+[data-theme='dark'] .roles-card-svg--gardener,
+[data-theme='dark'] .roles-card-svg--seedling {
+  color: #95d5b2 !important;
+}
+
+[data-theme='dark'] .roles-card-svg--nurturer {
+  color: #d4a373 !important;
+}
+
+[data-theme='dark'] .roles-dashboard-badge {
+  background: rgba(82, 183, 136, 0.18) !important;
+}
+
+[data-theme='dark'] .roles-card--interactive:hover,
+[data-theme='dark'] .roles-card--interactive:focus-visible {
+  border-color: rgba(149, 213, 178, 0.55) !important;
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(82, 183, 136, 0.35);
+}
+
+/* ── Record / Reports / Grading / Root logins / Create course ── */
+[data-theme='dark'] .students-record-container,
+[data-theme='dark'] .reports-container,
+[data-theme='dark'] .grading-scheme-container,
+[data-theme='dark'] .create-course-container,
+[data-theme='dark'] .create-course-marks-container,
+[data-theme='dark'] .map-questions-container,
+[data-theme='dark'] .result-sheet-container,
+[data-theme='dark'] .student-record-detail-container,
+[data-theme='dark'] .student-report-detail-container,
+[data-theme='dark'] .course-admins-container,
+[data-theme='dark'] .educators-container {
+  background: transparent !important;
+  color: var(--text-primary, #e8f0ea) !important;
+}
+
+[data-theme='dark'] .students-record-content h2,
+[data-theme='dark'] .reports-title,
+[data-theme='dark'] .grading-scheme-title,
+[data-theme='dark'] .course-admins-title,
+[data-theme='dark'] .educators-title,
+[data-theme='dark'] .root-logins-own-password h3,
+[data-theme='dark'] .reports-top-three-title,
+[data-theme='dark'] .reports-sessions-title {
+  color: #d8f3dc !important;
+  -webkit-text-fill-color: #d8f3dc;
+  background: none;
+}
+
+[data-theme='dark'] .students-record-content p,
+[data-theme='dark'] .reports-subtitle,
+[data-theme='dark'] .grading-scheme-subtitle,
+[data-theme='dark'] .root-logins-intro,
+[data-theme='dark'] .reports-top-three-subtitle,
+[data-theme='dark'] .reports-prompt,
+[data-theme='dark'] .grading-scheme-loading,
+[data-theme='dark'] .grading-scheme-empty {
+  color: var(--text-secondary, #a8b8af) !important;
+}
+
+[data-theme='dark'] .root-logins-own-password,
+[data-theme='dark'] .root-logins-success {
+  background: var(--surface-elevated, #1c2923) !important;
+  border-color: var(--surface-border) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme='dark'] .root-logins-own-form label,
+[data-theme='dark'] .root-logins-own-form input,
+[data-theme='dark'] .reports-select-label,
+[data-theme='dark'] .courses-record-search-label {
+  color: var(--text-primary, #e8f0ea) !important;
+}
+
+[data-theme='dark'] .reports-select,
+[data-theme='dark'] .courses-record-search-input {
+  background: var(--input-bg, #101816) !important;
+  border-color: var(--surface-border-strong) !important;
+  color: var(--text-primary, #e8f0ea) !important;
+}
+
+[data-theme='dark'] .reports-prompt {
+  background: var(--surface-elevated, #1c2923) !important;
+  border-color: var(--surface-border-strong, rgba(216, 243, 220, 0.22)) !important;
+  color: var(--text-secondary, #a8b8af) !important;
+}
+
+[data-theme='dark'] .reports-prompt-warning {
+  background: rgba(212, 175, 55, 0.14) !important;
+  border-color: rgba(212, 175, 55, 0.35) !important;
+  color: #f0e6b8 !important;
+}
+
+[data-theme='dark'] .reports-top-three-card {
+  background: linear-gradient(
+    135deg,
+    rgba(212, 175, 55, 0.12) 0%,
+    rgba(22, 32, 27, 0.95) 50%,
+    rgba(212, 175, 55, 0.08) 100%
+  ) !important;
+  border-color: rgba(212, 175, 55, 0.28) !important;
+}
+
+[data-theme='dark'] .reports-top-three-item-name,
+[data-theme='dark'] .reports-top-three-item-meta,
+[data-theme='dark'] .reports-download-all-btn {
+  color: var(--text-primary, #e8f0ea);
+}
+
+[data-theme='dark'] .reports-view-btn,
+[data-theme='dark'] .grading-scheme-delete-all-btn,
+[data-theme='dark'] .grading-scheme-remove-row-btn {
+  background: rgba(22, 32, 27, 0.9) !important;
+  color: #d8f3dc !important;
+  border-color: rgba(82, 183, 136, 0.4) !important;
+}
+
+[data-theme='dark'] .reports-view-btn:hover {
+  background: #2d6a4f !important;
+  color: #f7f3eb !important;
+}
+
+/* Generic light panels across feature pages */
+[data-theme='dark'] .app-page-body .card,
+[data-theme='dark'] .app-page-body .panel,
+[data-theme='dark'] .app-page-body .section,
+[data-theme='dark'] .app-page-body .content-box,
+[data-theme='dark'] .app-page-body .list-card,
+[data-theme='dark'] .app-page-body .scheme-card,
+[data-theme='dark'] .app-page-body .report-card,
+[data-theme='dark'] .app-page-body .course-card,
+[data-theme='dark'] .app-page-body .record-card {
+  background: var(--surface-card, #16201b) !important;
+  border-color: var(--surface-border) !important;
+  color: var(--text-primary, #e8f0ea) !important;
+}
+
+[data-theme='dark'] .app-page-body h2,
+[data-theme='dark'] .app-page-body h3 {
+  color: #d8f3dc !important;
+}
+
+[data-theme='dark'] .app-page-body .hint,
+[data-theme='dark'] .app-page-body .muted,
+[data-theme='dark'] .app-page-body .help-text {
+  color: var(--text-secondary, #a8b8af) !important;
+}
+
+[data-theme='dark'] .portal-credentials-card,
+[data-theme='dark'] .portal-credentials-card--ok {
+  background: rgba(82, 183, 136, 0.14) !important;
+  border-color: rgba(82, 183, 136, 0.35) !important;
+}
+
+[data-theme='dark'] .portal-credentials-card--warn {
+  background: rgba(212, 175, 55, 0.14) !important;
+  border-color: rgba(212, 175, 55, 0.35) !important;
+}
+
+[data-theme='dark'] .portal-credentials-title,
+[data-theme='dark'] .portal-credentials-card--ok .portal-credentials-title {
+  color: #d8f3dc !important;
+}
+
+[data-theme='dark'] .portal-credentials-card--warn .portal-credentials-title {
+  color: #f0e6b8 !important;
+}
+
+[data-theme='dark'] .portal-credentials-line code {
+  background: rgba(0, 0, 0, 0.25) !important;
+  color: #e8f0ea !important;
+}
+
+/* Student record detail / report detail surfaces */
+[data-theme='dark'] .student-record-detail-container .panel,
+[data-theme='dark'] .student-record-detail-container .card,
+[data-theme='dark'] .student-report-detail-container .panel,
+[data-theme='dark'] .result-sheet-container .panel,
+[data-theme='dark'] .create-course-container .form-card,
+[data-theme='dark'] .create-course-marks-container .form-card,
+[data-theme='dark'] .map-questions-container .form-card {
+  background: var(--surface-card, #16201b) !important;
+  border-color: var(--surface-border) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Username cells (Forest Keepers / Gardeners) */
+[data-theme='dark'] .course-admins-username-cell,
+[data-theme='dark'] .educators-username-cell,
+[data-theme='dark'] .course-admins-username-header span,
+[data-theme='dark'] .educators-username-header {
+  color: var(--text-primary, #e8f0ea) !important;
+}
+
+/* Empty states */
+[data-theme='dark'] .empty-state,
+[data-theme='dark'] .empty-state h2,
+[data-theme='dark'] .empty-state p,
+[data-theme='dark'] .student-directory-empty {
+  color: var(--text-secondary, #a8b8af) !important;
+}
+
+[data-theme='dark'] .empty-state h2 {
+  color: #d8f3dc !important;
+}
+
+/* Result sheet / create course / record detail */
+[data-theme='dark'] .result-sheet-table-wrapper,
+[data-theme='dark'] .result-sheet-back-btn,
+[data-theme='dark'] .create-course-form,
+[data-theme='dark'] .student-record-detail-container .students-table-section {
+  background: var(--surface-card, #16201b) !important;
+  border-color: var(--surface-border) !important;
+  color: var(--text-primary, #e8f0ea) !important;
+}
+
+[data-theme='dark'] .result-sheet-title,
+[data-theme='dark'] .create-course-title,
+[data-theme='dark'] .create-course-fields .form-label,
+[data-theme='dark'] .result-sheet-th,
+[data-theme='dark'] .result-sheet-th-subject {
+  color: #d8f3dc !important;
+}
+
+[data-theme='dark'] .result-sheet-loading,
+[data-theme='dark'] .result-sheet-no-grade,
+[data-theme='dark'] .create-course-fields .form-hint,
+[data-theme='dark'] .compulsory-hint {
+  color: var(--text-secondary, #a8b8af) !important;
+}
+
+[data-theme='dark'] .result-sheet-back-btn {
+  color: #e8f0ea !important;
+  border-color: var(--surface-border-strong) !important;
+}
+
+[data-theme='dark'] .result-sheet-back-btn:hover {
+  background: rgba(82, 183, 136, 0.14) !important;
+}
+
+[data-theme='dark'] .create-course-fields .course-name-input,
+[data-theme='dark'] .create-course-fields .duration-input,
+[data-theme='dark'] .create-course-fields .date-input,
+[data-theme='dark'] .create-course-fields .total-marks-input,
+[data-theme='dark'] .create-course-fields .total-questions-input {
+  background: var(--input-bg, #101816) !important;
+  color: var(--text-primary, #e8f0ea) !important;
+  border-color: var(--surface-border-strong) !important;
+}
+
+[data-theme='dark'] .table-header-section {
+  border-bottom-color: var(--surface-border) !important;
+}
+
+/* Student report detail tables */
+[data-theme='dark'] .student-report-detail-container,
+[data-theme='dark'] .student-report-card {
+  background: transparent !important;
+  color: var(--text-primary, #e8f0ea) !important;
+}
+
+[data-theme='dark'] .student-report-objectives-table,
+[data-theme='dark'] .student-report-marksheet-table,
+[data-theme='dark'] .student-report-card-table {
+  background: var(--surface-card, #16201b) !important;
+}
+
+[data-theme='dark'] .student-report-objectives-table td,
+[data-theme='dark'] .student-report-marksheet-table td,
+[data-theme='dark'] .student-report-card-table td {
+  color: var(--text-primary, #e8f0ea) !important;
+  border-color: var(--surface-border) !important;
+}
+
+/* Map questions / course marks white shells */
+[data-theme='dark'] .map-questions-container,
+[data-theme='dark'] .create-course-marks-container {
+  background: transparent !important;
+}
+
+[data-theme='dark'] .map-questions-container h2,
+[data-theme='dark'] .create-course-marks-container h2 {
+  color: #d8f3dc !important;
+}

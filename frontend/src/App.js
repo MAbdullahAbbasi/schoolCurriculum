@@ -184,7 +184,16 @@ function App() {
 
   if (checking) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8f9fa' }}>
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'var(--surface-page, #0b1210)',
+          color: 'var(--text-secondary, #a8b8af)',
+        }}
+      >
         <p>Loading...</p>
       </div>
     );
