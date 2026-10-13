@@ -21,6 +21,28 @@
 
 .results-count-indicator {
   margin-top: 2rem;
+  margin-bottom: 2rem;
+  padding: 1rem;
+  text-align: center;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.results-count-text {
+  margin: 0;
+  color: #5a6c7d;
+  font-size: 0.95rem;
+}
+
+.results-count-text strong {
+  color: #2c3e50;
+}
+
+.results-count-filtered {
+  margin-left: 0.5rem;
+  color: #1b4332;
+  font-weight: 600;
 }
 
 .filter-group {
@@ -1547,4 +1569,109 @@
   .form-label {
     font-size: 0.9rem;
   }
+}
+
+/* ── Dark mode: Objectives / Curriculum readability ── */
+[data-theme='dark'] .curriculum-container {
+  background: transparent;
+  color: var(--text-primary, #e8f0ea);
+}
+
+[data-theme='dark'] .filter-label {
+  color: var(--text-primary, #e8f0ea);
+}
+
+[data-theme='dark'] .filter-select {
+  background-color: var(--input-bg, #101816) !important;
+  color: var(--text-primary, #e8f0ea) !important;
+  border-color: var(--surface-border-strong, rgba(216, 243, 220, 0.22)) !important;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%95d5b2' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+}
+
+[data-theme='dark'] .filter-select option,
+[data-theme='dark'] select option {
+  background-color: #1c2923 !important;
+  color: #e8f0ea !important;
+}
+
+[data-theme='dark'] .add-single-objective-section,
+[data-theme='dark'] .results-count-indicator,
+[data-theme='dark'] .topic-card,
+[data-theme='dark'] .objectives-table-wrapper,
+[data-theme='dark'] .no-topics,
+[data-theme='dark'] .form-modal-content,
+[data-theme='dark'] .empty-state {
+  background: var(--surface-card, #16201b) !important;
+  border-color: var(--surface-border, rgba(216, 243, 220, 0.12)) !important;
+  color: var(--text-primary, #e8f0ea) !important;
+}
+
+[data-theme='dark'] .add-objective-heading,
+[data-theme='dark'] .results-count-text strong,
+[data-theme='dark'] .topic-card,
+[data-theme='dark'] .objectives-table th,
+[data-theme='dark'] .objectives-select-col-label,
+[data-theme='dark'] .empty-state h2,
+[data-theme='dark'] .form-modal-header h2 {
+  color: #d8f3dc !important;
+}
+
+[data-theme='dark'] .results-count-text,
+[data-theme='dark'] .add-single-objective-section p,
+[data-theme='dark'] .add-single-objective-section .help-text,
+[data-theme='dark'] .objectives-table td,
+[data-theme='dark'] .empty-state p,
+[data-theme='dark'] .no-topics {
+  color: var(--text-secondary, #a8b8af) !important;
+}
+
+[data-theme='dark'] .results-count-filtered {
+  color: #95d5b2 !important;
+}
+
+[data-theme='dark'] .add-single-objective-section input,
+[data-theme='dark'] .add-single-objective-section select,
+[data-theme='dark'] .add-single-objective-section textarea {
+  background: var(--input-bg, #101816) !important;
+  color: var(--text-primary, #e8f0ea) !important;
+  border-color: var(--surface-border-strong, rgba(216, 243, 220, 0.22)) !important;
+}
+
+[data-theme='dark'] .objectives-table th,
+[data-theme='dark'] .objectives-th-checkbox,
+[data-theme='dark'] .objectives-td-checkbox {
+  background: var(--surface-elevated, #1c2923) !important;
+}
+
+[data-theme='dark'] .objectives-table tbody tr:hover {
+  background: rgba(82, 183, 136, 0.08) !important;
+}
+
+[data-theme='dark'] .objectives-table th,
+[data-theme='dark'] .objectives-table td {
+  border-bottom-color: var(--surface-border, rgba(216, 243, 220, 0.12)) !important;
+}
+
+[data-theme='dark'] .topic-card.selection-mode.selected {
+  background: rgba(82, 183, 136, 0.12) !important;
+  border-color: #52b788 !important;
+}
+
+[data-theme='dark'] .curriculum-refresh-hint {
+  background: rgba(82, 183, 136, 0.12);
+  border-color: rgba(82, 183, 136, 0.3);
+  color: #d8f3dc;
+}
+
+[data-theme='dark'] .next-button {
+  background: var(--surface-elevated, #1c2923);
+  color: #d8f3dc;
+}
+
+[data-theme='dark'] .course-select-grade-btn {
+  background: rgba(82, 183, 136, 0.14);
+  color: #d8f3dc;
+  border-color: rgba(82, 183, 136, 0.35);
 }

@@ -844,20 +844,11 @@ const Curriculum = () => {
 
       {/* Results count indicator */}
       {!loading && !isSelectionMode && data.length > 0 && (
-        <div className="results-count-indicator" style={{
-          textAlign: 'center',
-          marginBottom: '2rem',
-          padding: '1rem',
-          backgroundColor: '#f8f9fa',
-          borderRadius: '8px',
-          border: '1px solid #e0e0e0'
-        }}>
-          <p style={{ margin: 0, color: '#5a6c7d', fontSize: '0.95rem' }}>
-            Showing <strong style={{ color: '#2c3e50' }}>{filteredData.length}</strong> of <strong style={{ color: '#2c3e50' }}>{data.length}</strong> grade{data.length !== 1 ? 's' : ''}
+        <div className="results-count-indicator">
+          <p className="results-count-text">
+            Showing <strong>{filteredData.length}</strong> of <strong>{data.length}</strong> grade{data.length !== 1 ? 's' : ''}
             {(filters.grade || filters.ageGroup || filters.subject || filters.topic || filters.learningObjective) && (
-              <span style={{ marginLeft: '0.5rem', color: '#3498db' }}>
-                (filtered)
-              </span>
+              <span className="results-count-filtered"> (filtered)</span>
             )}
           </p>
         </div>

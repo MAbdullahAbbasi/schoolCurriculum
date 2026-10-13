@@ -404,14 +404,28 @@ body {
 [data-theme='dark'] input:not([type='checkbox']):not([type='radio']):not([type='range']),
 [data-theme='dark'] select,
 [data-theme='dark'] textarea {
-  background-color: var(--input-bg);
-  color: var(--text-primary);
-  border-color: var(--surface-border-strong);
+  background-color: var(--input-bg) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--surface-border-strong) !important;
 }
 
-[data-theme='dark'] option {
-  background: var(--surface-card);
-  color: var(--text-primary);
+/* Native <select> menus: force readable option colors (Windows/Chrome) */
+[data-theme='dark'] option,
+[data-theme='dark'] select option,
+[data-theme='dark'] .filter-select option {
+  background-color: #1c2923 !important;
+  color: #e8f0ea !important;
+}
+
+[data-theme='dark'] .app-page-body .add-single-objective-section,
+[data-theme='dark'] .app-page-body .results-count-indicator,
+[data-theme='dark'] .app-page-body .topic-card,
+[data-theme='dark'] .app-page-body .objectives-table-wrapper,
+[data-theme='dark'] .app-page-body .empty-state,
+[data-theme='dark'] .app-page-body .form-modal-content {
+  background: var(--surface-card) !important;
+  border-color: var(--surface-border) !important;
+  color: var(--text-primary) !important;
 }
 
 /* Prefer readable sage links/buttons over bright blue leftovers in dark */
