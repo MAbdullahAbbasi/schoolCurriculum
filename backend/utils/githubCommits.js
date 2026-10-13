@@ -1,5 +1,6 @@
 import { execFile } from 'child_process';
 import { promisify } from 'util';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import AppUpdate from '../models/AppUpdate.js';
@@ -8,6 +9,7 @@ import { commitToPlainEnglish } from './commitToPlainEnglish.js';
 const execFileAsync = promisify(execFile);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../..');
+const SEED_PATH = path.resolve(__dirname, '../data/commits-seed.json');
 
 function getRepoSlug() {
   return (
@@ -76,6 +78,37 @@ export async function fetchGithubCommits({ maxPages = 50 } = {}) {
 }
 
 /**
+ * Bundled historical commits (ensures past updates exist even without GitHub/git).
+ */
+export function fetchSeedCommits() {
+  try {
+    if (!fs.existsSync(SEED_PATH)) return [];
+    const raw = JSON.parse(fs.readFileSync(SEED_PATH, 'utf8'));
+    if (!Array.isArray(raw)) return [];
+    const repo = getRepoSlug();
+    return raw
+      .map((r) => {
+        const sha = String(r.sha || '').trim();
+        const subject = String(r.subject || '').trim();
+        const body = String(r.body || '');
+        return {
+          commitSha: sha,
+          originalSubject: subject,
+          message: commitToPlainEnglish(subject, body),
+          authorName: String(r.author || '').trim(),
+          committedAt: new Date(r.iso || Date.now()),
+          htmlUrl: `https://github.com/${repo}/commit/${sha}`,
+          source: 'git',
+        };
+      })
+      .filter((c) => c.commitSha && c.message);
+  } catch (err) {
+    console.warn('Seed commits load failed:', err.message);
+    return [];
+  }
+}
+
+/**
  * Fallback: read local git history when GitHub API is unavailable.
  */
 export async function fetchLocalGitCommits() {
@@ -140,7 +173,8 @@ export async function upsertCommits(commits) {
 }
 
 /**
- * Sync from GitHub, falling back to local git history.
+ * Sync from GitHub, falling back to local git history, then bundled seed.
+ * Always merges seed commits so historical updates are never missing.
  */
 export async function syncAppUpdatesFromSource() {
   let commits = [];
@@ -150,14 +184,22 @@ export async function syncAppUpdatesFromSource() {
   } catch (err) {
     console.warn('GitHub sync failed, trying local git:', err.message);
     commits = await fetchLocalGitCommits();
-    source = 'git';
+    source = commits.length ? 'git' : 'seed';
   }
   if (!commits.length) {
     commits = await fetchLocalGitCommits();
-    source = 'git';
+    source = commits.length ? 'git' : 'seed';
   }
-  const stats = await upsertCommits(commits);
-  return { ...stats, source, fetched: commits.length };
+
+  const seed = fetchSeedCommits();
+  const bySha = new Map();
+  for (const c of seed) bySha.set(c.commitSha, c);
+  for (const c of commits) bySha.set(c.commitSha, c); // live source wins
+  const merged = Array.from(bySha.values());
+  if (!commits.length && seed.length) source = 'seed';
+
+  const stats = await upsertCommits(merged);
+  return { ...stats, source, fetched: merged.length };
 }
 
 /**
