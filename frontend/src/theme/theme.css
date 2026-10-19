@@ -234,16 +234,17 @@ body {
 
 /* ── Public site ── */
 [data-theme='dark'] .ps-root {
+  /* Keep --ps-white as true white — hero/CTA/buttons use it for text on dark media */
   --ps-forest: #95d5b2;
   --ps-forest-deep: #d8f3dc;
   --ps-sage: #52b788;
-  --ps-sage-soft: #74c69d;
+  --ps-sage-soft: #95d5b2;
   --ps-cream: #16201b;
   --ps-cream-dark: #1e2b24;
   --ps-gold: #d4af37;
   --ps-ink: #e8f0ea;
   --ps-muted: #a8b8af;
-  --ps-white: #16201b;
+  --ps-white: #ffffff;
   --ps-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
   --ps-shadow-sm: 0 6px 18px rgba(0, 0, 0, 0.28);
   background: var(--surface-page);
@@ -251,23 +252,28 @@ body {
 }
 
 [data-theme='dark'] .ps-nav {
-  background: rgba(11, 18, 16, 0.92);
-  border-bottom-color: var(--surface-border);
+  background: rgba(8, 14, 12, 0.94);
+  border-bottom-color: rgba(149, 213, 178, 0.14);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
 }
 
 [data-theme='dark'] .ps-nav__brand,
 [data-theme='dark'] .ps-nav__brand-text {
-  color: #d8f3dc;
+  color: #f0f7f2;
 }
 
 [data-theme='dark'] .ps-nav__link {
-  color: var(--text-secondary);
+  color: #c5d4cb;
 }
 
-[data-theme='dark'] .ps-nav__link:hover,
+[data-theme='dark'] .ps-nav__link:hover {
+  color: #f0f7f2;
+  background: rgba(82, 183, 136, 0.16);
+}
+
 [data-theme='dark'] .ps-nav__link.is-active {
-  color: #d8f3dc;
-  background: rgba(82, 183, 136, 0.14);
+  color: #081c15;
+  background: #95d5b2;
 }
 
 [data-theme='dark'] .ps-nav__mobile {
@@ -280,19 +286,99 @@ body {
   border-bottom-color: var(--surface-border);
 }
 
+[data-theme='dark'] .ps-nav__mobile-link.is-active {
+  color: #95d5b2;
+}
+
 [data-theme='dark'] .ps-btn--ghost {
-  color: #d8f3dc;
-  border-color: rgba(216, 243, 220, 0.28);
+  color: #e8f0ea;
+  border-color: rgba(216, 243, 220, 0.35);
+}
+
+[data-theme='dark'] .ps-btn--ghost:hover {
+  background: rgba(82, 183, 136, 0.14);
+  border-color: rgba(149, 213, 178, 0.55);
+  color: #f7f3eb;
 }
 
 [data-theme='dark'] .ps-btn--primary {
-  background: #2d6a4f;
+  background: #40916c;
   color: #fff;
+}
+
+[data-theme='dark'] .ps-btn--primary:hover {
+  background: #52b788;
+  color: #081c15;
+}
+
+[data-theme='dark'] .ps-btn--light {
+  background: rgba(247, 243, 235, 0.12);
+  color: #f7f3eb;
+  border-color: transparent;
+}
+
+[data-theme='dark'] .ps-btn--light:hover {
+  background: rgba(247, 243, 235, 0.2);
+}
+
+[data-theme='dark'] .ps-btn--outline-light {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.75);
+}
+
+/* Hero: keep titles/leads bright over photo overlays */
+[data-theme='dark'] .ps-hero {
+  color: #ffffff;
+}
+
+[data-theme='dark'] .ps-hero__overlay {
+  background: linear-gradient(
+    105deg,
+    rgba(4, 14, 10, 0.72) 0%,
+    rgba(8, 28, 21, 0.48) 52%,
+    rgba(8, 28, 21, 0.28) 100%
+  );
+}
+
+[data-theme='dark'] .ps-hero__eyebrow {
+  color: #b7e4c7;
+}
+
+[data-theme='dark'] .ps-hero__title {
+  color: #ffffff;
+  text-shadow: 0 2px 28px rgba(0, 0, 0, 0.45);
+}
+
+[data-theme='dark'] .ps-hero__lead {
+  color: rgba(255, 255, 255, 0.94);
+}
+
+[data-theme='dark'] .ps-hero__dot {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+[data-theme='dark'] .ps-hero__dot.is-active {
+  background: var(--ps-gold);
 }
 
 [data-theme='dark'] .ps-section--cream,
 [data-theme='dark'] .ps-section--muted {
   background: #121c18;
+}
+
+[data-theme='dark'] .ps-section__header h2 {
+  color: #f0f7f2;
+}
+
+[data-theme='dark'] .ps-section--forest {
+  background: linear-gradient(160deg, #0d1f18 0%, #1b4332 55%, #245c42 100%);
+  color: #ffffff;
+}
+
+[data-theme='dark'] .ps-section--forest .ps-section__header h2,
+[data-theme='dark'] .ps-section--forest .ps-section__header p,
+[data-theme='dark'] .ps-section--forest p {
+  color: rgba(255, 255, 255, 0.92);
 }
 
 [data-theme='dark'] .ps-card,
@@ -302,8 +388,16 @@ body {
 [data-theme='dark'] .ps-timeline__item,
 [data-theme='dark'] .ps-why-grid li {
   background: var(--surface-card);
-  border-color: var(--surface-border);
+  border-color: rgba(149, 213, 178, 0.16);
   color: var(--text-primary);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+}
+
+[data-theme='dark'] .ps-card:hover,
+[data-theme='dark'] .ps-stage-card:hover,
+[data-theme='dark'] .ps-article-card:hover {
+  border-color: rgba(149, 213, 178, 0.32);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.38);
 }
 
 [data-theme='dark'] .ps-card h2,
@@ -312,8 +406,13 @@ body {
 [data-theme='dark'] .ps-article-card h2,
 [data-theme='dark'] .ps-article-card h3,
 [data-theme='dark'] .ps-detail-card h2,
-[data-theme='dark'] .ps-prose h2 {
+[data-theme='dark'] .ps-prose h2,
+[data-theme='dark'] .ps-cta h2 {
   color: #d8f3dc;
+}
+
+[data-theme='dark'] .ps-cta h2 {
+  color: #ffffff;
 }
 
 [data-theme='dark'] .ps-card p,
@@ -326,12 +425,73 @@ body {
   color: var(--text-secondary);
 }
 
+[data-theme='dark'] .ps-why-grid li {
+  color: #d8f3dc;
+}
+
+[data-theme='dark'] .ps-timeline__num {
+  background: #2d6a4f;
+  color: #ffffff;
+}
+
+[data-theme='dark'] .ps-label {
+  color: #95d5b2;
+}
+
+[data-theme='dark'] .ps-meta {
+  color: var(--text-secondary);
+}
+
 [data-theme='dark'] .ps-text-link {
   color: #95d5b2;
 }
 
+[data-theme='dark'] .ps-text-link:hover {
+  color: #d8f3dc;
+  border-bottom-color: #95d5b2;
+}
+
+[data-theme='dark'] .ps-cta {
+  background:
+    radial-gradient(circle at top right, rgba(212, 175, 55, 0.18), transparent 42%),
+    linear-gradient(145deg, #060d0a, #12261c 50%, #1b4332);
+  color: #ffffff;
+}
+
+[data-theme='dark'] .ps-cta p {
+  color: rgba(255, 255, 255, 0.9);
+}
+
 [data-theme='dark'] .ps-footer {
-  background: #070c0a;
+  background: #050a08;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+[data-theme='dark'] .ps-footer__brand-row strong,
+[data-theme='dark'] .ps-footer a {
+  color: #ffffff;
+}
+
+[data-theme='dark'] .ps-footer a:hover {
+  color: #95d5b2;
+}
+
+[data-theme='dark'] .ps-footer__heading {
+  color: #95d5b2;
+}
+
+/* Forms / contact on public pages */
+[data-theme='dark'] .ps-root input:not([type='checkbox']):not([type='radio']),
+[data-theme='dark'] .ps-root select,
+[data-theme='dark'] .ps-root textarea {
+  background: var(--input-bg);
+  color: var(--text-primary);
+  border-color: var(--surface-border-strong);
+}
+
+[data-theme='dark'] .ps-root input::placeholder,
+[data-theme='dark'] .ps-root textarea::placeholder {
+  color: rgba(168, 184, 175, 0.75);
 }
 
 /* ── Student portal ── */
