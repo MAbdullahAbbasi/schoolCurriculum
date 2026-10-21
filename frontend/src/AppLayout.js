@@ -58,8 +58,10 @@ const AppLayout = () => {
 
   const ensureSidebarOpen = useCallback(() => setSidebarOpen(true), []);
 
+  const isSuperAdmin = role === 'SUPER_ADMIN';
+
   return (
-    <div className="app-layout">
+    <div className={`app-layout${isSuperAdmin ? ' app-layout--super-admin' : ''}`}>
       <AppSidebar open={sidebarOpen} onClose={closeSidebar} />
       {tourKey > 0 && tourSteps.length > 0 && (
         <GuestTour

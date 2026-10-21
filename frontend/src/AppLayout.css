@@ -118,3 +118,99 @@
 .guest-tour-replay-btn:hover {
   color: var(--brand-forest-deep, #081c15);
 }
+
+/*
+ * Super Admin portal: one consistent body font size everywhere.
+ * Main page title (.app-page-title) stays larger; all other UI matches.
+ */
+.app-layout--super-admin {
+  --sa-font: var(--font-sans, 'DM Sans', 'Segoe UI', sans-serif);
+  --sa-text: 0.8125rem; /* 13px */
+  --sa-title: 1.35rem;
+  font-family: var(--sa-font);
+  font-size: var(--sa-text);
+}
+
+.app-layout--super-admin .app-sidebar,
+.app-layout--super-admin .app-main,
+.app-layout--super-admin .app-page-panel,
+.app-layout--super-admin .app-page-body,
+.app-layout--super-admin .app-page-subtitle,
+.app-layout--super-admin .sidebar-nav-btn,
+.app-layout--super-admin .sidebar-nav-label,
+.app-layout--super-admin .app-sidebar-tagline,
+.app-layout--super-admin .theme-toggle,
+.app-layout--super-admin .theme-toggle__btn,
+.app-layout--super-admin button,
+.app-layout--super-admin input,
+.app-layout--super-admin select,
+.app-layout--super-admin textarea,
+.app-layout--super-admin label,
+.app-layout--super-admin p,
+.app-layout--super-admin td,
+.app-layout--super-admin th,
+.app-layout--super-admin li,
+.app-layout--super-admin span,
+.app-layout--super-admin code,
+.app-layout--super-admin table {
+  font-family: var(--sa-font) !important;
+  font-size: var(--sa-text) !important;
+  line-height: 1.45;
+}
+
+/* Main page headings only — keep distinctly larger */
+.app-layout--super-admin .app-page-title {
+  font-family: var(--font-display, 'Fraunces', Georgia, serif) !important;
+  font-size: var(--sa-title) !important;
+  line-height: 1.25 !important;
+  font-weight: 700 !important;
+}
+
+/* Brand name in sidebar can stay slightly emphasized but not huge */
+.app-layout--super-admin .app-sidebar-title {
+  font-family: var(--font-display, 'Fraunces', Georgia, serif) !important;
+  font-size: 0.95rem !important;
+  line-height: 1.3 !important;
+}
+
+/* Kill oversized page-local titles / section heads inside Super Admin pages */
+.app-layout--super-admin .app-page-body h2,
+.app-layout--super-admin .app-page-body h3,
+.app-layout--super-admin .app-page-body h4,
+.app-layout--super-admin .course-admins-title,
+.app-layout--super-admin .root-logins-own-password h3,
+.app-layout--super-admin .updates-table,
+.app-layout--super-admin .course-admins-table,
+.app-layout--super-admin .course-admins-th,
+.app-layout--super-admin .course-admins-table td,
+.app-layout--super-admin .root-logins-filter-field,
+.app-layout--super-admin .root-logins-filter-field select,
+.app-layout--super-admin .root-logins-intro,
+.app-layout--super-admin .root-logins-password-cell code,
+.app-layout--super-admin .btn-primary,
+.app-layout--super-admin .btn-secondary,
+.app-layout--super-admin .btn-sm,
+.app-layout--super-admin .updates-btn,
+.app-layout--super-admin .updates-filter-field,
+.app-layout--super-admin .updates-filter-field input {
+  font-size: var(--sa-text) !important;
+  font-family: var(--sa-font) !important;
+}
+
+.app-layout--super-admin .app-page-body h2,
+.app-layout--super-admin .app-page-body h3,
+.app-layout--super-admin .app-page-body h4,
+.app-layout--super-admin .root-logins-own-password h3 {
+  font-weight: 650 !important;
+  margin-top: 0.85rem;
+  margin-bottom: 0.45rem;
+}
+
+.app-layout--super-admin .sidebar-nav-btn {
+  padding: 0.55rem 0.85rem;
+}
+
+.app-layout--super-admin .sidebar-nav-icon svg {
+  width: 1em;
+  height: 1em;
+}
