@@ -100,7 +100,8 @@ const AppSidebar = ({ open, onClose }) => {
   const canViewObjectives = hasAdminViewAccess(role);
   const canViewReports = hasAdminViewAccess(role);
   const canViewGradingScheme = hasAdminViewAccess(role);
-  const showUpdates = canViewUpdates(role);
+  // Updates is Super Admin only — never show for ADMIN, COURSE_ADMIN, EDUCATOR, GUEST, etc.
+  const showUpdates = isRootAdmin && canViewUpdates(role);
 
   useEffect(() => {
     if (window.innerWidth <= 768) onClose();

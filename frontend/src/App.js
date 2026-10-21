@@ -308,7 +308,13 @@ function App() {
             />
             <Route
               path="/updates"
-              element={canViewUpdates(userRole) ? <Updates /> : <Navigate to="/" replace />}
+              element={
+                userRole === 'SUPER_ADMIN' && canViewUpdates(userRole) ? (
+                  <Updates />
+                ) : (
+                  <Navigate to={userRole === 'SUPER_ADMIN' ? '/root-logins' : '/'} replace />
+                )
+              }
             />
             <Route path="/login" element={<Navigate to="/" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
