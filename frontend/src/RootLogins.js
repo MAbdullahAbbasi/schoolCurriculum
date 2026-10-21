@@ -190,7 +190,15 @@ const RootLogins = () => {
                           placeholder="New password"
                         />
                       ) : (
-                        <code>{row.password || '—'}</code>
+                        <code
+                          className={
+                            row.password
+                              ? 'root-logins-password-value'
+                              : 'root-logins-password--empty'
+                          }
+                        >
+                          {row.password || 'Not stored'}
+                        </code>
                       )}
                     </td>
                     <td>
