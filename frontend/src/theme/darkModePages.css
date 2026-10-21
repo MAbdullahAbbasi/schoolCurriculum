@@ -376,6 +376,21 @@
   border-color: var(--surface-border-strong) !important;
 }
 
+[data-theme='dark'] .root-logins-filter-field {
+  color: #d8f3dc !important;
+}
+
+[data-theme='dark'] .root-logins-filter-field select {
+  background: var(--input-bg, #101816) !important;
+  color: var(--text-primary, #e8f0ea) !important;
+  border-color: var(--surface-border-strong) !important;
+}
+
+[data-theme='dark'] .root-logins-student-name,
+[data-theme='dark'] .root-logins-empty {
+  color: var(--text-secondary, #a8b8af) !important;
+}
+
 [data-theme='dark'] .reports-select,
 [data-theme='dark'] .courses-record-search-input {
   background: var(--input-bg, #101816) !important;
