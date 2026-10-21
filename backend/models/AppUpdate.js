@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
 
 /**
- * Application updates shown to Admin / Super Admin.
- * Usually sourced from GitHub commits (including historical ones).
+ * Application updates shown to Super Admin only.
+ * Usually sourced from GitHub commits / push webhooks (including historical ones).
  */
 const appUpdateSchema = new mongoose.Schema(
   {

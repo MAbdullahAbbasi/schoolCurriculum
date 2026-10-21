@@ -80,7 +80,7 @@ export default function Updates() {
     <div className="updates-page">
       <PageHeader
         title="Updates"
-        subtitle="Simple summaries of application changes, including past work from GitHub."
+        subtitle="Plain-language summaries of every GitHub push — visible only to Super Admin."
         actions={
           <button
             type="button"

@@ -203,20 +203,55 @@ export async function syncAppUpdatesFromSource() {
 }
 
 /**
+ * Lightweight sync of the newest commits so Super Admin always sees recent pushes.
+ */
+export async function syncRecentAppUpdatesFromSource({ maxPages = 1, limit = 100 } = {}) {
+  let commits = [];
+  let source = 'github';
+  try {
+    commits = await fetchGithubCommits({ maxPages });
+  } catch (err) {
+    console.warn('Recent GitHub sync failed, trying local git:', err.message);
+    commits = await fetchLocalGitCommits();
+    source = commits.length ? 'git' : 'none';
+  }
+  if (!commits.length) {
+    commits = await fetchLocalGitCommits();
+    source = commits.length ? 'git' : 'none';
+  }
+  const recent = commits.slice(0, limit);
+  const stats = await upsertCommits(recent);
+  return { ...stats, source, fetched: recent.length };
+}
+
+/**
  * Upsert commits from a GitHub push webhook payload.
+ * Uses the commits array, and falls back to head_commit so every push is recorded.
  */
 export async function upsertFromGithubPushPayload(payload) {
   const repo = payload?.repository?.full_name || getRepoSlug();
-  const list = Array.isArray(payload?.commits) ? payload.commits : [];
-  const commits = list.map((c) => {
-    const subject = String(c.message || '').split('\n')[0];
+  let list = Array.isArray(payload?.commits) ? payload.commits : [];
+  if (!list.length && payload?.head_commit) {
+    list = [payload.head_commit];
+  }
+
+  const byId = new Map();
+  for (const c of list) {
+    const id = String(c?.id || c?.sha || '').trim();
+    if (!id) continue;
+    byId.set(id, c);
+  }
+
+  const commits = Array.from(byId.values()).map((c) => {
+    const fullMessage = String(c.message || '');
+    const subject = fullMessage.split('\n')[0];
     return {
-      commitSha: c.id,
+      commitSha: String(c.id || c.sha).trim(),
       originalSubject: subject,
-      message: commitToPlainEnglish(c.message || subject, c.message || ''),
+      message: commitToPlainEnglish(fullMessage || subject, fullMessage),
       authorName: c.author?.name || c.committer?.name || '',
       committedAt: new Date(c.timestamp || Date.now()),
-      htmlUrl: c.url || `https://github.com/${repo}/commit/${c.id}`,
+      htmlUrl: c.url || c.html_url || `https://github.com/${repo}/commit/${c.id || c.sha}`,
       source: 'webhook',
     };
   });

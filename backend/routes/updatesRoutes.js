@@ -5,6 +5,7 @@ import { requireRoles } from '../rbac/guards.js';
 import { ROLE } from '../rbac/roles.js';
 import {
   syncAppUpdatesFromSource,
+  syncRecentAppUpdatesFromSource,
   upsertFromGithubPushPayload,
 } from '../utils/githubCommits.js';
 
@@ -24,17 +25,22 @@ function parseDateBoundary(value, endOfDay = false) {
 
 /**
  * GET /api/updates
- * List updates for Admin / Super Admin with optional date filters.
- * Auto-syncs from GitHub/git when the collection is empty.
+ * List updates for Super Admin with optional date filters.
+ * Always pulls recent GitHub/git commits so each push appears as a plain message.
  */
-router.get('/', requireRoles([ROLE.ADMIN, ROLE.SUPER_ADMIN]), async (req, res) => {
+router.get('/', requireRoles([ROLE.SUPER_ADMIN]), async (req, res) => {
   try {
-    const count = await AppUpdate.countDocuments();
-    if (count === 0) {
-      try {
-        await syncAppUpdatesFromSource();
-      } catch (syncErr) {
-        console.warn('Initial updates sync failed:', syncErr.message);
+    try {
+      await syncRecentAppUpdatesFromSource();
+    } catch (syncErr) {
+      console.warn('Recent updates sync failed:', syncErr.message);
+      const count = await AppUpdate.countDocuments();
+      if (count === 0) {
+        try {
+          await syncAppUpdatesFromSource();
+        } catch (fullErr) {
+          console.warn('Initial updates sync failed:', fullErr.message);
+        }
       }
     }
 
@@ -82,7 +88,7 @@ router.get('/', requireRoles([ROLE.ADMIN, ROLE.SUPER_ADMIN]), async (req, res) =
  * POST /api/updates/sync
  * Pull latest commits from GitHub (or local git fallback) into the database.
  */
-router.post('/sync', requireRoles([ROLE.ADMIN, ROLE.SUPER_ADMIN]), async (req, res) => {
+router.post('/sync', requireRoles([ROLE.SUPER_ADMIN]), async (req, res) => {
   try {
     const stats = await syncAppUpdatesFromSource();
     return res.json({

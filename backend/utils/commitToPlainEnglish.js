@@ -1,5 +1,5 @@
 /**
- * Turn a git commit subject (and optional body) into a simple admin-facing message.
+ * Turn a git commit subject (and optional body) into a simple Super Admin-facing message.
  */
 export function commitToPlainEnglish(subject, body = '') {
   let s = String(subject || '').trim();
@@ -11,7 +11,14 @@ export function commitToPlainEnglish(subject, body = '') {
     s = firstBody || 'An update was made to the application.';
   }
 
+  // Prefer first non-trailer line of a multi-line message
+  s = s
+    .split('\n')
+    .map((l) => l.trim())
+    .find((l) => l && !/^co-authored-by:/i.test(l) && !/^signed-off-by:/i.test(l)) || s;
+
   s = s.replace(/\s*Co-authored-by:.*$/i, '').trim();
+  s = s.replace(/\s+/g, ' ').trim();
 
   let forcedPrefix = null;
   const conventional = s.match(
@@ -36,8 +43,6 @@ export function commitToPlainEnglish(subject, body = '') {
     forcedPrefix = typeMap[type] || 'Update: ';
   }
 
-  s = s.replace(/\s+/g, ' ').trim();
-
   const rules = [
     [/^add(ed)?\s+/i, 'We added '],
     [/^fix(ed)?\s+/i, 'We fixed '],
@@ -52,12 +57,22 @@ export function commitToPlainEnglish(subject, body = '') {
     [/^revert(ed)?\s+/i, 'We reverted '],
     [/^polish(ed)?\s+/i, 'We polished '],
     [/^align(ed)?\s+/i, 'We aligned '],
+    [/^restrict(ed)?\s+/i, 'We restricted '],
+    [/^bundle(d)?\s+/i, 'We bundled '],
+    [/^introduce(d)?\s+/i, 'We introduced '],
+    [/^keep\s+/i, 'We kept '],
+    [/^darken(ed)?\s+/i, 'We darkened '],
+    [/^wire(d)?\s+/i, 'We wired '],
     [/^set\s+/i, 'We set '],
+    [/^make\s+/i, 'We made '],
+    [/^ensure(d)?\s+/i, 'We ensured '],
+    [/^support(ed)?\s+/i, 'We supported '],
+    [/^enable(d)?\s+/i, 'We enabled '],
+    [/^disable(d)?\s+/i, 'We disabled '],
   ];
 
   let message;
   if (forcedPrefix) {
-    // Avoid "We fixed Fix ..."
     let rest = s;
     for (const [re] of rules) {
       if (re.test(rest)) {
@@ -65,13 +80,13 @@ export function commitToPlainEnglish(subject, body = '') {
         break;
       }
     }
-    message = `${forcedPrefix}${rest}`;
+    message = `${forcedPrefix}${decapitalize(rest)}`;
   } else {
     let matched = false;
     for (const [re, prefix] of rules) {
       if (re.test(s)) {
         const rest = s.replace(re, '').trim();
-        message = `${prefix}${rest}`;
+        message = `${prefix}${decapitalize(rest)}`;
         matched = true;
         break;
       }
@@ -80,7 +95,7 @@ export function commitToPlainEnglish(subject, body = '') {
       if (/^(we|the|an|a)\s+/i.test(s)) {
         message = s.charAt(0).toUpperCase() + s.slice(1);
       } else {
-        message = `Update: ${s.charAt(0).toUpperCase()}${s.slice(1)}`;
+        message = `We updated ${decapitalize(s)}`;
       }
     }
   }
@@ -93,18 +108,29 @@ export function commitToPlainEnglish(subject, body = '') {
     .replace(/\bAPI\b/g, 'system connection')
     .replace(/\bJWT\b/g, 'login security')
     .replace(/\bCSS\b/g, 'styling')
-    .replace(/\bPR\b/g, 'change');
+    .replace(/\bPR\b/g, 'change')
+    .replace(/\bGitHub\b/gi, 'GitHub')
+    .replace(/\bdark mode\b/gi, 'dark mode')
+    .replace(/\bSuper Admin\b/gi, 'Super Admin');
 
   const lower = s.toLowerCase();
   if (lower === 'update' || lower === 'updates' || s.length < 8) {
     const firstBody = String(body || '')
       .split('\n')
       .map((l) => l.trim())
-      .find((l) => l && !/^co-authored-by:/i.test(l));
+      .find((l) => l && !/^co-authored-by:/i.test(l) && !/^signed-off-by:/i.test(l));
     if (firstBody && firstBody.length > 12) {
       return commitToPlainEnglish(firstBody, '');
     }
   }
 
   return message;
+}
+
+function decapitalize(text) {
+  const t = String(text || '').trim();
+  if (!t) return t;
+  // Keep acronyms / proper nouns that are fully uppercase short tokens
+  if (/^[A-Z0-9]{2,}$/.test(t.split(/\s+/)[0])) return t;
+  return t.charAt(0).toLowerCase() + t.slice(1);
 }

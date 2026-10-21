@@ -65,9 +65,9 @@ export function isStudentPortalRole(role = getAuthRole()) {
   return role === 'STUDENT';
 }
 
-/** Admin and Super Admin may view application Updates (GitHub history). */
+/** Only Super Admin may view application Updates (GitHub history). */
 export function canViewUpdates(role = getAuthRole()) {
-  return role === 'ADMIN' || role === 'SUPER_ADMIN';
+  return role === 'SUPER_ADMIN';
 }
 
 export function getStoredAuthPortal() {
