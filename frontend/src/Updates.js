@@ -22,7 +22,6 @@ function formatDateTime(value) {
 export default function Updates() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState('');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
@@ -34,6 +33,7 @@ export default function Updates() {
       const params = {};
       if (fromDate) params.from = fromDate;
       if (toDate) params.to = toDate;
+      // GET /api/updates automatically syncs recent GitHub pushes before returning.
       const res = await axios.get(`${API_URL}/api/updates`, { params });
       setRows(Array.isArray(res.data?.data) ? res.data.data : []);
     } catch (err) {
@@ -53,24 +53,6 @@ export default function Updates() {
     loadUpdates();
   }, [loadUpdates]);
 
-  const handleSync = async () => {
-    setSyncing(true);
-    setError('');
-    try {
-      await axios.post(`${API_URL}/api/updates/sync`);
-      await loadUpdates();
-    } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          err.response?.data?.error ||
-          err.message ||
-          'Failed to sync updates.'
-      );
-    } finally {
-      setSyncing(false);
-    }
-  };
-
   const handleClearFilters = () => {
     setFromDate('');
     setToDate('');
@@ -80,17 +62,7 @@ export default function Updates() {
     <div className="updates-page">
       <PageHeader
         title="Updates"
-        subtitle="Plain-language summaries of every GitHub push — visible only to Super Admin."
-        actions={
-          <button
-            type="button"
-            className="updates-sync-btn"
-            onClick={handleSync}
-            disabled={syncing || loading}
-          >
-            {syncing ? 'Syncing…' : 'Sync from GitHub'}
-          </button>
-        }
+        subtitle="Plain-language summaries of every GitHub push — refreshed automatically for Super Admin."
       />
 
       <div className="app-page-body updates-body">
@@ -141,7 +113,7 @@ export default function Updates() {
           <p className="updates-status">Loading updates…</p>
         ) : rows.length === 0 ? (
           <p className="updates-status">
-            No updates found for this date range. Try syncing from GitHub or clearing the filter.
+            No updates found for this date range. Try clearing the filter.
           </p>
         ) : (
           <div className="updates-table-wrap">

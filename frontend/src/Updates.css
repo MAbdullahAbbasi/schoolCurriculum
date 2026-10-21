@@ -46,8 +46,7 @@
   gap: 0.5rem;
 }
 
-.updates-btn,
-.updates-sync-btn {
+.updates-btn {
   min-height: 40px;
   padding: 0.5rem 1rem;
   border-radius: 999px;
@@ -57,14 +56,12 @@
   cursor: pointer;
 }
 
-.updates-btn--primary,
-.updates-sync-btn {
+.updates-btn--primary {
   background: var(--garden-forest, #1b4332);
   color: #fff;
 }
 
-.updates-btn--primary:hover:not(:disabled),
-.updates-sync-btn:hover:not(:disabled) {
+.updates-btn--primary:hover:not(:disabled) {
   background: var(--garden-forest-dark, #081c15);
 }
 
@@ -74,8 +71,7 @@
   color: var(--brand-forest, #1b4332);
 }
 
-.updates-btn:disabled,
-.updates-sync-btn:disabled {
+.updates-btn:disabled {
   opacity: 0.7;
   cursor: not-allowed;
 }
