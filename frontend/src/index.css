@@ -1,5 +1,6 @@
 @import './theme/theme.css';
 @import './theme/darkModePages.css';
+@import './theme/portalCompact.css';
 
 :root {
   /* Canonical brand (aligned with public site + login) */

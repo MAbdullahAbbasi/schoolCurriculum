@@ -1,0 +1,552 @@
+/**
+ * Compact typography & spacing for LOGIN + INTERNAL PORTALS only.
+ * Scoped to: .app-layout, .login-page, .sp-shell
+ * Does NOT target .ps-root (public website).
+ */
+
+/* ── Shared portal tokens ── */
+.app-layout,
+.login-page,
+.sp-shell {
+  --portal-font: var(--font-sans, 'DM Sans', 'Segoe UI', sans-serif);
+  --portal-display: var(--font-display, 'Fraunces', Georgia, serif);
+  --portal-text: 0.6875rem; /* 11px body */
+  --portal-text-sm: 0.625rem; /* 10px meta */
+  --portal-text-xs: 0.5625rem; /* 9px badges */
+  --portal-th: 0.625rem; /* 10px table headers */
+  --portal-input: 0.6875rem; /* 11px inputs */
+  --portal-btn: 0.6875rem; /* 11px buttons */
+  --portal-section: 0.9375rem; /* 15px section heads */
+  --portal-page-title: 1.25rem; /* 20px main headings */
+  --portal-gap: 0.45rem;
+  --portal-pad-y: 0.35rem;
+  --portal-pad-x: 0.55rem;
+  --portal-control-h: 1.85rem;
+  --portal-row-pad: 0.32rem 0.55rem;
+  font-family: var(--portal-font);
+  font-size: var(--portal-text);
+  line-height: 1.4;
+}
+
+/* ═══════════════════════════════════════════
+   Staff authenticated shell (.app-layout)
+   ═══════════════════════════════════════════ */
+.app-layout .app-sidebar,
+.app-layout .app-main,
+.app-layout .app-page-panel,
+.app-layout .app-page-body,
+.app-layout .app-page-subtitle,
+.app-layout .sidebar-nav-btn,
+.app-layout .sidebar-nav-label,
+.app-layout .app-sidebar-tagline,
+.app-layout .theme-toggle,
+.app-layout .theme-toggle__btn,
+.app-layout button,
+.app-layout input,
+.app-layout select,
+.app-layout textarea,
+.app-layout label,
+.app-layout p,
+.app-layout td,
+.app-layout th,
+.app-layout li,
+.app-layout span:not(.app-page-title),
+.app-layout code,
+.app-layout table {
+  font-family: var(--portal-font);
+}
+
+.app-layout .app-page-body {
+  font-size: var(--portal-text) !important;
+  padding: 0.85rem 1.15rem 1.25rem !important;
+  line-height: 1.4 !important;
+}
+
+.app-layout .app-page-header {
+  padding: 0.85rem 1.15rem 0.65rem !important;
+}
+
+.app-layout .app-page-title {
+  font-family: var(--portal-display) !important;
+  font-size: var(--portal-page-title) !important;
+  line-height: 1.25 !important;
+  font-weight: 700 !important;
+  margin: 0 !important;
+}
+
+.app-layout .app-page-subtitle {
+  font-size: var(--portal-text-sm) !important;
+  line-height: 1.4 !important;
+  margin-top: 0.2rem !important;
+}
+
+.app-layout .app-page-back-btn {
+  font-size: var(--portal-text-sm) !important;
+  padding: 0.28rem 0.55rem !important;
+  margin-bottom: 0.45rem !important;
+  gap: 0.25rem !important;
+}
+
+.app-layout .app-page-alumni-btn {
+  font-size: var(--portal-btn) !important;
+  padding: 0.32rem 0.7rem !important;
+}
+
+.app-layout .app-main-content {
+  padding: 2.5rem 0.85rem 0.85rem !important;
+}
+
+/* Sidebar compact */
+.app-layout .app-sidebar-brand {
+  padding: 0.85rem 0.75rem 0.65rem !important;
+}
+
+.app-layout .app-sidebar-title {
+  font-family: var(--portal-display) !important;
+  font-size: 0.9rem !important;
+  margin-bottom: 0.15rem !important;
+}
+
+.app-layout .app-sidebar-tagline {
+  font-size: var(--portal-text-xs) !important;
+}
+
+.app-layout .app-sidebar-nav {
+  gap: 0.2rem !important;
+  padding: 0.55rem 0.5rem !important;
+}
+
+.app-layout .sidebar-nav-btn {
+  font-size: var(--portal-text) !important;
+  padding: 0.4rem 0.65rem !important;
+  gap: 0.5rem !important;
+  border-radius: 8px !important;
+}
+
+.app-layout .sidebar-nav-icon svg {
+  width: 0.95em !important;
+  height: 0.95em !important;
+}
+
+.app-layout .app-sidebar-footer {
+  padding: 0.45rem !important;
+  gap: 0.4rem !important;
+}
+
+.app-layout .sidebar-toggle-btn {
+  width: 34px !important;
+  height: 34px !important;
+}
+
+.app-layout .guest-mode-banner {
+  font-size: var(--portal-text-sm) !important;
+  padding: 0.4rem 0.75rem !important;
+}
+
+/* Body typography scale */
+.app-layout .app-page-body p,
+.app-layout .app-page-body label,
+.app-layout .app-page-body .filter-label,
+.app-layout .app-page-body li,
+.app-layout .app-page-body .hint,
+.app-layout .app-page-body .muted,
+.app-layout .app-page-body .help-text {
+  font-size: var(--portal-text) !important;
+}
+
+.app-layout .app-page-body h2 {
+  font-size: var(--portal-section) !important;
+  font-weight: 650 !important;
+  margin: 0.75rem 0 0.35rem !important;
+}
+
+.app-layout .app-page-body h3,
+.app-layout .app-page-body h4 {
+  font-size: 0.8125rem !important; /* 13px */
+  font-weight: 650 !important;
+  margin: 0.6rem 0 0.3rem !important;
+}
+
+/* Tables */
+.app-layout .app-page-body table {
+  font-size: var(--portal-text) !important;
+}
+
+.app-layout .app-page-body th,
+.app-layout .app-page-body thead th,
+.app-layout .course-admins-th,
+.app-layout .course-admins-th-select,
+.app-layout .course-admins-th-action,
+.app-layout .educators-th,
+.app-layout .educators-th-action,
+.app-layout .updates-table th,
+.app-layout .students-table th,
+.app-layout .reports-th,
+.app-layout .courses-record-table th,
+.app-layout .grading-scheme-table th,
+.app-layout .grading-scheme-list-table th {
+  font-size: var(--portal-th) !important;
+  font-weight: 700 !important;
+  padding: var(--portal-row-pad) !important;
+  letter-spacing: 0.03em;
+}
+
+.app-layout .app-page-body td,
+.app-layout .course-admins-table td,
+.app-layout .educators-table td,
+.app-layout .updates-table td,
+.app-layout .students-table td,
+.app-layout .reports-td,
+.app-layout .courses-record-table td,
+.app-layout .grading-scheme-table td,
+.app-layout .grading-scheme-list-table td {
+  font-size: var(--portal-text) !important;
+  padding: var(--portal-row-pad) !important;
+  font-weight: 500 !important;
+}
+
+/* Forms / filters / inputs */
+.app-layout .app-page-body input,
+.app-layout .app-page-body select,
+.app-layout .app-page-body textarea,
+.app-layout .filter-select,
+.app-layout .grade-filter-select,
+.app-layout .reports-select,
+.app-layout .root-logins-filter-field select,
+.app-layout .updates-filter-field input,
+.app-layout .course-admins-input,
+.app-layout .educators-input,
+.app-layout .root-logins-own-form input,
+.app-layout .root-logins-password-input,
+.app-layout .root-logins-confirm-input {
+  font-size: var(--portal-input) !important;
+  min-height: var(--portal-control-h) !important;
+  padding: var(--portal-pad-y) var(--portal-pad-x) !important;
+  border-radius: 7px !important;
+}
+
+.app-layout .app-page-body textarea {
+  min-height: 4.5rem !important;
+}
+
+.app-layout .filter-group,
+.app-layout .grade-filter-wrapper,
+.app-layout .root-logins-filter-field,
+.app-layout .updates-filter-field,
+.app-layout .filters-section,
+.app-layout .root-logins-filters,
+.app-layout .updates-filters {
+  gap: var(--portal-gap) !important;
+}
+
+.app-layout .filters-section {
+  margin-bottom: 0.75rem !important;
+  padding: 0.55rem 0 !important;
+}
+
+.app-layout .updates-filters,
+.app-layout .root-logins-filters {
+  margin-bottom: 0.75rem !important;
+  padding: 0.55rem 0.7rem !important;
+}
+
+.app-layout .root-logins-filter-field,
+.app-layout .updates-filter-field,
+.app-layout .filter-label,
+.app-layout .grade-filter-label {
+  font-size: var(--portal-text-sm) !important;
+  gap: 0.2rem !important;
+}
+
+/* Buttons */
+.app-layout .btn-primary,
+.app-layout .btn-secondary,
+.app-layout .btn-danger,
+.app-layout .btn-sm,
+.app-layout .updates-btn,
+.app-layout .nav-btn,
+.app-layout .icon-btn,
+.app-layout .select-mode-btn,
+.app-layout .course-admins-action-btn,
+.app-layout .educators-action-btn,
+.app-layout .reports-view-btn,
+.app-layout .reports-download-btn,
+.app-layout .app-page-body button {
+  font-size: var(--portal-btn) !important;
+  min-height: var(--portal-control-h) !important;
+  padding: 0.28rem 0.65rem !important;
+  border-radius: 7px !important;
+  gap: 0.25rem !important;
+}
+
+.app-layout .btn-sm {
+  padding: 0.22rem 0.5rem !important;
+  min-height: 1.65rem !important;
+}
+
+/* Cards / panels */
+.app-layout .course-admins-table-wrap,
+.app-layout .educators-table-wrap,
+.app-layout .updates-table-wrap,
+.app-layout .table-wrapper,
+.app-layout .root-logins-own-password,
+.app-layout .roles-card,
+.app-layout .topic-card,
+.app-layout .content-card {
+  border-radius: 10px !important;
+}
+
+.app-layout .root-logins-own-password {
+  padding: 0.75rem 0.9rem !important;
+  margin-bottom: 0.85rem !important;
+}
+
+.app-layout .root-logins-own-form {
+  gap: 0.5rem 0.75rem !important;
+}
+
+.app-layout .course-admins-container,
+.app-layout .educators-container,
+.app-layout .root-logins-container,
+.app-layout .students-record-container,
+.app-layout .reports-container,
+.app-layout .grading-scheme-container,
+.app-layout .curriculum-container,
+.app-layout .student-data-container,
+.app-layout .roles-dashboard-container {
+  padding: 0 !important;
+  font-size: inherit !important;
+}
+
+.app-layout .course-admins-title,
+.app-layout .educators-title {
+  font-size: var(--portal-section) !important;
+}
+
+.app-layout .roles-dashboard-title {
+  font-size: var(--portal-page-title) !important;
+}
+
+.app-layout .roles-card {
+  padding: 0.85rem 0.75rem !important;
+}
+
+.app-layout .roles-card-label {
+  font-size: 0.8125rem !important;
+}
+
+.app-layout .roles-card-hint {
+  font-size: var(--portal-text-sm) !important;
+}
+
+.app-layout .root-logins-password-cell code {
+  font-size: var(--portal-text) !important;
+  padding: 0.2rem 0.4rem !important;
+}
+
+.app-layout .root-logins-student-name,
+.app-layout .updates-meta {
+  font-size: var(--portal-text-xs) !important;
+}
+
+.app-layout .theme-toggle__btn {
+  font-size: var(--portal-text-xs) !important;
+  padding: 0.2rem 0.4rem !important;
+  min-height: 1.5rem !important;
+}
+
+/* Modals inside portal */
+.app-layout .course-admins-modal-card,
+.app-layout .educators-modal-card,
+.app-layout .form-modal-content,
+.app-layout .course-edit-modal,
+.app-layout .grading-scheme-editor {
+  font-size: var(--portal-text) !important;
+}
+
+.app-layout .course-admins-modal-title,
+.app-layout .educators-modal-title {
+  font-size: var(--portal-section) !important;
+}
+
+/* Guest tour (portal only) */
+.app-layout ~ .guest-tour-overlay .guest-tour-card,
+.guest-tour-card {
+  font-size: var(--portal-text, 0.6875rem);
+}
+
+.guest-tour-title {
+  font-size: 0.9rem !important;
+}
+
+.guest-tour-body,
+.guest-tour-step-label,
+.guest-tour-btn {
+  font-size: 0.6875rem !important;
+}
+
+.guest-tour-btn {
+  padding: 0.3rem 0.6rem !important;
+}
+
+/* ═══════════════════════════════════════════
+   Login + access request (.login-page)
+   ═══════════════════════════════════════════ */
+.login-page {
+  font-size: var(--portal-text);
+}
+
+.login-page .login-title {
+  font-family: var(--portal-display) !important;
+  font-size: 1.35rem !important; /* ~22px prominent */
+  line-height: 1.25 !important;
+  margin: 0 0 0.25rem !important;
+}
+
+.login-page .login-subtitle,
+.login-page .login-footnote,
+.login-page .login-field label,
+.login-page .login-info,
+.login-page .login-error,
+.login-page .login-divider,
+.login-page .login-back {
+  font-size: var(--portal-text-sm) !important;
+}
+
+.login-page .login-aside__eyebrow {
+  font-size: var(--portal-text-xs) !important;
+}
+
+.login-page .login-aside__title {
+  font-size: clamp(1.35rem, 2.4vw, 1.75rem) !important;
+  margin: 0 0 0.45rem !important;
+}
+
+.login-page .login-aside__lead {
+  font-size: 0.75rem !important;
+  line-height: 1.45 !important;
+}
+
+.login-page .login-card {
+  padding: 1.15rem 1.25rem !important;
+  border-radius: 14px !important;
+  gap: 0.75rem !important;
+}
+
+.login-page .login-card__brand {
+  margin-bottom: 0.35rem !important;
+  gap: 0.55rem !important;
+}
+
+.login-page .login-form {
+  gap: 0.55rem !important;
+}
+
+.login-page .login-field {
+  gap: 0.25rem !important;
+  margin: 0 !important;
+}
+
+.login-page .login-field input,
+.login-page .login-password-wrap input {
+  font-size: var(--portal-input) !important;
+  min-height: 2.05rem !important;
+  padding: 0.4rem 0.65rem !important;
+  border-radius: 8px !important;
+}
+
+.login-page .login-password-toggle {
+  padding: 0.25rem !important;
+}
+
+.login-page .login-submit,
+.login-page .login-google {
+  font-size: var(--portal-btn) !important;
+  min-height: 2.05rem !important;
+  padding: 0.4rem 0.85rem !important;
+  border-radius: 999px !important;
+}
+
+.login-page .login-main__top {
+  margin-bottom: 0.75rem !important;
+}
+
+.login-page .login-divider {
+  margin: 0.55rem 0 !important;
+}
+
+.login-page .theme-toggle__btn {
+  font-size: var(--portal-text-xs) !important;
+  padding: 0.2rem 0.4rem !important;
+}
+
+/* ═══════════════════════════════════════════
+   Student portal (.sp-shell)
+   ═══════════════════════════════════════════ */
+.sp-shell {
+  font-size: var(--portal-text);
+}
+
+.sp-shell .sp-brand-title,
+.sp-shell .sp-hero-title {
+  font-family: var(--portal-display) !important;
+  font-size: var(--portal-page-title) !important;
+  line-height: 1.25 !important;
+}
+
+.sp-shell .sp-brand-sub,
+.sp-shell .sp-hero-meta,
+.sp-shell .sp-hero-tagline,
+.sp-shell .sp-eyebrow,
+.sp-shell .sp-stat-label,
+.sp-shell .sp-password-help,
+.sp-shell label,
+.sp-shell p {
+  font-size: var(--portal-text-sm) !important;
+}
+
+.sp-shell .sp-stat-value {
+  font-size: 1.05rem !important;
+}
+
+.sp-shell .sp-btn,
+.sp-shell button,
+.sp-shell input,
+.sp-shell select {
+  font-size: var(--portal-btn) !important;
+  min-height: var(--portal-control-h) !important;
+  padding: 0.28rem 0.6rem !important;
+}
+
+.sp-shell .sp-topbar {
+  padding: 0.55rem 0.85rem !important;
+}
+
+.sp-shell .sp-main {
+  padding: 0.75rem 0.85rem 1.25rem !important;
+  gap: 0.75rem !important;
+}
+
+.sp-shell .sp-hero {
+  padding: 0.85rem !important;
+  gap: 0.75rem !important;
+}
+
+.sp-shell .sp-stat-card,
+.sp-shell .sp-course-card,
+.sp-shell .sp-password-panel {
+  padding: 0.65rem 0.75rem !important;
+  border-radius: 10px !important;
+}
+
+.sp-shell .sp-stat-grid {
+  gap: 0.45rem !important;
+}
+
+.sp-shell .sp-password-form {
+  gap: 0.45rem !important;
+}
+
+.sp-shell .sp-password-form label {
+  gap: 0.2rem !important;
+}
