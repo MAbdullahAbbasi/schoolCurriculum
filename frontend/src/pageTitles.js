@@ -6,6 +6,7 @@ import { APP_LABELS, ROLE_LABELS } from './roleLabels';
  */
 const PAGE_RULES = [
   { test: (p) => p === '/root-logins', title: 'All logins', subtitle: 'View and manage every account in the system.' },
+  { test: (p) => p === '/updates', title: 'Updates', subtitle: '' },
   { test: (p) => p.startsWith('/create-course/marks'), title: 'Course Marks', subtitle: 'Set marks for each question in the new course.' },
   { test: (p) => p.startsWith('/create-course'), title: 'Create Course', subtitle: 'Configure course details from selected objectives.' },
   { test: (p) => p.startsWith('/download-report-cards'), title: 'Download Report Cards', subtitle: 'Download all students\' report cards as a PDF (2 per page).' },
@@ -42,6 +43,7 @@ const TOP_LEVEL_PATHS = new Set([
   '/grading-scheme',
   '/roles',
   '/root-logins',
+  '/updates',
 ]);
 
 export function isTopLevelPath(pathname) {

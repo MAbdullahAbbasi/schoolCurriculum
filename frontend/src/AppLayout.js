@@ -99,25 +99,29 @@ const AppLayout = () => {
           )}
         </button>
         <div className="app-main-content" data-guest-tour="main-content">
-          <div className="app-page-panel">
-            <PageHeader
-              title={title}
-              subtitle={subtitle}
-              showBack={showBack}
-              actions={
-                pathname === '/students-data' ? (
-                  <button
-                    type="button"
-                    className="app-page-alumni-btn"
-                    onClick={() => navigate('/students-data/alumni')}
-                  >
-                    <IconAlumni />
-                    Alumni
-                  </button>
-                ) : null
-              }
-            />
-            <div className="app-page-body">
+          <div
+            className={`app-page-panel${pathname === '/updates' ? ' app-page-panel--updates' : ''}`}
+          >
+            {pathname !== '/updates' ? (
+              <PageHeader
+                title={title}
+                subtitle={subtitle}
+                showBack={showBack}
+                actions={
+                  pathname === '/students-data' ? (
+                    <button
+                      type="button"
+                      className="app-page-alumni-btn"
+                      onClick={() => navigate('/students-data/alumni')}
+                    >
+                      <IconAlumni />
+                      Alumni
+                    </button>
+                  ) : null
+                }
+              />
+            ) : null}
+            <div className={`app-page-body${pathname === '/updates' ? ' app-page-body--updates' : ''}`}>
               <Outlet />
             </div>
           </div>

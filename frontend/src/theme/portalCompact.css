@@ -179,7 +179,6 @@
 .app-layout .course-admins-th-action,
 .app-layout .educators-th,
 .app-layout .educators-th-action,
-.app-layout .updates-table th,
 .app-layout .students-table th,
 .app-layout .reports-th,
 .app-layout .courses-record-table th,
@@ -194,7 +193,6 @@
 .app-layout .app-page-body td,
 .app-layout .course-admins-table td,
 .app-layout .educators-table td,
-.app-layout .updates-table td,
 .app-layout .students-table td,
 .app-layout .reports-td,
 .app-layout .courses-record-table td,
@@ -213,7 +211,6 @@
 .app-layout .grade-filter-select,
 .app-layout .reports-select,
 .app-layout .root-logins-filter-field select,
-.app-layout .updates-filter-field input,
 .app-layout .course-admins-input,
 .app-layout .educators-input,
 .app-layout .root-logins-own-form input,
@@ -232,10 +229,8 @@
 .app-layout .filter-group,
 .app-layout .grade-filter-wrapper,
 .app-layout .root-logins-filter-field,
-.app-layout .updates-filter-field,
 .app-layout .filters-section,
-.app-layout .root-logins-filters,
-.app-layout .updates-filters {
+.app-layout .root-logins-filters {
   gap: var(--portal-gap) !important;
 }
 
@@ -244,14 +239,12 @@
   padding: 0.55rem 0 !important;
 }
 
-.app-layout .updates-filters,
 .app-layout .root-logins-filters {
   margin-bottom: 0.75rem !important;
   padding: 0.55rem 0.7rem !important;
 }
 
 .app-layout .root-logins-filter-field,
-.app-layout .updates-filter-field,
 .app-layout .filter-label,
 .app-layout .grade-filter-label {
   font-size: var(--portal-text-sm) !important;
@@ -263,7 +256,6 @@
 .app-layout .btn-secondary,
 .app-layout .btn-danger,
 .app-layout .btn-sm,
-.app-layout .updates-btn,
 .app-layout .nav-btn,
 .app-layout .icon-btn,
 .app-layout .select-mode-btn,
@@ -287,7 +279,6 @@
 /* Cards / panels */
 .app-layout .course-admins-table-wrap,
 .app-layout .educators-table-wrap,
-.app-layout .updates-table-wrap,
 .app-layout .table-wrapper,
 .app-layout .root-logins-own-password,
 .app-layout .roles-card,
@@ -344,8 +335,7 @@
   padding: 0.2rem 0.4rem !important;
 }
 
-.app-layout .root-logins-student-name,
-.app-layout .updates-meta {
+.app-layout .root-logins-student-name {
   font-size: var(--portal-text-xs) !important;
 }
 

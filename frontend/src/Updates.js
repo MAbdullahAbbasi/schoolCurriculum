@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
 import { API_URL } from './config/api';
-import PageHeader from './PageHeader';
 import './Updates.css';
 
 function formatDateTime(value) {
@@ -60,89 +59,84 @@ export default function Updates() {
 
   return (
     <div className="updates-page">
-      <PageHeader
-        title="Updates"
-        subtitle="Plain-language summaries of every GitHub push — refreshed automatically for Super Admin."
-      />
+      <h1 className="updates-heading">Updates</h1>
 
-      <div className="app-page-body updates-body">
-        <form
-          className="updates-filters"
-          onSubmit={(e) => {
-            e.preventDefault();
-            loadUpdates();
-          }}
-        >
-          <label className="updates-filter-field">
-            Date from
-            <input
-              type="date"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-            />
-          </label>
-          <label className="updates-filter-field">
-            Date to
-            <input
-              type="date"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-            />
-          </label>
-          <div className="updates-filter-actions">
-            <button type="submit" className="updates-btn updates-btn--primary">
-              Apply filter
-            </button>
-            <button
-              type="button"
-              className="updates-btn updates-btn--ghost"
-              onClick={handleClearFilters}
-            >
-              Clear
-            </button>
-          </div>
-        </form>
+      <form
+        className="updates-filters"
+        onSubmit={(e) => {
+          e.preventDefault();
+          loadUpdates();
+        }}
+      >
+        <label className="updates-filter-field">
+          Date from
+          <input
+            type="date"
+            value={fromDate}
+            onChange={(e) => setFromDate(e.target.value)}
+          />
+        </label>
+        <label className="updates-filter-field">
+          Date to
+          <input
+            type="date"
+            value={toDate}
+            onChange={(e) => setToDate(e.target.value)}
+          />
+        </label>
+        <div className="updates-filter-actions">
+          <button type="submit" className="updates-btn updates-btn--primary">
+            Apply filter
+          </button>
+          <button
+            type="button"
+            className="updates-btn updates-btn--ghost"
+            onClick={handleClearFilters}
+          >
+            Clear
+          </button>
+        </div>
+      </form>
 
-        {error ? (
-          <p className="updates-error" role="alert">
-            {error}
-          </p>
-        ) : null}
+      {error ? (
+        <p className="updates-error" role="alert">
+          {error}
+        </p>
+      ) : null}
 
-        {loading ? (
-          <p className="updates-status">Loading updates…</p>
-        ) : rows.length === 0 ? (
-          <p className="updates-status">
-            No updates found for this date range. Try clearing the filter.
-          </p>
-        ) : (
-          <div className="updates-table-wrap">
-            <table className="updates-table">
-              <thead>
-                <tr>
-                  <th scope="col">S.No.</th>
-                  <th scope="col">Date &amp; time</th>
-                  <th scope="col">Update message</th>
+      {loading ? (
+        <p className="updates-status">Loading updates…</p>
+      ) : rows.length === 0 ? (
+        <p className="updates-status">
+          No updates found for this date range. Try clearing the filter.
+        </p>
+      ) : (
+        <div className="updates-table-wrap">
+          <table className="updates-table">
+            <thead>
+              <tr>
+                <th scope="col">S.No.</th>
+                <th scope="col">Date &amp; time</th>
+                <th scope="col">Update message</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.id || row.commitSha}>
+                  <td className="updates-col-serial">{row.serialNumber}</td>
+                  <td className="updates-col-date">{formatDateTime(row.committedAt)}</td>
+                  <td className="updates-col-message">
+                    <p>{row.message}</p>
+                    {row.authorName ? (
+                      <span className="updates-meta">By {row.authorName}</span>
+                    ) : null}
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <tr key={row.id || row.commitSha}>
-                    <td className="updates-col-serial">{row.serialNumber}</td>
-                    <td className="updates-col-date">{formatDateTime(row.committedAt)}</td>
-                    <td className="updates-col-message">
-                      <p>{row.message}</p>
-                      {row.authorName ? (
-                        <span className="updates-meta">By {row.authorName}</span>
-                      ) : null}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
